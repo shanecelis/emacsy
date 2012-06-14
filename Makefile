@@ -2,12 +2,12 @@ CC = cc
 
 CFLAGS = -g
 
-TARGET = hello
+TARGET = emacsy
 VERSION = 0.1
 
-OBJS = hello.o
+OBJS = 
 
-SRCS = hello.c
+SRCS = emacsy.scm emacsy-tests.scm
 
 HDRS = 
 
@@ -15,10 +15,10 @@ BIBS =
 
 STYS = 
 
-DIST = Makefile README hello.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
+DIST = Makefile README emacsy.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 
 %.tex: %.w
-	nuweb -r $<
+	nuweb -lr $<
 
 %: %.tex
 	latex2html -split 0 $<
@@ -30,11 +30,13 @@ DIST = Makefile README hello.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 	latex $<
 
 %.pdf: %.tex
-	pdflatex $<
+	pdflatex -shell-escape $<
 
-all:
+$(SRCS): emacsy.w
+	nuweb -t $<
+
+all: $(SRCS)
 	$(MAKE) $(TARGET).tex
-	$(MAKE) $(TARGET)
 	$(MAKE) $(TARGET).pdf
 
 tar: $(TARGET)doc.tex
@@ -75,6 +77,9 @@ view:	$(TARGET).dvi
 print:	$(TARGET).dvi
 	lpr -d $(TARGET).dvi
 
+preview: $(TARGET).pdf
+	preview -r Emacs $(TARGET).pdf
+
 lint:
 	lint $(SRCS) > nuweb.lint
 
@@ -82,3 +87,6 @@ $(OBJS):
 
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)
+
+test: emacsy-tests.scm
+	guile -l line-pragma.scm -L . emacsy-tests.scm
