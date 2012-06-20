@@ -1,6 +1,6 @@
 CC = cc
 
-CFLAGS = -g
+CFLAGS = -g $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --cflags)
 
 TARGET = emacsy
 VERSION = 0.1
@@ -90,3 +90,6 @@ $(TARGET): $(OBJS)
 
 test: emacsy-tests.scm
 	guile -l line-pragma.scm -L . emacsy-tests.scm
+
+libemacsy.a: emacsy.o
+	ar rcs libemacsy.a emacsy.o

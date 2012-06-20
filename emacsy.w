@@ -1,9 +1,11 @@
 % hello.w
   
-\documentclass[twocolumn]{report}
+\documentclass{report}
 \newif\ifshowcode
 \showcodetrue
 
+\usepackage{microtype}
+\usepackage{multicol}
 \usepackage{etoolbox}
 \newtoggle{proposal}
 \togglefalse{proposal}
@@ -15,42 +17,52 @@
 %\usepackage{html} 
 
 \usepackage{listings}
-\usepackage{minted}
-\usemintedstyle{monokai}
-\definecolor{bg}{RGB}{39,40,34}
+%% \usepackage[scaled]{beramono}
+%% \usepackage[T1]{fontenc}
+%% \usepackage[T1]{fontenc} 
+%% \usepackage{dejavu}
+%% \usepackage[scaled]{DejaVuSansMono}
+%\usepackage{inconsolata}
+%\usepackage{minted}
+%\usemintedstyle{monokai}
+%\definecolor{bg}{RGB}{39,40,34}
 
 \usepackage{color}
 %\usepackage{framed}
 \usepackage{textcomp}
 %\definecolor{listinggray}{gray}{0.9}
 %\definecolor{shadecolor}{HTML}{211e1e}
+\definecolor{darkgray}{rgb}{0.95,0.95,0.95}
 \lstset{
+%  basicstyle=\ttfamily,
+  backgroundcolor=\color{darkgray}, 
 	tabsize=2,
 	language=lisp,
-    keepspaces=true,
-    upquote=true,
-    aboveskip=0pt,
-    belowskip=0pt,
-    framesep=0pt,
-    rulesep=0pt,
-    columns=fixed,
-    showstringspaces=true,
-    extendedchars=true,
-    breaklines=true,
-    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
-    frame=none,
-    framerule=0pt,
-    showtabs=false,
-    showspaces=false,
-    showstringspaces=false,
-    keywords={lambda, define, define-syntax, syntax-rules, set, while, if, begin, define-module, use-module, use-modules, let, let*, }
-    %basicstyle=\color[HTML]{dadada},
+  escapechar=\@@,
+  keepspaces=true,
+  upquote=true,
+  aboveskip=0pt,
+  belowskip=0pt,
+  framesep=0pt,
+  rulesep=0pt,
+  columns=fixed,
+  showstringspaces=true,
+  extendedchars=true,
+  breaklines=true,
+  prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+  frame=tb,
+  %framerule=0pt,
+  showtabs=false,
+  showspaces=false,
+  showstringspaces=false,
+  keywords={lambda, define, define-syntax, syntax-rules, set, while, if, begin, define-module, use-module, use-modules, let, let*, }
+  %basicstyle=\color[HTML]{dadada},
 	%rulecolor=\color[HTML]{dadada},
 	%backgroundcolor=\color[HTML]{211E1E},
-    %identifierstyle=\color[HTML]{bec337},%\ttfamily,
-    %keywordstyle=\color[HTML]{6f61ff},
-    %commentstyle=\color[HTML]{ED5B15},
-    %stringstyle=\color[HTML]{ad9361}
+  %identifierstyle=\color[HTML]{bec337},%\ttfamily,
+  %keywordstyle=\color[HTML]{6f61ff},
+  %commentstyle=\color[HTML]{ED5B15},
+  %stringstyle=\color[HTML]{ad9361}
 }
 \definecolor{linkcolor}{rgb}{0, 0, 0.7}
 \usepackage[backref,raiselinks,pdfhighlight=/O,pagebackref,hyperfigures,breaklinks,colorlinks,pdfstartview=FitBH,linkcolor={linkcolor},anchorcolor={linkcolor},citecolor={linkcolor},filecolor={linkcolor},menucolor={linkcolor},pagecolor={linkcolor},urlcolor={linkcolor}]{hyperref}
@@ -83,26 +95,20 @@
 \\ {\sl shane.celis@@gmail.com}}
 
 \input{commands}
-
 \begin{document}
 \maketitle
-%\chapter{Introduction}
-\section{Introduction}
+\chapter{Introduction}
+%\section{Introduction}
 % What's the logo?  How about a gnu inside some other creature?
 % Think an O'Reily animal with a gnu inside it.
 
-Emacsy is inspired by the Emacs text editor, but this project is not
-an attempt to create yet another text editor.  This project is an attempt
-to extract the kernel of Emacs' extensible key binding system for easy
-use within other programs that have nothing to do with text editing.
-
-\begin{comment}
-
-\footnote{There is a joke
-  that ``Emacs is a great operating system---it lacks a good editor,
-  though.'' Funnily enough, Emacsy is like Emacs but without any
-  editor.}
-\end{comment}
+Emacsy is inspired by the Emacs text editor, but it is not an attempt
+to create another text editor. This project "extracts" the kernel of
+Emacs that makes it so extensible.  There's a joke that Emacs is a
+great operating system---lacking only a decent editor. Emacsy is the
+Emacs OS sans the text editor.  Although Emacsy shares no code with
+Emacs, it does share a vision.  This project is aimed at Emacs users
+and software developers.
 
 \subsection{Vision}
 
@@ -113,26 +119,30 @@ some the prospect of chatting from within one's text editor sounds
 weird.  Why would anyone want to do that?  Because Emacs gives them so
 much control.  Frustrated by a particular piece of functionality?
 Disable it.  Unhappy with some unintuitive key binding?  Change it.
-Unimpressed by built-in functionality?  Rewrite it.
+Unimpressed by built-in functionality?  Rewrite it.  And you can do
+all that while Emacs is running.  You don't have to exit and
+recompile.
 
-The role I see for Emacsy is to bring the Emacs way of doing things to
-whatever application one is working on.  In my mind, I imagine Emacs
-consuming applications from the outside, while Emacsy subsumes
-applications from the inside---thereby allowing many applications to
-be Emacs-like without requiring each to use Emacs as their front-end.
-I would like to hit \verb|M-x| in other applications to run
-commands. I would like to see authors introduce a new version:
-``Version 3.0, now with Emacsy extensibility.''  I would like hear
-power users ask, ``Yes, but is it Emacsy?''
+The purpose of Emacsy is to bring the Emacs way of doing things to
+other applications natively. In my mind, I imagine Emacs consuming
+applications from the outside, while Emacsy combines with applications
+from the inside---thereby allowing an application to be Emacs-like
+without requiring it to use Emacs as its frontend. I would like to hit
+\verb|M-x| in other applications to run commands. I would like to see
+authors introduce a new version: ``Version 3.0, now extendable with
+Emacsy.'' I would like hear power users ask, ``Yes, but is it Emacsy?''
 
 \subsection{Motivation}
 
-This project was inspired by frustration with creating interactive
+This project was inspired by my frustration creating interactive
 applications with the conventional edit-run-compile style of
-development.  Finding the right abstraction for the building blocks of
-the User Interface (UI) such that they compose well is not easy.  This
-problem is exacerbated if the application is a means to an end and not
-an end in itself.
+development. Finding the right abstraction for the User Interface (UI)
+that will compose well is not easy. Additionally, If the application
+is a means to an end and not an end in itself (which is common for
+academic and in-house tools), then the UI is usually the lowest
+development priority.  Changing the UI is painful, so often mediocre
+UIs rule.  Emacsy allows the developer---or the user---to reshape and
+extend the UI and application easily at runtime.
 
 \begin{figure}
   \centering
@@ -165,25 +175,10 @@ The REPL interaction pattern is to enter one complete expression, hit
 the return key, and the result of that expression will be displayed.
 It might look like this:
 
-some
-
-other stuff
-
-
 \begin{verbatim}
 > (+ 1 2)
 3
 \end{verbatim}\label{blah}
-
-%% \begin{minted}[bgcolor=bg,mathescape,texcl]{c}
-%% // Ou, I like!  3
-%% int main() {
-%%   // $\text{< other stuff > figure. \ref{blah}} \ref{blah}$
-%%   printf("Hello, world!");  
-
-%%   return 0;
-%% } 
-%% \end{minted} 
 
 The kernel of Emacs is conceptually similar to the REPL, but the level
 of interaction is more fine grained.  A REPL assumes a command line
@@ -217,6 +212,10 @@ Key sequences in Emacs are associated with commands.  The fact that
 each command is implemented in Lisp is an implementation detail and
 not essential to the idea of a KLECL.
 
+Note how flexible the KLECL is: One can build a REPL out of a KLECL,
+or a text editor, or a robot simulator (as shown in the video).  Emacs
+uses the KLECL to create an extensible text editor.  Emacsy uses the
+KLECL to make other applications similarly extensible.
 
 \subsection{Goals}
 
@@ -225,24 +224,11 @@ The goals of this project are as follows.
 \begin{enumerate}
 \item Easy to embed technically
 
-  Emacsy should be easy to embed within an existing project.  (The
-  implementation choices will necessarily restrict it to perhaps only
-  C and C++ programs initially.)
+  Emacsy will use Guile Scheme to make it easy to embed within C and C++ programs.  
 
 \item Easy to embed legally
 
-  My preference for Emacsy in terms of its license would be something
-  like the Lesser GNU Public
-  License\footnote{\url{http://www.gnu.org/licenses/lgpl-3.0.txt}}.
-  Something one can use free of contamination, but where changes to
-  Emacsy in particular are protected by a license that requires those
-  changes be open.
-
-\item Small enough to understand and trust
-
-  It ought to be small enough that one can wrap their hands and mind
-  around it such that one is able trust it, which is important for
-  embedding.  (This document is an effort towards this goal.)
+  Emacsy will be licensed under the LGPL.  
 
 \item Easy to learn
 
@@ -262,8 +248,12 @@ The goals of this project are as follows.
 
 \item Key bindings can be modified
 
+  It wouldn't be Emacs-like if you couldn't tinker with it.
+
 \item Commands can be defined in Emacsy's language or the host
   language
+  
+  New commands can be defined in Guile Scheme or C/C++.
 
 \item Commands compose well
   
@@ -273,9 +263,7 @@ The goals of this project are as follows.
 \item A small number of \emph{interface} functions
 
   The core functions that must be called by the embedding application
-  ought to be small and relatively straightforward.  To that end, all
-  these \emph{interface} variables and functions that are expected to
-  be called have the prefix 'emacsy-' in their names.
+  will be few and straightforward to use.
 
 \item Bring KLECL to light
 
@@ -289,15 +277,20 @@ it is not intended to do.
 \begin{enumerate}
 \item Not a general purpose text editor
 
-  Emacsy will not do general purpose text editing out of the box.  It
-  will support a minibuffer.
+  Emacsy will not do general purpose text editing out of the box,
+  although it will have a minibuffer.
 
 \item Not an Emacs replacement
 
+  Emacs is full featured programmer's text editor with more bells and
+  whistles than most people will ever have the time to fully explore.
+  Emacsy extracts the Emacs spirit of application and UI extensibility
+  to use within other programs.  
+
+\item Not an Elisp replacement
+
   There have been many attempts to replace Emacs and elisp with an
-  newer Lisp dialect.  Emacsy is not one of them.  Emacs is full
-  featured programmer's text editor with more bells and whistles than
-  most people will ever have the time to fully explore.
+  newer Lisp dialect.  Emacsy is not one of them. 
 
 \item Not source code compatible with Emacs
 
@@ -312,7 +305,21 @@ it is not intended to do.
 
 \end{enumerate}
 
-%\section{Usage}
+\section{Emacsy Features}
+
+These are the core features from Emacs that will be implemented in Emacsy.
+
+\begin{enumerate}
+\item keymaps
+\item minibuffer
+\item recordable macros
+\item history
+\item tab completion
+\item major and minor modes
+\end{enumerate}
+
+
+\chapter{Usage}
 
 %% \section{Implementation Plan}
 
@@ -341,47 +348,197 @@ it is not intended to do.
 %% %\item Make code available on github
 %% \end{enumerate}
 
-\subsection{How you can help?}
-
-\begin{enumerate}
-\item Tell other people about Emacsy, especially other Emacs users and
-  developers.
-\item Tell me how to make the project better.  
-\begin{itemize}
-\item  You can send me an email: \href{mailto:shane.celis@@gmail.com}{shane.celis@@gmail.com}.
-\item  You can leave a comment on kickstarter.
-  
-\item  You can vote on features at \url{http://reddit.com/r/emacsy}.
-
-\item You can check out the latest code from \url{http://github.com/secelis/emacsy}.
-\end{itemize}
-
-\item Become a supporter on kickstarter.
-
-  \begin{itemize}
-    \item \$1 - If funded, you get a copy of Emacsy that you can run,
-      modify, and redistribute (LGPL).
-    \item \$10 - All the above and you are mentioned in credits.
-    \item \$20 - All the above and you will get receive ``backer'' flair on
-      \href{http://reddit.com/r/emacsy}{r/emacsy}.
-    \item \$150 - All the above and you will receive a printed manual (US only).
-    \item \$200 - All the above and if you send me your project logo,
-      I will attempt to add a small gnu to it.
-  \end{itemize}
-\end{enumerate}
-
 \subsection{Minimal Emacsy Example}
 
-\section{Implementation}
+\chapter{Implementation}
 
-The file \verb|emacsy.scm| is the heart of implementation.  The file
-\verb|emacsy-tests.scm| houses all the unit tests.
+Emacsy is divided into the following modules: klecl, buffer.
 
-@o emacsy.scm -cl -d  @{@< Lisp File Header @> 
-(define-module (emacsy)
-)
-@< Definitions @>
+\section{C API}
+
+The minimal C API is given below.
+
+\lstset{language=C}
+@o emacsy.h -cc @{@%
+/* @f
+
+@< Copyright @>
+
+@< License @>
+*/
+
+@< Begin Header Guard @>
+
+@< Defines @>
+
+/* Initialize Emacsy. */
+int  emacsy_init(void);
+
+/* Enqueue a keyboard event. */
+void emacsy_key_event(int char_code,
+                      int modifier_key_flags);
+
+/* Enqueue a mouse event. */
+void emacsy_mouse_event(int x, int y, 
+                        int state,
+                        int button,
+                        int modifier_key_flags);
+
+/* Run an iteration of Emacsy's event loop 
+   (will not block). */
+void emacsy_tick(); 
+
+/* Return the message or echo area. */
+char *emacsy_message_or_echo_area();
+
+/* Return the mode line */
+char *emacsy_mode_line();
+
+@< End Header Guard @>
+@%
+
 @|@}
+
+Here are the constants for the C API.
+
+@d Defines @{@%
+#define MODKEY_COUNT   6
+
+#define MODKEY_ALT     1 // A
+#define MODKEY_CONTROL 2 // C
+#define MODKEY_HYPER   4 // H
+#define MODKEY_META    8 // M
+#define MODKEY_SUPER  16 // s
+#define MODKEY_SHIFT  32 // S
+
+#define MOUSE_BUTTON_DOWN  0
+#define MOUSE_BUTTON_UP    1
+#define MOUSE_MOTION       2
+@|@}
+
+@d Begin Header Guard @{@%
+#ifdef __cplusplus
+ extern "C" {
+#endif
+@|@}
+
+@d End Header Guard @{@%
+#ifdef __cplusplus
+ }
+#endif
+@|@}
+
+
+
+The implementation of the API basically calls similarly named Scheme
+functions.
+
+@o emacsy.c @{@%
+#include "emacsy.h"
+#include <libguile.h>
+
+@< Utility Functions @>
+
+int emacsy_init()
+{
+  scm_c_use_module("emacsy");
+  /* load the emacsy modules */
+  return 0;
+}
+
+void emacsy_key_event(int char_code,
+                      int modifier_key_flags)
+                      
+{
+  // XXX I shouldn't have to do a CONTROL key fix here.
+  (void) scm_call_2(scm_c_public_ref("emacsy","emacsy-key-event"),
+                    scm_integer_to_char(scm_from_char(char_code + (modifier_key_flags & MODKEY_CONTROL ? ('a' - 1) : 0))),
+                    modifier_key_flags_to_list(modifier_key_flags));
+}
+
+void emacsy_mouse_event(int x, int y, 
+                        int state,
+                        int button, 
+                        int modifier_key_flags)
+{
+
+  SCM down_sym   = scm_c_string_to_symbol("down");
+  SCM up_sym     = scm_c_string_to_symbol("up");
+  SCM motion_sym = scm_c_string_to_symbol("motion");
+  SCM state_sym;
+  switch(state) {
+  case MOUSE_BUTTON_UP:   state_sym = up_sym;     break;
+  case MOUSE_BUTTON_DOWN: state_sym = down_sym;   break;
+  case MOUSE_MOTION:      state_sym = motion_sym; break;
+  default:
+    fprintf(stderr, "warning: mouse event state received invalid input %d.\n",
+            state);
+    return;
+  }
+
+  (void) scm_call_3(scm_c_public_ref("emacsy","emacsy-mouse-event"),
+                    scm_vector(scm_list_2(scm_from_int(x),
+                                          scm_from_int(y))),
+                    scm_from_int(button + 1),
+                    state_sym);
+}
+
+void emacsy_tick()
+{
+  (void) scm_call_0(scm_c_public_ref("emacsy",
+                                      "emacsy-tick"));
+}
+
+char *emacsy_message_or_echo_area()
+{
+  return scm_to_locale_string(
+    scm_call_0(scm_c_public_ref("emacsy",
+                                 "emacsy-message-or-echo-area")));
+}
+
+char *emacsy_mode_line()
+{
+  return scm_to_locale_string(
+    scm_call_0(scm_c_public_ref("emacsy",
+                                 "emacsy-mode-line")));
+}
+@|@}
+
+@d Utility Functions @{@%
+SCM scm_c_string_to_symbol(const char* str) {
+  return scm_string_to_symbol(scm_from_locale_string(str));
+}
+
+SCM modifier_key_flags_to_list(int modifier_key_flags)
+{
+  const char* modifiers[] = { "alt", "control", "hyper", "meta", "super", "shift" };
+  SCM list = SCM_EOL;
+  for (int i = 0; i < 6; i++) {
+    if (modifier_key_flags & 1 << i) {
+      list = scm_cons(scm_c_string_to_symbol(modifiers[i]), list);
+    }
+  }
+  
+  return list;
+}
+@|@}
+
+
+
+
+\lstset{language=lisp}
+\section{KLECL}
+
+@o emacsy/klecl.scm -cl -d  @{@%
+@< Lisp File Header @> 
+(define-module (emacsy klecl)
+  @< Include Modules @>
+  #:export ( @< Exported Symbols @> )
+  #:export-syntax ( @< Exported Syntax @> ) )
+@< Variables @>
+@< Procedures @>
+@|@}
+
 
 We will use the module check for most of our unit test needs.
 
