@@ -1,12 +1,13 @@
-% hello.w
+% emacsy.w
   
 \documentclass{report}
 \newif\ifshowcode
 \showcodetrue
 
-\usepackage{microtype}
+%\usepackage{microtype}
 \usepackage{multicol}
 \usepackage{etoolbox}
+\usepackage{units}
 \newtoggle{proposal}
 \togglefalse{proposal}
 \usepackage{verbatim}
@@ -19,10 +20,11 @@
 \usepackage{listings}
 %% \usepackage[scaled]{beramono}
 %% \usepackage[T1]{fontenc}
-%% \usepackage[T1]{fontenc} 
-%% \usepackage{dejavu}
-%% \usepackage[scaled]{DejaVuSansMono}
-%\usepackage{inconsolata}
+%\usepackage[T1]{fontenc} 
+%\usepackage{dejavu}
+%\usepackage[scaled]{DejaVuSansMono}
+%% \usepackage{inconsolata} 
+%% \usepackage[T1]{fontenc}
 %\usepackage{minted}
 %\usemintedstyle{monokai}
 %\definecolor{bg}{RGB}{39,40,34}
@@ -359,12 +361,12 @@ Emacsy is divided into the following modules: klecl, buffer.
 The minimal C API is given below.
 
 \lstset{language=C}
-@o emacsy.h -cc @{@%
+@o emacsy.h @{@%
 /* @f
 
-@< Copyright @>
+@<+ Copyright @>
 
-@< License @>
+@<+ License @>
 */
 
 @< Begin Header Guard @>
@@ -372,7 +374,7 @@ The minimal C API is given below.
 @< Defines @>
 
 /* Initialize Emacsy. */
-int  emacsy_init(void);
+int  emacsy_init(void);// XXX spell initialize out?
 
 /* Enqueue a keyboard event. */
 void emacsy_key_event(int char_code,
@@ -386,20 +388,29 @@ void emacsy_mouse_event(int x, int y,
 
 /* Run an iteration of Emacsy's event loop 
    (will not block). */
-void emacsy_tick(); 
+int emacsy_tick(); 
 
 /* Return the message or echo area. */
 char *emacsy_message_or_echo_area();
 
-/* Return the mode line */
+/* Return the mode line. */
 char *emacsy_mode_line();
+
+/* Run a hook. */
+int  emacsy_run_hook_0(const char *hook_name);
+
+/* Return the minibuffer point. */
+int  emacsy_minibuffer_point();
+
+/* Terminate Emacsy, runs termination hook. */
+void emacsy_terminate();
 
 @< End Header Guard @>
 @%
 
 @|@}
 
-Here are the constants for the C API.
+Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
 
 @d Defines @{@%
 #define MODKEY_COUNT   6
@@ -415,6 +426,15 @@ Here are the constants for the C API.
 #define MOUSE_BUTTON_UP    1
 #define MOUSE_MOTION       2
 @|@}
+
+Here are the exit codes that may be returned by \verb|emacsy_tick|.
+
+@d Defines @{@%
+#define EY_QUIT_APPLICATION  1
+#define EY_ECHO_AREA_UPDATED 2
+#define EY_MODELINE_UPDATED  4
+@|@}
+
 
 @d Begin Header Guard @{@%
 #ifdef __cplusplus
@@ -441,7 +461,10 @@ functions.
 
 int emacsy_init()
 {
+  /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
+  /* scm_primitive_load_path(scm_from_locale_string(emacsy_file));  */
   scm_c_use_module("emacsy");
+
   /* load the emacsy modules */
   return 0;
 }
@@ -451,8 +474,12 @@ void emacsy_key_event(int char_code,
                       
 {
   // XXX I shouldn't have to do a CONTROL key fix here.
+  SCM i = scm_from_int(char_code);
+  fprintf(stderr, "i = %d\n", scm_to_int(i));
+  SCM c = scm_integer_to_char(i);
+  fprintf(stderr, "c = %d\n", scm_to_int(scm_char_to_integer(c)));
   (void) scm_call_2(scm_c_public_ref("emacsy","emacsy-key-event"),
-                    scm_integer_to_char(scm_from_char(char_code + (modifier_key_flags & MODKEY_CONTROL ? ('a' - 1) : 0))),
+                    c,
                     modifier_key_flags_to_list(modifier_key_flags));
 }
 
@@ -479,14 +506,19 @@ void emacsy_mouse_event(int x, int y,
   (void) scm_call_3(scm_c_public_ref("emacsy","emacsy-mouse-event"),
                     scm_vector(scm_list_2(scm_from_int(x),
                                           scm_from_int(y))),
-                    scm_from_int(button + 1),
+                    scm_from_int(button),
                     state_sym);
 }
 
-void emacsy_tick()
+int emacsy_tick()
 {
+  int flags;
   (void) scm_call_0(scm_c_public_ref("emacsy",
                                       "emacsy-tick"));
+  if (scm_is_true(scm_c_public_ref("emacsy",
+                                   "emacsy-quit-application?")))
+    flags |= EY_QUIT_APPLICATION;
+  return flags;
 }
 
 char *emacsy_message_or_echo_area()
@@ -503,6 +535,28 @@ char *emacsy_mode_line()
                                  "emacsy-mode-line")));
 }
 @|@}
+
+@o emacsy.c @{@%
+int  emacsy_run_hook_0(const char *hook_name)
+{
+  /* This should be protected from all sorts of errors that the hooks
+     could throw. */
+  scm_run_hook(scm_c_private_ref("guile-user", hook_name),
+               SCM_EOL);
+  return 0;
+}
+@|@}
+
+@o emacsy.c @{@%
+int  emacsy_minibuffer_point()
+{
+  return scm_to_int(
+    scm_call_0(scm_c_public_ref("emacsy",
+                                 "emacsy-minibuffer-point")));  
+}
+@|@}
+
+
 
 @d Utility Functions @{@%
 SCM scm_c_string_to_symbol(const char* str) {
@@ -530,7 +584,7 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
 \section{KLECL}
 
 @o emacsy/klecl.scm -cl -d  @{@%
-@< Lisp File Header @> 
+@<+ Lisp File Header @> 
 (define-module (emacsy klecl)
   @< Include Modules @>
   #:export ( @< Exported Symbols @> )
@@ -542,24 +596,31 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
 
 We will use the module check for most of our unit test needs.
 
-@o emacsy-tests.scm -cl -d  @{@< Lisp File Header @>  
-@< Test Preamble @>
+@o emacsy-tests.scm -cl -d  @{
+@<+ Lisp File Header @>  
+@<+ Test Preamble @>
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy)))) 
 @< Tests @> 
-@< Test Postscript @> 
+@<+ Test Postscript @> 
 @|@}
 
 The header for Lisp files shown below.
 
-@d Lisp File Header @{;;; @f 
-;; DO NOT EDIT - generated from emacsy.w. 
-;;
-;; @< License @>
-;;
-;; @f written by Shane Celis 
-;; shane (dot) celis (at) uvm (dot) edu
+@d+ Lisp File Header @{#|
+@f 
+
+DO NOT EDIT - automatically generated from emacsy.w. 
+
+@<+ Copyright @>
+@<+ License @>
+|#
 @|@}
+
+@d+ Copyright @{@%
+Copyright (C) 2012 Shane Celis 
+@|@}
+
 
 @d Definitions @{@%
 (define (f x)
@@ -573,6 +634,302 @@ The header for Lisp files shown below.
 )
 @|test-f@}
 
+\section{Windows}
+@s
+Emacsy aims to offer the minimal amount of intrusion to acquire big
+gains in program functionality.  Windows is an optional module for
+Emacsy.  If you want to offer windows that behave like Emacs windows,
+you can, but you aren't required to.  
+
+@o emacsy/windows.scm -cl @{@%
+@<+ Lisp File Header @>
+@< Module @>
+@< Classes @>
+@< State @>
+@< Procedures @>
+@|@}
+
+@d Module @{@%
+(define-module (emacsy windows)
+  #:use-module (oop goops)
+  @< Include Modules @>
+  #:export ( @< Exported Symbols @> )
+@%  #:export-syntax ( @< Exported Syntax @> ) 
+)
+@|@}
+
+@d Include Modules @{@%
+@|@}
+
+\subsection{Window Class}
+
+The window class contains a renderable window that is associated with
+a buffer.
+
+@d Classes @{@%
+(define-class <window> ()
+  (window-buffer #:accessor window-buffer #:init-value #f)
+  (window-parent #:accessor window-parent #:init-value #f)
+  (window-dedicated? #:accessor window-dedicated? #:init-value #f)
+  (user-data #:accessor user-data #:init-value #f)
+  (to-parent-transform #:accessor to-parent-transform #:init-value #f)
+  (from-parent-transform #:accessor from-parent-transform #:init-value #f)
+  )
+@|@}
+
+@d Exported Symbols @{@%
+<window>
+@|@}
+
+\subsection{Internal Window Class}
+
+The internal window class contains other windows.
+
+@d Classes @{@%
+(define-class <internal-window> ()
+  (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
+  (window-parent #:accessor window-parent #:init-value #f)
+  (orientation #:accessor orientation #:init-value 'vertical) ; or 'horizontal
+  (size #:accessor size #:init-keyword #:size #:init-value (cons .5 'pr)) ; (cons 100 'px)
+  )
+@|@}
+
+@d Exported Symbols @{@%
+<internal-window>
+@|@}
+
+\subsection{Procedures}
+
+@d Procedures @{@%
+(define (window? o)
+  (or (is-a? o <window>) (is-a? o <internal-window>))
+  )
+@|@}
+
+@d Tests @{@%
+  (check (window? root-window) => #t)
+@|@}
+
+@d Procedures @{@%
+(define (window-live? o)
+  (is-a? o <window>))
+@|@}
+
+@d Tests @{@%
+  (check (window-live? root-window) => #t)
+@|@}
+
+@d Procedures @{@%
+(define (frame-root-window)
+  root-window)
+@|@}
+
+@d State @{@%
+(define root-window (make <window>))
+@|@}
+
+@d Include Modules @{@%
+  #:use-module (ice-9 match)
+@|@}
+
+Emacs uses the edges of windows \verb|(left top right bottom)|, but
+I'm more comfortable using bounded coordinate systems
+\verb|(left bottom width height)|.  So let's write some converters.
+
+@d Procedures @{@%
+(define (edges->bcoords edges)
+  (match edges
+   ((left top right bottom)
+    (list left bottom (- right left) (- top bottom))
+     )))
+@|@}
+
+@d Tests @{@%
+(check (edges->bcoords '(0 1 1 0)) => '(0 0 1 1))
+@|@}
+
+@d Procedures @{@%
+(define (bcoords->edges coords)
+  (match coords
+  ((x y w h)
+    (list x (+ y h) (+ x w) y))))
+@|@}
+
+@d Tests @{@%
+(check (bcoords->edges '(0 0 1 1)) => '(0 1 1 0))
+@|@}
+
+The best way I can think to tile and scale all these windows is like
+this.  Let's use a normalized bounded coordinates for the internal
+windows.  This way the frame size can change and the pixel edges can
+be recomputed.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.75]{window-diagram.pdf} 
+  \caption[Window Diagram]{\label{window-diagram}Window $A$ can be
+    fully described by two vectors: its origin $\bv o_a = (ox, oy)$
+    and its end $\bv e_a = (w_a, h_a)$.}
+\end{figure}
+
+
+Imagine the frame has a width $W$ and a height H.  My root window has
+the bounded coordinates \verb|(0 0 1 1)|.  When I call
+\verb|window-pixel-coords| on it, it will return \verb|(0 0 W H)|.
+
+Consider the case where my root window is split vertically in half.
+My root window would be an internal window with the same bounded
+coordinates as before.  The top child, however, will have its pixel
+bounded coordinates as \verb|(0 (/ H 2) W (/ H 2)|. And the bottom
+child will have \verb|(0 0 W (/ H 2))|.  
+
+One way to think of this is every \verb|<window>| takes up all its
+space; intrinsically, they are all set to \verb|(0 0 1 1)|.  The trick
+is each \verb|<internal-window>| divides up the space recursively.  So
+the internal window in the preceding example that was split
+vertically, it passes \verb|0 .5 1 .5| to the top child and
+\verb|0 0 1 .5|.
+
+One thing we need is the absolute pixel bounded coordinates of the
+frame.  Emacsy integrators need to set and update this appropriately.
+
+@d State @{@%
+(define emacsy-root-frame-absolute-pixel-bcoords '(0 0 640 320))
+@|@}
+
+\subsection{Units}
+
+There are two different units: pixel (\unit{px}) and proportion
+(unitless but denoted \unit{pr} for explicitness).  The size of a
+pixel is the same for all windows reference frames.  It is an absolute
+measure.  However, the size of a proportion is relative to the window
+it is in.  The end of every window $\bv e$ is $(1,1)$ \unit{pr}, or
+equivalently $(w, h)$ \px, and the origin of every window is $(0, 0)$
+in pixels or proportions.
+
+When the root window, or frame in Emacs parlance, is resized, we want
+each windows by default to resize proportionately.  The windows will
+be tiled; therefore, it seems appropriate to use the unit of
+proportions as our representation over pixels. There will be some
+windows that will have a size of a particular pixel size, like the
+minibuffer window.  A little bit of specialization to maintain a
+particular pixel height will require some callbacks or hooks.
+
+\subsection{Converting Between Window Reference Frames}
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.75]{child-window-diagram.pdf}
+  \caption[Child Window Diagram]{\label{child-window-diagram}This diagram shows
+    two windows $A$ and $B$.  Window $B$ can be said to be a child of
+    window $A$. Each window has its origin $\bv o$ and end $\bv e$
+    with its width $w$ and height $h$.  The point $(x,y)$ may be
+    referenced by either coordinate system denoted as follows.
+    $(x,y)_A$ denotes the coordinates with respect to the $A$
+    reference frame; $(x,y)_B$ denotes the coordinates with respect to
+    the $B$ reference frame. }
+\end{figure}
+
+Figure~\ref{child-window-diagram} shows a diagram of two windows: one
+parent and one child.  The valid range of each variable is given
+below.
+
+\begin{align}
+  \bv o_b &= (ox, oy) \\
+  ox &\in [0, 1]  \\
+  oy &\in [0, 1] \\
+  w_b &\in [0, 1 - ox]  \\
+  h_b &\in [0, 1 - oy] 
+\end{align}
+
+Let's assume that we know the coordinates of the point with respect to
+RF $B$ which we'll denote as $(x,y)_B$.  How do we determine the
+coordinate wrt RF $A$, $(x',y')_A$?  First, let's define some matrix
+operators: translate $\M T(tx, ty)$ and scale $\M S(sw, sh)$.
+
+\begin{align}
+  \M T(tx,ty) &= \begin{bmatrix}
+    1 & 0 & tx \\
+    0 & 1 & ty \\
+    0 & 0 & 1 
+  \end{bmatrix} \\
+  \M S(sw,sh) &= \begin{bmatrix}
+    sw & 0 & 0 \\
+    0 & sh & 0\\
+    0 & 0 & 1
+  \end{bmatrix} 
+\end{align}
+
+Now we can determine $(x', y')_A$.
+
+\begin{align}
+  %(x',y')_A \px &= \M T(\bv o_b) \, (x,y)_B \, \px  \\
+  %(x',y')_A \px &= \M S(\bv e_b) \, (x,y)_A \, \pr  \\
+  (x',y')_A &= \M T(\bv o_b) \, \M S(\bv e_b) \, (x,y)_B  \\
+  \where \bv e_b &= (w_b, h_b) 
+\end{align}
+
+Note that the multiplication between a $3 \times 3$ matrix and a two
+dimensional vector actually is shorthand for this $$\M M ~ (x,y)
+\equiv \M M~\begin{bmatrix} x \\ y \\ 1 \end{bmatrix}\text{.}$$ This
+is a homogenous coordinate that allows us to capture affine
+transformations like translation.
+
+%% What are the domains of each of these variables in pixel units?
+
+%% \begin{align}
+%%   \bv o_b &= (ox, oy) \\
+%%   ox &\in [0, w_a] \px \\
+%%   oy &\in [0, h_a] \px\\
+%%   w_b &\in [0, w_a - ox] \px \\
+%%   h_b &\in [0, h_a - oy] \px
+%% \end{align}
+
+Let's denote the transformation to RF $A$ from RF $B$ as ${}_A\M M_B$.
+
+\begin{align}
+  (x', y')_A &= {}_A\M M_B \, (x, y)_B \\
+  \where{}_A\M M_B &= \M T(\bv o_b) \, \M S(\bv e_b) 
+\end{align}
+
+\noindent And its inverse defines the opposite operation going to RF $B$
+from RF $A$.
+
+\begin{align}
+  _A\M M_B^{-1} &= (\M T(\bv o_b) \, \M S(\bv e_b))^{-1} \\
+  _A\M M_B^{-1} &= \M S(\bv e_b)^{-1} \, \M T(\bv o_b)^{-1}  \\
+  _A\M M_B^{-1} &=  {}_B\M M_A
+\end{align}
+
+\subsection{Identities}
+
+Here are a few identities.  
+
+\begin{align}
+  [\bv o_b]_B &= (0,0) \\
+  [\bv e_b]_B &= (1,1) \\
+  [\bv o_b]_A &= {}_A\M M_B \, (0, 0) \\
+  [\bv e_b]_A &= {}_A\M M_B \, (1, 1) 
+\end{align}
+
+@d Procedures @{@%
+(define (window-pixel-bcoords window)
+  #f
+)
+@|@}
+
+
+
+@o windows-tests.scm -cl -d  @{
+@<+ Lisp File Header @>  
+@<+ Test Preamble @>
+(eval-when (compile load eval)
+           (module-use! (current-module) (resolve-module '(emacsy windows)))) 
+@< Tests @> 
+@<+ Test Postscript @> 
+@|@}
+
+@S
 \subsection{Literate Programming Support}
 
 All the code for this project is generated from \verb|emacsy.w|.  To
@@ -794,7 +1151,7 @@ Finally, now we just need a way to run all the unit tests.
 
 Finally, let's provide this as our testing preamble.
 
-@d Test Preamble @{@%
+@d+ Test Preamble @{@%
 (use-modules (check))
 (use-modules (ice-9 pretty-print))
 
@@ -805,7 +1162,7 @@ Finally, let's provide this as our testing preamble.
 
 Let's run these tests at the end.
 
-@d Test Postscript @{@%
+@d+ Test Postscript @{@%
 
 (run-tests)
 (check-report)
@@ -816,14 +1173,9 @@ Let's run these tests at the end.
 
 @|@}
 
-\section{Example Program: ERACS}
-
-Extensible Robot And Controller Simulation (ERACS) was written along
-side Emacsy.  
-
 \section{Vector Math}
 
-@o vector-math.scm -cl -d  @{@< Lisp File Header @> 
+@o vector-math-2.scm -cl -d  @{@<+ Lisp File Header @> 
 ;@< Vector Module @> 
 @< Vector Definitions @>
 @|@}   

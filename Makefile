@@ -5,9 +5,9 @@ CFLAGS = -g $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.
 TARGET = emacsy
 VERSION = 0.1
 
-OBJS = 
+OBJS = emacsy.o
 
-SRCS = emacsy.scm emacsy-tests.scm
+SRCS = emacsy.scm emacsy-tests.scm emacsy.c emacsy/windows.scm windows-tests.scm
 
 HDRS = 
 
@@ -16,6 +16,8 @@ BIBS =
 STYS = 
 
 DIST = Makefile README emacsy.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
+
+.PHONY : all
 
 %.tex: %.w
 	nuweb -lr $<
@@ -30,14 +32,16 @@ DIST = Makefile README emacsy.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 	latex $<
 
 %.pdf: %.tex
-	pdflatex -shell-escape $<
+	pdflatex -shell-escape -halt-on-error $<
 
-$(SRCS): emacsy.w
-	nuweb -t $<
 
 all: $(SRCS)
 	$(MAKE) $(TARGET).tex
 	$(MAKE) $(TARGET).pdf
+	$(MAKE) lib$(TARGET).a
+
+$(SRCS): emacsy.w
+	nuweb -t $<
 
 tar: $(TARGET)doc.tex
 	mkdir $(TARGET)-$(VERSION)
@@ -66,7 +70,7 @@ check: nuweb
         echo "$$f failed"
 
 clean:
-	-rm -f *.o *.tex *.log *.dvi *~ *.blg *.lint $(TARGET)
+	-rm -f *.o emacsy.tex *.log *.dvi *~ *.blg *.lint $(TARGET)
 
 veryclean:
 	-rm -f *.o *.c *.h *.tex *.log *.dvi *~ *.blg *.lint *.aux *.pdf *.bbl *.out
@@ -88,8 +92,9 @@ $(OBJS):
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)
 
-test: emacsy-tests.scm
+test: emacsy-tests.scm windows-tests.scm
 	guile -l line-pragma.scm -L . emacsy-tests.scm
+	guile -l line-pragma.scm -L . windows-tests.scm
 
 libemacsy.a: emacsy.o
 	ar rcs libemacsy.a emacsy.o
