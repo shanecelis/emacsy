@@ -1348,7 +1348,7 @@ another reader extension that will strip out any \#l lines within it.
                   (loop (read-char port)))))))))
 @|@}
 
-@o my-line-pragma.scm -cl @{@%
+@o line-pragma.scm -cl @{@%
 (define-module (my-line-pragma)
   #:use-module (ice-9 rdelim))
 

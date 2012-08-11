@@ -73,7 +73,7 @@ clean:
 	-rm -f *.o emacsy.tex *.log *.dvi *~ *.blg *.lint $(TARGET)
 
 veryclean:
-	-rm -f *.o *.c *.h *.tex *.log *.dvi *~ *.blg *.lint *.aux *.pdf *.bbl *.out
+	-rm -f *.o *.c *.h *.log *.dvi *~ *.blg *.lint *.aux *.bbl *.out
 
 view:	$(TARGET).dvi
 	xdvi $(TARGET).dvi
