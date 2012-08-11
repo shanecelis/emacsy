@@ -40,7 +40,7 @@
   backgroundcolor=\color{darkgray}, 
 	tabsize=2,
 	language=lisp,
-  escapechar=\@@,
+  escapechar=\@,
   keepspaces=true,
   upquote=true,
   aboveskip=0pt,
@@ -94,7 +94,7 @@
 %\title{Emacsey: An Embedable Macro System for Embedding }
 \date{}
 \author{Shane Celis
-\\ {\sl shane.celis@@gmail.com}}
+\\ {\sl shane.celis@gmail.com}}
 
 \input{commands}
 \begin{document}
@@ -171,12 +171,11 @@ The Lisp programming language introduced the term Read-Eval-Print-Loop
 in many dynamic languages: Python, Ruby, MATLAB, Mathematica, Lua to
 name a few.  The pseudo code is given below.
 
-@d Lisp REPL @{
+<<Lisp REPL>>=
+
 (while #t
  (print (eval (read))))
-@}
-
-The REPL interaction pattern is to enter one complete expression, hit
+@ The REPL interaction pattern is to enter one complete expression, hit
 the return key, and the result of that expression will be displayed.
 It might look like this:
 
@@ -193,12 +192,11 @@ of similar utility to the REPL---and entirely separate from text
 editing.  I'd like to name this the Key-Lookup-Execute-Command-Loop
 (KLECL, pronounced clec-cull).
 
-@d KLECL @{
+<<KLECL>>=
+
 (while #t
  (execute-command (lookup-key (read-key))))
-@}
-
-Long-time Emacs users will be familiar with this idea, but new Emacs
+@ Long-time Emacs users will be familiar with this idea, but new Emacs
 users may not be.  For instance, when a user hits the 'a' key, then an
 'a' is inserted into their document.  Let's pull apart the functions
 to see what that actually looks like with respect to the KLECL.
@@ -364,7 +362,8 @@ Emacsy is divided into the following modules: klecl, buffer.
 
 The minimal C API is given below.
 
-@d Prototypes @{
+<<Prototypes>>=
+
 
 /* Initialize Emacsy. */
 int  emacsy_init(void);// XXX spell initialize out?
@@ -397,31 +396,27 @@ int  emacsy_minibuffer_point();
 
 /* Terminate Emacsy, runs termination hook. */
 void emacsy_terminate();
-@|@}
+<<emacsy.h>>=
 
-
-
-@o emacsy.h @{
 /* emacsy.h
 
-@<+ Copyright @>
+<<+ Copyright>>
 
-@<+ License @>
+<<+ License>>
 */
 
-@< Begin Header Guard @>
+<<Begin Header Guard>>
 
-@< Defines @>
+<<Defines>>
 
-@< Prototypes @>
+<<Prototypes>>
 
-@< End Header Guard @>
+<<End Header Guard>>
 
-@|@}
+@ Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
 
-Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
+<<Defines>>=
 
-@d Defines @{
 #define EY_MODKEY_COUNT   6
 
 #define EY_MODKEY_ALT     1 // A
@@ -434,36 +429,32 @@ Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these 
 #define MOUSE_BUTTON_DOWN  0
 #define MOUSE_BUTTON_UP    1
 #define MOUSE_MOTION       2
-@|@}
+@ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
-Here are the return flags that may be returned by \verb|emacsy_tick|.
+<<Defines>>=
 
-@d Defines @{
 #define EY_QUIT_APPLICATION  1
 #define EY_ECHO_AREA_UPDATED 2
 #define EY_MODELINE_UPDATED  4
-@|@}
-
-The boilerplate guards so that a C++ program may include
+@ The boilerplate guards so that a C++ program may include
 \verb|emacsy.h| are given below.
 
-@d Begin Header Guard @{
+<<Begin Header Guard>>=
+
 #ifdef __cplusplus
  extern "C" {
 #endif
-@|@}
+<<End Header Guard>>=
 
-@d End Header Guard @{
 #ifdef __cplusplus
  }
 #endif
-@|@}
-
-The implementation of the API calls similarly named Scheme procedures.
+@ The implementation of the API calls similarly named Scheme procedures.
 
 \section{emacsy\_init}
 
-@d Functions @{
+<<Functions>>=
+
 int emacsy_init()
 {
   /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
@@ -473,11 +464,10 @@ int emacsy_init()
   /* load the emacsy modules */
   return 0;
 }
-@|@}
+@ \section{emacsy\_key\_event}
 
-\section{emacsy\_key\_event}
+<<Functions>>=
 
-@d Functions @{
 void emacsy_key_event(int char_code,
                       int modifier_key_flags)
 {
@@ -490,11 +480,10 @@ void emacsy_key_event(int char_code,
                     c,
                     modifier_key_flags_to_list(modifier_key_flags));
 }
-@|@}
+@ \section{emacsy\_mouse\_event}
 
-\section{emacsy\_mouse\_event}
+<<Functions>>=
 
-@d Functions @{
 void emacsy_mouse_event(int x, int y, 
                         int state,
                         int button, 
@@ -521,11 +510,10 @@ void emacsy_mouse_event(int x, int y,
                     scm_from_int(button),
                     state_sym);
 }
-@|@}
- 
-\section{emacsy\_tick}
+@ \section{emacsy\_tick}
 
-@d Functions @{
+<<Functions>>=
+
 int emacsy_tick()
 {
   int flags;
@@ -537,11 +525,10 @@ int emacsy_tick()
   return flags;
 }
 
-@|@}
+@ \section{emacsy\_message\_or\_echo\_area}
 
-\section{emacsy\_message\_or\_echo\_area}
+<<Functions>>=
 
-@d Functions @{
 
 char *emacsy_message_or_echo_area()
 {
@@ -549,29 +536,26 @@ char *emacsy_message_or_echo_area()
     scm_call_0(scm_c_public_ref("emacsy",
                                  "emacsy-message-or-echo-area")));
 }
-@|@}
+@ \section{emacsy\_modeline}
 
-\section{emacsy\_modeline}
+<<Functions>>=
 
-@d Functions @{
 char *emacsy_mode_line()
 {
   return scm_to_locale_string(
     scm_call_0(scm_c_public_ref("emacsy",
                                  "emacsy-mode-line")));
 }
-@|@}
+<<emacsy.c>>=
 
-@o emacsy.c @{
 #include "emacsy.h"
 #include <libguile.h>
 
-@< Utility Functions @>
+<<Utility Functions>>
 
-@< Functions @>
-@|@}
+<<Functions>>
+<<emacsy.c>>=
 
-@o emacsy.c @{
 int  emacsy_run_hook_0(const char *hook_name)
 {
   /* This should be protected from all sorts of errors that the hooks
@@ -580,18 +564,16 @@ int  emacsy_run_hook_0(const char *hook_name)
                SCM_EOL);
   return 0;
 }
-@|@}
+<<emacsy.c>>=
 
-@o emacsy.c @{
 int  emacsy_minibuffer_point()
 {
   return scm_to_int(
     scm_call_0(scm_c_public_ref("emacsy",
                                  "emacsy-minibuffer-point")));  
 }
-@|@}
+<<Utility Functions>>=
 
-@d Utility Functions @{
 SCM scm_c_string_to_symbol(const char* str) {
   return scm_string_to_symbol(scm_from_locale_string(str));
 }
@@ -601,106 +583,98 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
   const char* modifiers[] = { "alt", "control", "hyper", "meta", "super", "shift" };
   SCM list = SCM_EOL;
   for (int i = 0; i < EY_MODKEY_COUNT; i++) {
-    if (modifier_key_flags & (1 << i)) {
+    if (modifier_key_flags & (1 @<< i)) {
       list = scm_cons(scm_c_string_to_symbol(modifiers[i]), list);
     }
   }
   
   return list;
 }
-@|@}
-
-\lstset{language=lisp}
+@ \lstset{language=lisp}
 \chapter{KLECL} 
 
 I expounded on the virtues of the Key Lookup Execute Command Loop
 (KLECL) in \ref{klecl-treasure}.  Now we're going to implement a
 KLECL.
 
-@o emacsy/klecl.scm  @{
-@<+ Lisp File Header @> 
+<<emacsy/klecl.scm>>=
+
+<<+ Lisp File Header>> 
 (define-module (emacsy klecl)
-  @< Include Modules @>
-  #:export ( @< Exported Symbols @> )
-  #:export-syntax ( @< Exported Syntax @> ) )
-@< Variables @>
-@< Procedures @>
-@|@}
+  <<Include Modules>>
+  #:export ( <<Exported Symbols>> )
+  #:export-syntax ( <<Exported Syntax>> ) )
+<<Variables>>
+<<Procedures>>
+@ We will use the module check for most of our unit test needs.
 
-We will use the module check for most of our unit test needs.
+<<emacsy-tests.scm>>=
 
-@o emacsy-tests.scm  @{
-@<+ Lisp File Header @>  
-@<+ Test Preamble @>
+<<+ Lisp File Header>>  
+<<+ Test Preamble>>
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy)))) 
-@< Definitions @>
-@< Tests @> 
-@<+ Test Postscript @> 
-@|@}
+<<Definitions>>
+<<Tests>> 
+<<+ Test Postscript>> 
+@ The header for Lisp files shown below.
 
-The header for Lisp files shown below.
-
-@d+ Lisp File Header @{#|
+<<+ Lisp File Header>>=
+#|
 filename
 
 DO NOT EDIT - automatically generated from emacsy.w. 
 
-@<+ Copyright @>
-@<+ License @>
+<<+ Copyright>>
+<<+ License>>
 |#
-@|@}
+<<+ Copyright>>=
 
-@d+ Copyright @{
 Copyright (C) 2012 Shane Celis 
-@|@}
+<<Definitions>>=
 
-
-@d Definitions @{
 (define (f x)
   (1+ x))
-@|f@}
+@ %def f
+<<Tests>>=
 
-@d Tests @{
 (define-test (test-f)
   (check (f 1) => 2)
   (check (f 0) => 1)
 )
-@|test-f@}
-
-\chapter{Optional Windows}  
+@ %def test-f
+@ \chapter{Optional Windows}  
 
 Emacsy aims to offer the minimal amount of intrusion to acquire big
 gains in program functionality.  Windows is an optional module for
 Emacsy.  If you want to offer windows that behave like Emacs windows,
 you can, but you aren't required to.  
 
-@o emacsy/windows.scm @{
-@<+ Lisp File Header @>
-@< Module @>
-@< Classes @>
-@< State @>
-@< Procedures @>
-@< Commands @>
-@< Key bindings @>
-@|@}
+<<emacsy/windows.scm>>=
 
-@d Module @{
+<<+ Lisp File Header>>
+<<Module>>
+<<Classes>>
+<<State>>
+<<Procedures>>
+<<Commands>>
+<<Key bindings>>
+<<Module>>=
+
 (define-module (emacsy windows)
   #:use-module (oop goops)
   #:use-module (emacsy)
-  @< Include Modules @>
-  #:export ( @< Exported Symbols @> )
-  #:export-syntax ( @< Exported Syntax @> ) 
+  <<Include Modules>>
+  #:export ( <<Exported Symbols>> )
+  #:export-syntax ( <<Exported Syntax>> ) 
 )
-@|@}
-
-\section{Classes}
+@ \section{Classes}
 
 The window class contains a renderable window that is associated with
 a buffer.  
 
-@d Classes @{
+<<Classes>>=
+
 (define-class <window> ()
   (window-buffer #:accessor window-buffer #:init-value #f)
   (window-parent #:accessor window-parent #:init-value #f)
@@ -709,30 +683,29 @@ a buffer.
   (to-parent-transform #:accessor to-parent-transform #:init-value (make-identity-matrix 3))
   (from-parent-transform #:accessor from-parent-transform #:init-value (make-identity-matrix 3))
   )
-@|<window>@}
+@ %def <window>
+@ The internal window class contains other windows.
 
-The internal window class contains other windows.
+<<Classes>>=
 
-@d Classes @{
 (define-class <internal-window> ()
   (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
   (window-parent #:accessor window-parent #:init-value #f)
   (orientation #:accessor orientation #:init-keyword #:orientation #:init-value 'vertical) ; or 'horizontal
   (size #:accessor size #:init-keyword #:size #:init-value .5)
   )
-@|<internal-window>@}
+@ %def <internal-window>
+<<Exported Symbols>>=
 
-@d Exported Symbols @{
 <window> <internal-window> <pixel-window>
-@|@}
+<<Classes>>=
 
-@d Classes @{
 (define-class <pixel-window> (<internal-window>)
   (window-child #:accessor window-child #:init-value #f)
   (pixel-size #:accessor pixel-size #:init-keyword #:pixel-size #:init-value '(640 480)))
-@|<pixel-window>@} 
+@ %def <pixel-window>
+<<Procedures>>=
 
-@d Procedures @{
 (define-method (initialize (obj <pixel-window>) initargs)
   (next-method)
   (let ((child-window (make <window>)))
@@ -740,76 +713,59 @@ The internal window class contains other windows.
     (set! (window-child obj) child-window)
   )
 )
-@|@}
+@ \section{Procedures}
 
+<<Procedures>>=
 
-
-\section{Procedures}
-
-@d Procedures @{
 (define (window? o)
   (or (is-a? o <window>) (is-a? o <internal-window>) (is-a? o <pixel-window>))
   )
-@|@}
+<<Exported Symbols>>=
 
-@d Exported Symbols @{
 window?
-@|@}
+<<Tests>>=
 
-
-@d Tests @{
   (check (window? root-window) => #t)
-@|@}
+<<Procedures>>=
 
-@d Procedures @{
 (define (window-live? o)
   (is-a? o <window>))
-@|@}
+<<Tests>>=
 
-@d Tests @{
   (check (window-live? root-window) => #t)
-@|@}
+<<Procedures>>=
 
-@d Procedures @{
 (define (frame-root-window)
   root-window)
-@|@}
+<<State>>=
 
-@d State @{
 (define root-window (make <window>))
-@|@}
+<<Include Modules>>=
 
-@d Include Modules @{
   #:use-module (ice-9 match)
-@|@}
-
-Emacs uses the edges of windows \verb|(left top right bottom)|, but
+@ Emacs uses the edges of windows \verb|(left top right bottom)|, but
 I'm more comfortable using bounded coordinate systems
 \verb|(left bottom width height)|.  So let's write some converters.
 
-@d Procedures @{
+<<Procedures>>=
+
 (define (edges->bcoords edges)
   (match edges
    ((left top right bottom)
     (list left bottom (- right left) (- top bottom)))))
-@|@}
+<<Tests>>=
 
-@d Tests @{
 (check (edges->bcoords '(0 1 1 0)) => '(0 0 1 1))
-@|@}
+<<Procedures>>=
 
-@d Procedures @{
 (define (bcoords->edges coords)
   (match coords
   ((x y w h)
     (list x (+ y h) (+ x w) y))))
-@|@}
+<<Tests>>=
 
-@d Tests @{
 (check (bcoords->edges '(0 0 1 1)) => '(0 1 1 0))
-@|@}
-
-The best way I can think to tile and scale all these windows is like
+@ The best way I can think to tile and scale all these windows is like
 this.  Let's use a normalized bounded coordinates for the internal
 windows.  This way the frame size can change and the pixel edges can
 be recomputed.
@@ -843,11 +799,10 @@ vertically, it passes \verb|0 .5 1 .5| to the top child and
 One thing we need is the absolute pixel bounded coordinates of the
 frame.  Emacsy integrators need to set and update this appropriately.
 
-@d State @{
-(define emacsy-root-frame-absolute-pixel-bcoords '(0 0 640 320))
-@|@}
+<<State>>=
 
-\section{Units}
+(define emacsy-root-frame-absolute-pixel-bcoords '(0 0 640 320))
+@ \section{Units}
 
 There are two different units: pixel (\unit{px}) and proportion
 (unitless but denoted \unit{pr} for explicitness).  The size of a
@@ -954,28 +909,29 @@ Here are a few identities.
 
 Again but in code this time.
 
-@d Procedures @{
+<<Procedures>>=
+
 (define (translate-2d tx ty)
  (vector 
   (vector 1 0 tx)
   (vector 0 1 ty)
   (vector 0 0 1)))
-@|translate-2d@}
+@ %def translate-2d
+<<Procedures>>=
 
-@d Procedures @{
 (define (scale-2d sx sy)
  (vector 
   (vector sx 0  0)
   (vector 0  sy 0)
   (vector 0  0  1)))
-@|scale-2d@}
-
-\subsection{Split Window}
+@ %def scale-2d
+@ \subsection{Split Window}
 
 Be careful with \verb|deep-clone|. If you deep clone one window that
 has references to other windows, you will clone entire object graph.
 
-@d Commands @{
+<<Commands>>=
+
 (define-interactive (split-window #:optional 
                      (window (selected-window))
                      (size 0.5)
@@ -993,34 +949,31 @@ has references to other windows, you will clone entire object graph.
     (set! (window-parent new-child) internal-window)
     (update-window internal-window)
   internal-window))
-@|split-window@}
+@ %def split-window
+<<Exported Symbols>>=
+ split-window 
+<<Procedures>>=
 
-@d Exported Symbols @{ split-window @|@}
-
-@d Procedures @{
 (define (selected-window)
   current-window)
-@|@}
+<<State>>=
 
-@d State @{
 (define current-window #f)
-@|@}
-
-If the internal window size is changed, we want to update the sizes of
+@ If the internal window size is changed, we want to update the sizes of
 its children.  Also, normally we'd only need to keep one matrix and
 just invert it as necessary; however, I haven't written a matrix
 solver routine, so I'm just going to construct the matrix and its
 inverse.  (I wish guile-num were around.)
 
-@d Procedures @{
+<<Procedures>>=
+
 (define-method (update-window (window <internal-window>))
  (let ((children (window-children window)))
   (if (eq? (orientation window) 'vertical)
-    @< Update vertical window. @>
-    @< Update horizontal window. @>)))
-@|@}
+    <<Update vertical window.>>
+    <<Update horizontal window.>>)))
+<<Update vertical window.>>=
 
-@d Update vertical window. @{
 (let ((top-size (size window))
       (bottom-size (- 1 (size window))))
  (let ((top (car children))
@@ -1033,9 +986,8 @@ inverse.  (I wish guile-num were around.)
        (from-parent (matrix. (scale-2d 1. (/ 1 bottom-size)) (translate-2d 0. 0.))))
   (set! (to-parent-transform bottom) to-parent)
   (set! (from-parent-transform bottom) from-parent)))
-@|@}
+<<Update horizontal window.>>=
 
-@d Update horizontal window. @{
 (let ((left-size (size window))
         (right-size (- 1 (size window))))
   (let ((left (car children))
@@ -1048,81 +1000,68 @@ inverse.  (I wish guile-num were around.)
         (from-parent (matrix. (scale-2d (/ 1 right-size) 1.) (translate-2d (- left-size) 0.))))
    (set! (to-parent-transform right) to-parent)
    (set! (from-parent-transform right) from-parent)))
-@|@}
+<<Include Modules>>=
 
-
-
-@d Include Modules @{
 #:use-module (vector-math)
-@|@}
-
-\subsection{Window Project}
+@ \subsection{Window Project}
 
 Let's project a point in the current window to the point in its
 ultimate parent window.  
   
-@d Procedures @{
+<<Procedures>>=
+
 (define-method (window-project (window <window>) position)
   (let ((parent-position (matrix. (to-parent-transform window) position)))
     (if (window-parent window)
       (window-project (window-parent window) parent-position)
       parent-position)))
-@|@}
+@ For internal-windows, we just pass the information through.
 
-For internal-windows, we just pass the information through.
+<<Procedures>>=
 
-@d Procedures @{
 (define-method (window-project (window <internal-window>) position)
   (if (window-parent window)
     (window-project (window-parent window) position)
     position))
-@|@}
+<<Procedures>>=
 
-@d Procedures @{
 (define-method (window-project (window <pixel-window>) position)
   (let ((psize (pixel-size window)))
     (matrix. (scale-2d (car psize) (cadr psize)) position)))
-@|@}
+<<Projection Tests>>=
 
-
-@d Projection Tests @{
 (check (window-project window #(0 0 1)) => #(0. .5 1.))
 (check (window-project window #(1. 1. 1.)) => #(1. 1. 1.))
 (check (window-unproject window #(0 .5 1.)) => #(0. 0. 1.))
 (check (window-unproject window #(1. 1. 1.)) => #(1. 1. 1.))
-@|@}
-
-\subsection{Window Unproject}
+@ \subsection{Window Unproject}
 
 Let's unproject from a point in the ultimate parent window to a point
 in the given window.  Note that if the point is not within the bounds
 of the given window, the resulting point will not be within $[0, 1]^2$.
   
-@d Procedures @{
+<<Procedures>>=
+
 (define-method (window-unproject (window <window>) position)
   (let ((parent-position (window-unproject (window-parent window) position)))
     (if (window-parent window)
      (matrix. (from-parent-transform window) parent-position)
       parent-position)))
-@|@}
+@ For internal-windows, we just pass the information through.
 
-For internal-windows, we just pass the information through.
+<<Procedures>>=
 
-@d Procedures @{
 (define-method (window-unproject (window <internal-window>) position)
   (if (window-parent window)
     (window-unproject (window-parent window) position)
     position))
-@|@}
+<<Procedures>>=
 
-@d Procedures @{
 (define-method (window-unproject (window <pixel-window>) position)
   (let ((psize (pixel-size window)))
   (matrix. (scale-2d (/ 1 (car psize)) (/ 1 (cadr psize))) position)))
-@|@}
+<<Procedures>>=
 
-
-@d Procedures @{
 (define (window-pixel-bcoords window)
   (let ((origin (window-project window #(0 0 1)))
         (end    (window-project window #(1 1 0))))
@@ -1131,49 +1070,44 @@ For internal-windows, we just pass the information through.
      (vector-ref origin 1)
      (vector-ref end 0)
      (vector-ref end 1))))
-@|@}
+<<Tests>>=
 
-@d Tests @{
 (define i-window (make <internal-window>))
 (define window (make <window>))
 (check (window? i-window) => #t)
 (check (window? window) => #t)
-@|@}
+@ Let's test window splitting.
 
-Let's test window splitting.
+<<Tests>>=
 
-@d Tests @{
 (check (procedure? split-window) => #t)
 (define s-window (split-window window))
 (check (is-a? s-window <internal-window>) => #t)
 (check (window-pixel-bcoords s-window) => '(0 0 1 1))
 (check (window-pixel-bcoords window) => '(0. .5 1. .5))
-@|@}
+@ Let's test window splitting with a different size value.
+<<Tests>>=
 
-Let's test window splitting with a different size value.
-@d Tests @{
 (define small-window (make <window>))
 (define parent-window (split-window small-window 0.2))
 (define big-window (cdr (window-children parent-window)))
 (check (orientation parent-window) => 'vertical)
 (check (window-pixel-bcoords small-window) => '(0. .2 1. .2))
 (check (window-pixel-bcoords big-window) => '(0. 0. 1. .8))
-@|@}
+@ Let's test window splitting with a different orientation.
 
-Let's test window splitting with a different orientation.
+<<Tests>>=
 
-@d Tests @{
 (define left-window (make <window>))
 (define parent-window-2 (split-window left-window 0.2 'right))
 (define right-window (cdr (window-children parent-window-2)))
 (check (orientation parent-window-2) => 'horizontal)
 (check (window-pixel-bcoords left-window) => '(0. 0. .2 1.))
 (check (window-pixel-bcoords right-window) => '(.2 .0 .8 1.))
-@|@}
+@ Let's test the pixel-window at the top of the hierarchy.
 
-Let's test the pixel-window at the top of the hierarchy.
+<<Tests>>=
 
-@d Tests @{
 (define pixel-window (make <pixel-window> #:pixel-size '(500 400)))
 
 ;(update-window pixel-window)
@@ -1192,11 +1126,10 @@ Let's test the pixel-window at the top of the hierarchy.
 (check (window-project sub-window #(0. 0. 1.)) => #(0. 200. 1.))
 
 (check (window-unproject sub-window #(0. 200. 1.)) => #(0. 0. 1.))
-@|@}
+@ \subsection{Window List}
 
-\subsection{Window List}
+<<Procedures>>=
 
-@d Procedures @{
 (define-method (window-tree (w <internal-window>))
   (let ((cs (window-children w)))
     (list (window-tree (car cs))
@@ -1207,10 +1140,8 @@ Let's test the pixel-window at the top of the hierarchy.
 
 (define-method (window-tree (w <pixel-window>))
   (window-tree (window-child w)))
-@|@}
+<<Procedures>>=
 
-
-@d Procedures @{
 
 (define (flatten x)
     (cond ((null? x) '())
@@ -1220,9 +1151,8 @@ Let's test the pixel-window at the top of the hierarchy.
 
 (define* (window-list #:optional (w root-window))
   (flatten (window-tree w)))
-@|@}
+<<Tests>>=
 
-@d Tests @{
 (let* ((w (make <window>))
        (sw (split-window w))
        (c (cdr (window-children sw)))
@@ -1234,41 +1164,33 @@ Let's test the pixel-window at the top of the hierarchy.
   (check (window-list sw) => (list w c))
   (check (window-list sw) => (list w c #f))
   )
-@|@}
+@ \section{Window Commands}
 
+<<Commands>>=
 
-
-
-\section{Window Commands}
-
-@d Commands @{
 (define-interactive (split-window-below #:optional (size .5))
   (split-window (selected-window) size 'below))
-@|@}
-
-\section{Window Key Bindings}
+@ \section{Window Key Bindings}
 
 It will come as no surprise that these key bindings will mimic the
 behavior of Emacs.
 
-@d Key bindings @{
-(define-key global-mode-map (kbd "C-x 2") 'split-window-below)
-@|@}
+<<Key bindings>>=
 
-@o windows-tests.scm  @{
-@<+ Lisp File Header @>  
-@<+ Test Preamble @>
+(define-key global-mode-map (kbd "C-x 2") 'split-window-below)
+<<windows-tests.scm>>=
+
+<<+ Lisp File Header>>  
+<<+ Test Preamble>>
 
 (use-modules (emacsy) (emacsy windows))
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy windows)))) 
-@< Tests @> 
-@< Projection Tests @>
+<<Tests>> 
+<<Projection Tests>>
 
-@<+ Test Postscript @> 
-@|@}
-
-\appendix 
+<<+ Test Postscript>> 
+@ \appendix 
 \part{Appendix} 
 \chapter{Support Code} 
 \section{Literate Programming Support}
@@ -1283,17 +1205,18 @@ support it.
 
 An example use of it might look like this:
 
-@d Line Pragma Example @{
+<<Line Pragma Example>>=
+
 (define (f x)
 #line 314 "increment-literately.w"
-  (+ x 1)) @}
-
-BUG: The line pragma ends up littering the source with zero length
+  (+ x 1)) 
+@ BUG: The line pragma ends up littering the source with zero length
 strings, which often doesn't matter, but it can't be used everywhere
 especially within a particular form.  I'm not entirely sure how to fix
 that.
 
-@d Line Pragma Handler @{
+<<Line Pragma Handler>>=
+
 (lambda (char port)
   (let* ((ine (read port))
          (lineno (read port))
@@ -1304,26 +1227,24 @@ that.
     (set-port-line! port lineno)
     (set-port-column! port 0)
     ""))
-@|@}
-
-One problem that popped up was I sometimes wanted to include pieces of
+@ One problem that popped up was I sometimes wanted to include pieces of
 documentation in embedded strings.  Something that might end up
 looking like this in the source code:
 
-@d Line Pragma Embedded String Example @{
+<<Line Pragma Embedded String Example>>=
+
 (define (f x)
   "#line 352 "emacsy.w"
    The function f and its associated function h...
    #line 362 "emacsy.w"
   "
   ...
-@}
-
-The above code will see a string "\#line 352 " followed by a bare
+@ The above code will see a string "\#line 352 " followed by a bare
 symbol emacsy.w, which will not do.  To get around this, I implemented
 another reader extension that will strip out any \#l lines within it.
 
-@d Liberal String Quote Reader @{
+<<Liberal String Quote Reader>>=
+
 (lambda (char port)
   (let ((accum '()))
     (let loop ((entry (read-char port)))
@@ -1344,71 +1265,65 @@ another reader extension that will strip out any \#l lines within it.
                   ;; Keep and loop
                   (set! accum (cons entry accum))
                   (loop (read-char port)))))))))
-@|@}
+<<line-pragma.scm>>=
 
-@o line-pragma.scm @{
 (define-module (my-line-pragma)
   #:use-module (ice-9 rdelim))
 
 (eval-when (compile load eval)
- (read-hash-extend #\l @< Line Pragma Handler @>)
- (read-hash-extend #\" @< Liberal String Quote Reader  @>))
+ (read-hash-extend #\l <<Line Pragma Handler>>)
+ (read-hash-extend #\" <<Liberal String Quote Reader>>))
 
-@|@}
-
-\section{Unit Testing Support}
+@ \section{Unit Testing Support}
 
 We want to be able to easily write and aggregate unit tests.  It's not
 important to our project per se.  We just need the utility.  Our
 association list (alist) \verb|unit-tests| will hold the symbol of the
 function and the procedure.
 
-@o check/harness.scm @{
+<<check/harness.scm>>=
+
 (define-module (check harness)
   #:use-module (check)
   #:export (run-tests
             run-tests-and-exit)
   #:export-syntax (define-test))
-@|@}
+@ Set up the variables.
 
-Set up the variables.
+<<check/harness.scm>>=
 
-@o check/harness.scm @{
 (define unit-tests '())
 (define test-errors '())
-@|@}
+@ We can register any procedure to a test name.  
 
-We can register any procedure to a test name.  
+<<check/harness.scm>>=
 
-@o check/harness.scm @{
 (define (register-test name func)
   "Register a procedure to a test name."
   (set! unit-tests (acons name func unit-tests)))
-@|@}
+@ Typically, users will define and register their tests with this macro.
 
-Typically, users will define and register their tests with this macro.
+<<check/harness.scm>>=
 
-@o check/harness.scm @{
 (define-syntax define-test
   (syntax-rules ()
     ((define-test (name args ...) expr ...)
      (begin (define* (name args ...)
         expr ...)
      (register-test 'name name)))))
-@|define-test@}
+@ %def define-test
+@ We need to run the tests.
 
-We need to run the tests.
+<<check/harness.scm>>=
 
-@o check/harness.scm @{
 (define (run-tests)
   (catch 'first-error
     (lambda () 
-      @< handle each test @>)
+      <<handle each test>>)
     (lambda args
       #f)))
-@|@}
+<<handle each test>>=
 
-@d handle each test @{
 (for-each 
  (lambda (elt)
    (format #t "TEST: ~a\n" (car elt))
@@ -1427,9 +1342,8 @@ We need to run the tests.
        (throw 'first-error)
        #f)))
  (reverse unit-tests))
-@|@}
+<<check/harness.scm>>=
 
-@o check/harness.scm @{
 (define (run-tests-and-exit)
   (run-tests)
   (check-report)
@@ -1437,32 +1351,31 @@ We need to run the tests.
       (format #t "~a ERROR in tests: ~a." (length test-errors) (reverse test-errors))
       (format #t "NO ERRORs in tests."))
   (exit (if (and (= (length test-errors) 0) (= 0 (length check:failed))) 0 1)))
-@|@}
+<<test functions>>=
 
-@d test functions @{
 (define unit-tests '())
 
 (define (register-test name func)
   (set! unit-tests (acons name func unit-tests)))
 
-@| unit-tests register-test@}
-
-The function register-test does the work, but we don't want to require
+@ %def unit-tests register-test
+@ The function register-test does the work, but we don't want to require
 the user to call it, so we'll define a macro that will automatically
 call it.
 
-@d test macro @{
+<<test macro>>=
+
 (define-syntax define-test
   (syntax-rules ()
     ((define-test (name args ...) expr ...)
      (begin (define* (name args ...)
         expr ...)
      (register-test 'name name)))))
-@| define-test@}
+@ %def define-test
+@ Finally, now we just need a way to run all the unit tests.
 
-Finally, now we just need a way to run all the unit tests.
+<<run tests>>=
 
-@d run tests @{
 (define test-errors '())
 (define (run-tests)
   (catch 'first-error
@@ -1486,22 +1399,21 @@ Finally, now we just need a way to run all the unit tests.
                (reverse unit-tests)))
     (lambda args
       #f)))
-@| run-tests test-errors@}
+@ %def run-tests test-errors
+@ Finally, let's provide this as our testing preamble.
 
-Finally, let's provide this as our testing preamble.
+<<+ Test Preamble>>=
 
-@d+ Test Preamble @{
 (use-modules (check))
 (use-modules (ice-9 pretty-print))
 
-@< test functions @>
-@< test macro @>
-@< run tests @>
-@|@}
+<<test functions>>
+<<test macro>>
+<<run tests>>
+@ Let's run these tests at the end.
 
-Let's run these tests at the end.
+<<+ Test Postscript>>=
 
-@d+ Test Postscript @{
 
 (run-tests)
 (check-report)
@@ -1510,17 +1422,13 @@ Let's run these tests at the end.
     (format #t "NO ERRORs in tests."))
 (exit (if (and (= (length test-errors) 0) (= 0 (length check:failed))) 0 1))
 
-@|@}
+@ \section{Vector Math}
 
-\section{Vector Math}
-
-@o vector-math-2.scm  @{@<+ Lisp File Header @> 
-;@< Vector Module @> 
-@< Vector Definitions @>
-@|@}   
-
-
-\begin{enumerate}
+<<vector-math-2.scm>>=
+<<+ Lisp File Header>> 
+;<<Vector Module>> 
+<<Vector Definitions>>
+@ \begin{enumerate}
 \item vector-component-usage
 
  The component of $\bv a$ in the $\bv b$ direction.
@@ -1529,14 +1437,14 @@ Let's run these tests at the end.
   &= \frac{\bv a \cdot \bv b}{||\bv b||}
 \end{align*}
 
-  @d Vector Definitions @{(define (vector-component a b)
+  
+<<Vector Definitions>>=
+(define (vector-component a b)
     ;(string-trim-both 
-    #" @< vector-component-usage @> "# 
+    #" <<vector-component-usage>> "# 
     ;char-set:whitespace)
  (/ (vector-dot a b) (vector-norm b)))
-@|@}
-
-Tried to define vector-component-usage to "Scalar projection"
+@ Tried to define vector-component-usage to "Scalar projection"
 
 \item Vector projection
 
@@ -1545,11 +1453,11 @@ Tried to define vector-component-usage to "Scalar projection"
     \proj_\bv b \bv a &= a_1 \bhv b \\
     a_1 &= \comp_\bv b \bv a
   \end{align*}
-  @d Vector Definitions @{(define (vector-projection a b)
+  
+<<Vector Definitions>>=
+(define (vector-projection a b)
  (vector* (vector-component a b) (vector-normalize b)))
-@|@}
-
-\end{enumerate}
+@ \end{enumerate}
 
 
 
@@ -1559,11 +1467,11 @@ Tried to define vector-component-usage to "Scalar projection"
 This is an index of all the filenames, code fragments, and identifiers
 for the code.
 \section{Index of Filenames}
-@f
+
 \section{Index of Fragments}
-@m
+\nowebchunks 
 \section{Index of User Specified Identifiers} 
-@u
+\nowebindex 
  
 \end{document}
 
