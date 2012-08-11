@@ -93,8 +93,8 @@ $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)
 
 test: emacsy-tests.scm windows-tests.scm
-	guile -l line-pragma.scm -L . emacsy-tests.scm
-	guile -l line-pragma.scm -L . windows-tests.scm
+	guile -l line-pragma.scm -L . -L .. emacsy-tests.scm
+	guile -l line-pragma.scm -L . -L .. windows-tests.scm
 
 libemacsy.a: emacsy.o
 	ar rcs libemacsy.a emacsy.o

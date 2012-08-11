@@ -99,6 +99,9 @@
 \input{commands}
 \begin{document}
 \maketitle
+\tableofcontents
+\newpage 
+\part{Usage}
 \chapter{Introduction}
 %\section{Introduction}
 % What's the logo?  How about a gnu inside some other creature?
@@ -154,7 +157,7 @@ extend the UI and application easily at runtime.
 \end{figure}
 
 
-\subsection{Overlooked Treasure}
+\subsection{Overlooked Treasure}\label{klecl-treasure}
 
 Emacs has a powerful means of programmatically extending itself while
 it is running.  Not many successful applications can boast of that,
@@ -352,27 +355,16 @@ These are the core features from Emacs that will be implemented in Emacsy.
 
 \subsection{Minimal Emacsy Example}
 
-\chapter{Implementation}
+\part{Implementation} 
+\chapter{C API} 
 
 Emacsy is divided into the following modules: klecl, buffer.
 
-\section{C API}
+\lstset{language=C}
 
 The minimal C API is given below.
 
-\lstset{language=C}
-@o emacsy.h @{@%
-/* @f
-
-@<+ Copyright @>
-
-@<+ License @>
-*/
-
-@< Begin Header Guard @>
-
-@< Defines @>
-
+@d Prototypes @{@%
 /* Initialize Emacsy. */
 int  emacsy_init(void);// XXX spell initialize out?
 
@@ -404,6 +396,23 @@ int  emacsy_minibuffer_point();
 
 /* Terminate Emacsy, runs termination hook. */
 void emacsy_terminate();
+@|@}
+
+
+
+@o emacsy.h @{@%
+/* @f
+
+@<+ Copyright @>
+
+@<+ License @>
+*/
+
+@< Begin Header Guard @>
+
+@< Defines @>
+
+@< Prototypes @>
 
 @< End Header Guard @>
 @%
@@ -413,21 +422,21 @@ void emacsy_terminate();
 Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
 
 @d Defines @{@%
-#define MODKEY_COUNT   6
+#define EY_MODKEY_COUNT   6
 
-#define MODKEY_ALT     1 // A
-#define MODKEY_CONTROL 2 // C
-#define MODKEY_HYPER   4 // H
-#define MODKEY_META    8 // M
-#define MODKEY_SUPER  16 // s
-#define MODKEY_SHIFT  32 // S
+#define EY_MODKEY_ALT     1 // A
+#define EY_MODKEY_CONTROL 2 // C
+#define EY_MODKEY_HYPER   4 // H
+#define EY_MODKEY_META    8 // M
+#define EY_MODKEY_SUPER  16 // s
+#define EY_MODKEY_SHIFT  32 // S
 
 #define MOUSE_BUTTON_DOWN  0
 #define MOUSE_BUTTON_UP    1
 #define MOUSE_MOTION       2
 @|@}
 
-Here are the exit codes that may be returned by \verb|emacsy_tick|.
+Here are the return flags that may be returned by \verb|emacsy_tick|.
 
 @d Defines @{@%
 #define EY_QUIT_APPLICATION  1
@@ -435,6 +444,8 @@ Here are the exit codes that may be returned by \verb|emacsy_tick|.
 #define EY_MODELINE_UPDATED  4
 @|@}
 
+The boilerplate guards so that a C++ program may include
+\verb|emacsy.h| are given below.
 
 @d Begin Header Guard @{@%
 #ifdef __cplusplus
@@ -448,17 +459,11 @@ Here are the exit codes that may be returned by \verb|emacsy_tick|.
 #endif
 @|@}
 
+The implementation of the API calls similarly named Scheme procedures.
 
+\section{emacsy\_init}
 
-The implementation of the API basically calls similarly named Scheme
-functions.
-
-@o emacsy.c @{@%
-#include "emacsy.h"
-#include <libguile.h>
-
-@< Utility Functions @>
-
+@d Functions @{@%
 int emacsy_init()
 {
   /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
@@ -468,10 +473,13 @@ int emacsy_init()
   /* load the emacsy modules */
   return 0;
 }
+@|@}
 
+\section{emacsy\_key\_event}
+
+@d Functions @{@%
 void emacsy_key_event(int char_code,
                       int modifier_key_flags)
-                      
 {
   // XXX I shouldn't have to do a CONTROL key fix here.
   SCM i = scm_from_int(char_code);
@@ -482,7 +490,11 @@ void emacsy_key_event(int char_code,
                     c,
                     modifier_key_flags_to_list(modifier_key_flags));
 }
+@|@}
 
+\section{emacsy\_mouse\_event}
+
+@d Functions @{@%
 void emacsy_mouse_event(int x, int y, 
                         int state,
                         int button, 
@@ -509,7 +521,11 @@ void emacsy_mouse_event(int x, int y,
                     scm_from_int(button),
                     state_sym);
 }
+@|@}
+ 
+\section{emacsy\_tick}
 
+@d Functions @{@%
 int emacsy_tick()
 {
   int flags;
@@ -521,19 +537,38 @@ int emacsy_tick()
   return flags;
 }
 
+@|@}
+
+\section{emacsy\_message\_or\_echo\_area}
+
+@d Functions @{@%
+
 char *emacsy_message_or_echo_area()
 {
   return scm_to_locale_string(
     scm_call_0(scm_c_public_ref("emacsy",
                                  "emacsy-message-or-echo-area")));
 }
+@|@}
 
+\section{emacsy\_modeline}
+
+@d Functions @{@%
 char *emacsy_mode_line()
 {
   return scm_to_locale_string(
     scm_call_0(scm_c_public_ref("emacsy",
                                  "emacsy-mode-line")));
 }
+@|@}
+
+@o emacsy.c @{@%
+#include "emacsy.h"
+#include <libguile.h>
+
+@< Utility Functions @>
+
+@< Functions @>
 @|@}
 
 @o emacsy.c @{@%
@@ -556,8 +591,6 @@ int  emacsy_minibuffer_point()
 }
 @|@}
 
-
-
 @d Utility Functions @{@%
 SCM scm_c_string_to_symbol(const char* str) {
   return scm_string_to_symbol(scm_from_locale_string(str));
@@ -567,8 +600,8 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
 {
   const char* modifiers[] = { "alt", "control", "hyper", "meta", "super", "shift" };
   SCM list = SCM_EOL;
-  for (int i = 0; i < 6; i++) {
-    if (modifier_key_flags & 1 << i) {
+  for (int i = 0; i < EY_MODKEY_COUNT; i++) {
+    if (modifier_key_flags & (1 << i)) {
       list = scm_cons(scm_c_string_to_symbol(modifiers[i]), list);
     }
   }
@@ -577,11 +610,12 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
 }
 @|@}
 
-
-
-
 \lstset{language=lisp}
-\section{KLECL}
+\chapter{KLECL} 
+
+I expounded on the virtues of the Key Lookup Execute Command Loop
+(KLECL) in \ref{klecl-treasure}.  Now we're going to implement a
+KLECL.
 
 @o emacsy/klecl.scm -cl -d  @{@%
 @<+ Lisp File Header @> 
@@ -593,7 +627,6 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
 @< Procedures @>
 @|@}
 
-
 We will use the module check for most of our unit test needs.
 
 @o emacsy-tests.scm -cl -d  @{
@@ -601,6 +634,7 @@ We will use the module check for most of our unit test needs.
 @<+ Test Preamble @>
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy)))) 
+@< Definitions @>
 @< Tests @> 
 @<+ Test Postscript @> 
 @|@}
@@ -634,7 +668,7 @@ Copyright (C) 2012 Shane Celis
 )
 @|test-f@}
 
-\section{Windows}
+\chapter{Optional Windows}  
 @s
 Emacsy aims to offer the minimal amount of intrusion to acquire big
 gains in program functionality.  Windows is an optional module for
@@ -647,24 +681,24 @@ you can, but you aren't required to.
 @< Classes @>
 @< State @>
 @< Procedures @>
+@< Commands @>
+@< Key bindings @>
 @|@}
 
 @d Module @{@%
 (define-module (emacsy windows)
   #:use-module (oop goops)
+  #:use-module (emacsy)
   @< Include Modules @>
   #:export ( @< Exported Symbols @> )
 @%  #:export-syntax ( @< Exported Syntax @> ) 
 )
 @|@}
 
-@d Include Modules @{@%
-@|@}
-
-\subsection{Window Class}
+\section{Classes}
 
 The window class contains a renderable window that is associated with
-a buffer.
+a buffer.  
 
 @d Classes @{@%
 (define-class <window> ()
@@ -672,16 +706,10 @@ a buffer.
   (window-parent #:accessor window-parent #:init-value #f)
   (window-dedicated? #:accessor window-dedicated? #:init-value #f)
   (user-data #:accessor user-data #:init-value #f)
-  (to-parent-transform #:accessor to-parent-transform #:init-value #f)
-  (from-parent-transform #:accessor from-parent-transform #:init-value #f)
+  (to-parent-transform #:accessor to-parent-transform #:init-value (make-identity-matrix 3))
+  (from-parent-transform #:accessor from-parent-transform #:init-value (make-identity-matrix 3))
   )
-@|@}
-
-@d Exported Symbols @{@%
-<window>
-@|@}
-
-\subsection{Internal Window Class}
+@|<window>@}
 
 The internal window class contains other windows.
 
@@ -689,22 +717,45 @@ The internal window class contains other windows.
 (define-class <internal-window> ()
   (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
   (window-parent #:accessor window-parent #:init-value #f)
-  (orientation #:accessor orientation #:init-value 'vertical) ; or 'horizontal
-  (size #:accessor size #:init-keyword #:size #:init-value (cons .5 'pr)) ; (cons 100 'px)
+  (orientation #:accessor orientation #:init-keyword #:orientation #:init-value 'vertical) ; or 'horizontal
+  (size #:accessor size #:init-keyword #:size #:init-value .5)
+  )
+@|<internal-window>@}
+
+@d Exported Symbols @{@%
+<window> <internal-window> <pixel-window>
+@|@}
+
+@d Classes @{@%
+(define-class <pixel-window> (<internal-window>)
+  (window-child #:accessor window-child #:init-value #f)
+  (pixel-size #:accessor pixel-size #:init-keyword #:pixel-size #:init-value '(640 480)))
+@|<pixel-window>@} 
+
+@d Procedures @{@%
+(define-method (initialize (obj <pixel-window>) initargs)
+  (next-method)
+  (let ((child-window (make <window>)))
+    (set! (window-parent child-window) obj)
+    (set! (window-child obj) child-window)
+  )
+)
+@|@}
+
+
+
+\section{Procedures}
+
+@d Procedures @{@%
+(define (window? o)
+  (or (is-a? o <window>) (is-a? o <internal-window>) (is-a? o <pixel-window>))
   )
 @|@}
 
 @d Exported Symbols @{@%
-<internal-window>
+window?
 @|@}
 
-\subsection{Procedures}
-
-@d Procedures @{@%
-(define (window? o)
-  (or (is-a? o <window>) (is-a? o <internal-window>))
-  )
-@|@}
 
 @d Tests @{@%
   (check (window? root-window) => #t)
@@ -740,8 +791,7 @@ I'm more comfortable using bounded coordinate systems
 (define (edges->bcoords edges)
   (match edges
    ((left top right bottom)
-    (list left bottom (- right left) (- top bottom))
-     )))
+    (list left bottom (- right left) (- top bottom)))))
 @|@}
 
 @d Tests @{@%
@@ -797,7 +847,7 @@ frame.  Emacsy integrators need to set and update this appropriately.
 (define emacsy-root-frame-absolute-pixel-bcoords '(0 0 640 320))
 @|@}
 
-\subsection{Units}
+\section{Units}
 
 There are two different units: pixel (\unit{px}) and proportion
 (unitless but denoted \unit{pr} for explicitness).  The size of a
@@ -815,7 +865,7 @@ windows that will have a size of a particular pixel size, like the
 minibuffer window.  A little bit of specialization to maintain a
 particular pixel height will require some callbacks or hooks.
 
-\subsection{Converting Between Window Reference Frames}
+\section{Converting Between Window Reference Frames}
 
 \begin{figure}
   \centering
@@ -872,18 +922,8 @@ Now we can determine $(x', y')_A$.
 Note that the multiplication between a $3 \times 3$ matrix and a two
 dimensional vector actually is shorthand for this $$\M M ~ (x,y)
 \equiv \M M~\begin{bmatrix} x \\ y \\ 1 \end{bmatrix}\text{.}$$ This
-is a homogenous coordinate that allows us to capture affine
+is a homogenous coordinate system that allows us to capture affine
 transformations like translation.
-
-%% What are the domains of each of these variables in pixel units?
-
-%% \begin{align}
-%%   \bv o_b &= (ox, oy) \\
-%%   ox &\in [0, w_a] \px \\
-%%   oy &\in [0, h_a] \px\\
-%%   w_b &\in [0, w_a - ox] \px \\
-%%   h_b &\in [0, h_a - oy] \px
-%% \end{align}
 
 Let's denote the transformation to RF $A$ from RF $B$ as ${}_A\M M_B$.
 
@@ -912,31 +952,334 @@ Here are a few identities.
   [\bv e_b]_A &= {}_A\M M_B \, (1, 1) 
 \end{align}
 
+Again but in code this time.
+
 @d Procedures @{@%
-(define (window-pixel-bcoords window)
-  #f
-)
+(define (translate-2d tx ty)
+ (vector 
+  (vector 1 0 tx)
+  (vector 0 1 ty)
+  (vector 0 0 1)))
+@|translate-2d@}
+
+@d Procedures @{@%
+(define (scale-2d sx sy)
+ (vector 
+  (vector sx 0  0)
+  (vector 0  sy 0)
+  (vector 0  0  1)))
+@|scale-2d@}
+
+\subsection{Split Window}
+
+Be careful with \verb|deep-clone|. If you deep clone one window that
+has references to other windows, you will clone entire object graph.
+
+@d Commands @{@%
+(define-interactive (split-window #:optional 
+                     (window (selected-window))
+                     (size 0.5)
+                     (side 'below))
+  (let* ((original-parent (window-parent window))
+         (new-child (shallow-clone window))
+         (internal-window (make <internal-window> 
+                                #:window-children (cons window new-child)
+                                #:size size
+                                #:orientation (if (memq side '(below above))
+                                                  'vertical
+                                                  'horizontal))))
+    (set! (window-parent internal-window) original-parent)
+    (set! (window-parent window)    internal-window)
+    (set! (window-parent new-child) internal-window)
+    (update-window internal-window)
+  internal-window))
+@|split-window@}
+
+@d Exported Symbols @{ split-window @|@}
+
+@d Procedures @{@%
+(define (selected-window)
+  current-window)
+@|@}
+
+@d State @{@%
+(define current-window #f)
+@|@}
+
+If the internal window size is changed, we want to update the sizes of
+its children.  Also, normally we'd only need to keep one matrix and
+just invert it as necessary; however, I haven't written a matrix
+solver routine, so I'm just going to construct the matrix and its
+inverse.  (I wish guile-num were around.)
+
+@d Procedures @{@%
+(define-method (update-window (window <internal-window>))
+ (let ((children (window-children window)))
+  (if (eq? (orientation window) 'vertical)
+    @< Update vertical window. @>
+    @< Update horizontal window. @>)))
+@|@}
+
+@d Update vertical window. @{@%
+(let ((top-size (size window))
+      (bottom-size (- 1 (size window))))
+ (let ((top (car children))
+       (to-parent (matrix. (translate-2d 0. top-size) (scale-2d 1. top-size)))
+       (from-parent (matrix. (scale-2d 1. (/ 1 top-size)) (translate-2d 0. (- top-size)))))
+  (set! (to-parent-transform top) to-parent)
+  (set! (from-parent-transform top) from-parent))
+ (let ((bottom (cdr children))
+       (to-parent (matrix. (translate-2d 0. 0.) (scale-2d 1. bottom-size)))
+       (from-parent (matrix. (scale-2d 1. (/ 1 bottom-size)) (translate-2d 0. 0.))))
+  (set! (to-parent-transform bottom) to-parent)
+  (set! (from-parent-transform bottom) from-parent)))
+@|@}
+
+@d Update horizontal window. @{@%
+(let ((left-size (size window))
+        (right-size (- 1 (size window))))
+  (let ((left (car children))
+        (to-parent (matrix. (translate-2d 0. 0.) (scale-2d left-size 1.)))
+        (from-parent (matrix. (scale-2d (/ 1 left-size) 1.) (translate-2d 0. 0.))))
+   (set! (to-parent-transform left) to-parent)
+   (set! (from-parent-transform left) from-parent))
+  (let ((right (cdr children))
+        (to-parent (matrix. (translate-2d left-size 0.) (scale-2d right-size 1.)))
+        (from-parent (matrix. (scale-2d (/ 1 right-size) 1.) (translate-2d (- left-size) 0.))))
+   (set! (to-parent-transform right) to-parent)
+   (set! (from-parent-transform right) from-parent)))
 @|@}
 
 
+
+@d Include Modules @{@%
+#:use-module (vector-math)
+@|@}
+
+\subsection{Window Project}
+
+Let's project a point in the current window to the point in its
+ultimate parent window.  
+  
+@d Procedures @{@%
+(define-method (window-project (window <window>) position)
+  (let ((parent-position (matrix. (to-parent-transform window) position)))
+    (if (window-parent window)
+      (window-project (window-parent window) parent-position)
+      parent-position)))
+@|@}
+
+For internal-windows, we just pass the information through.
+
+@d Procedures @{@%
+(define-method (window-project (window <internal-window>) position)
+  (if (window-parent window)
+    (window-project (window-parent window) position)
+    position))
+@|@}
+
+@d Procedures @{@%
+(define-method (window-project (window <pixel-window>) position)
+  (let ((psize (pixel-size window)))
+    (matrix. (scale-2d (car psize) (cadr psize)) position)))
+@|@}
+
+
+@d Projection Tests @{@%
+(check (window-project window #(0 0 1)) => #(0. .5 1.))
+(check (window-project window #(1. 1. 1.)) => #(1. 1. 1.))
+(check (window-unproject window #(0 .5 1.)) => #(0. 0. 1.))
+(check (window-unproject window #(1. 1. 1.)) => #(1. 1. 1.))
+@|@}
+
+\subsection{Window Unproject}
+
+Let's unproject from a point in the ultimate parent window to a point
+in the given window.  Note that if the point is not within the bounds
+of the given window, the resulting point will not be within $[0, 1]^2$.
+  
+@d Procedures @{@%
+(define-method (window-unproject (window <window>) position)
+  (let ((parent-position (window-unproject (window-parent window) position)))
+    (if (window-parent window)
+     (matrix. (from-parent-transform window) parent-position)
+      parent-position)))
+@|@}
+
+For internal-windows, we just pass the information through.
+
+@d Procedures @{@%
+(define-method (window-unproject (window <internal-window>) position)
+  (if (window-parent window)
+    (window-unproject (window-parent window) position)
+    position))
+@|@}
+
+@d Procedures @{@%
+(define-method (window-unproject (window <pixel-window>) position)
+  (let ((psize (pixel-size window)))
+  (matrix. (scale-2d (/ 1 (car psize)) (/ 1 (cadr psize))) position)))
+@|@}
+
+
+@d Procedures @{@%
+(define (window-pixel-bcoords window)
+  (let ((origin (window-project window #(0 0 1)))
+        (end    (window-project window #(1 1 0))))
+    (list 
+     (vector-ref origin 0)
+     (vector-ref origin 1)
+     (vector-ref end 0)
+     (vector-ref end 1))))
+@|@}
+
+@d Tests @{@%
+(define i-window (make <internal-window>))
+(define window (make <window>))
+(check (window? i-window) => #t)
+(check (window? window) => #t)
+@|@}
+
+Let's test window splitting.
+
+@d Tests @{@%
+(check (procedure? split-window) => #t)
+(define s-window (split-window window))
+(check (is-a? s-window <internal-window>) => #t)
+(check (window-pixel-bcoords s-window) => '(0 0 1 1))
+(check (window-pixel-bcoords window) => '(0. .5 1. .5))
+@|@}
+
+Let's test window splitting with a different size value.
+@d Tests @{@%
+(define small-window (make <window>))
+(define parent-window (split-window small-window 0.2))
+(define big-window (cdr (window-children parent-window)))
+(check (orientation parent-window) => 'vertical)
+(check (window-pixel-bcoords small-window) => '(0. .2 1. .2))
+(check (window-pixel-bcoords big-window) => '(0. 0. 1. .8))
+@|@}
+
+Let's test window splitting with a different orientation.
+
+@d Tests @{@%
+(define left-window (make <window>))
+(define parent-window-2 (split-window left-window 0.2 'right))
+(define right-window (cdr (window-children parent-window-2)))
+(check (orientation parent-window-2) => 'horizontal)
+(check (window-pixel-bcoords left-window) => '(0. 0. .2 1.))
+(check (window-pixel-bcoords right-window) => '(.2 .0 .8 1.))
+@|@}
+
+Let's test the pixel-window at the top of the hierarchy.
+
+@d Tests @{@%
+(define pixel-window (make <pixel-window> #:pixel-size '(500 400)))
+
+;(update-window pixel-window)
+;(define sub-window   (window-child pixel-window))
+(define sub-window   (make <window>))
+(check (window? pixel-window) => #t)
+(check (window? sub-window) => #t)
+(set! (window-parent sub-window) pixel-window)
+(set! (window-child pixel-window) sub-window)
+(check (window-child pixel-window) => sub-window)
+(check (window-project sub-window #(1. 1. 1.)) => #(500. 400. 1.))
+(check (window-project sub-window #(0. 0. 1.)) => #(0. 0. 1.))
+(format #t "Splitting the window\n")
+(define sub-window-2 (split-window sub-window))
+(check (window-project sub-window #(1. 1. 1.)) => #(500. 400. 1.))
+(check (window-project sub-window #(0. 0. 1.)) => #(0. 200. 1.))
+
+(check (window-unproject sub-window #(0. 200. 1.)) => #(0. 0. 1.))
+@|@}
+
+\subsection{Window List}
+
+@d Procedures @{@%
+(define-method (window-tree (w <internal-window>))
+  (let ((cs (window-children w)))
+    (list (window-tree (car cs))
+          (window-tree (cdr cs)))))
+
+(define-method (window-tree (w <window>))
+  w)
+
+(define-method (window-tree (w <pixel-window>))
+  (window-tree (window-child w)))
+@|@}
+
+
+@d Procedures @{@%
+
+(define (flatten x)
+    (cond ((null? x) '())
+          ((not (pair? x)) (list x))
+          (else (append (flatten (car x))
+                        (flatten (cdr x))))))
+
+(define* (window-list #:optional (w root-window))
+  (flatten (window-tree w)))
+@|@}
+
+@d Tests @{@%
+(let* ((w (make <window>))
+       (sw (split-window w))
+       (c (cdr (window-children sw)))
+       (sc (split-window c))
+  )
+
+  (check (window-list w) => (list w))
+  (check (window-tree sw) => (list w c))
+  (check (window-list sw) => (list w c))
+  (check (window-list sw) => (list w c #f))
+  )
+@|@}
+
+
+
+
+\section{Window Commands}
+
+@d Commands @{@%
+(define-interactive (split-window-below #:optional (size .5))
+  (split-window (selected-window) size 'below))
+@|@}
+
+\section{Window Key Bindings}
+
+It will come as no surprise that these key bindings will mimic the
+behavior of Emacs.
+
+@d Key bindings @{@%
+(define-key global-mode-map (kbd "C-x 2") 'split-window-below)
+@|@}
 
 @o windows-tests.scm -cl -d  @{
 @<+ Lisp File Header @>  
 @<+ Test Preamble @>
+
+(use-modules (emacsy) (emacsy windows))
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy windows)))) 
 @< Tests @> 
+@< Projection Tests @>
+
 @<+ Test Postscript @> 
 @|@}
 
 @S
-\subsection{Literate Programming Support}
+
+\appendix 
+\part{Appendix} 
+\chapter{Support Code} 
+\section{Literate Programming Support}
 
 All the code for this project is generated from \verb|emacsy.w|.  To
 ease debugging, it is helpful to have the debug information point to
 the place it came from in \verb|emacsy.w| and not whatever source file
 it came from.  The program \verb|nuweb| has a means of providing this
-information that works for C/C++, the line pragma.  Scheme does not
+information that works for C/C++ via the line pragma.  Scheme does not
 support the line pragma, but the reader can fortunately be extended to
 support it.
 
@@ -946,6 +1289,11 @@ An example use of it might look like this:
 (define (f x)
 #line 314 "increment-literately.w"
   (+ x 1)) @}
+
+BUG: The line pragma ends up littering the source with zero length
+strings, which often doesn't matter, but it can't be used everywhere
+especially within a particular form.  I'm not entirely sure how to fix
+that.
 
 @d Line Pragma Handler @{@%
 (lambda (char port)
@@ -1010,9 +1358,7 @@ another reader extension that will strip out any \#l lines within it.
 
 @|@}
 
-
-
-\subsection{Unit Testing}
+\section{Unit Testing Support}
 
 We want to be able to easily write and aggregate unit tests.  It's not
 important to our project per se.  We just need the utility.  Our
@@ -1094,11 +1440,6 @@ We need to run the tests.
       (format #t "NO ERRORs in tests."))
   (exit (if (and (= (length test-errors) 0) (= 0 (length check:failed))) 0 1)))
 @|@}
-
-
-
-
-
 
 @d test functions @{@%
 (define unit-tests '())
@@ -1216,16 +1557,16 @@ Let's run these tests at the end.
 
 
 
-
-
-\appendix
+\chapter{Indices} 
+This is an index of all the filenames, code fragments, and identifiers
+for the code.
 \section{Index of Filenames}
 @f
 \section{Index of Fragments}
 @m
-\section{Index of User Specified Identifiers}
+\section{Index of User Specified Identifiers} 
 @u
-
+ 
 \end{document}
 
 %%  LocalWords:  elt args Emacsism lispism Eval rep pel MATLAB Lua
