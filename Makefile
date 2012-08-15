@@ -7,9 +7,9 @@ VERSION = 0.1
 
 OBJS = emacsy.o
 
-SRCS = emacsy.scm emacsy-tests.scm emacsy.c emacsy/windows.scm windows-tests.scm
+SRCS = emacsy-tests.scm emacsy.c emacsy/windows.scm windows-tests.scm
 
-HDRS = 
+HDRS = emacsy.h
 
 BIBS = 
 
@@ -19,8 +19,12 @@ DIST = Makefile README emacsy.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 
 .PHONY : all
 
-%.tex: %.w
-	nuweb -lr $<
+#%.tex: %.w
+#	nuweb -lr $<
+
+
+%.tex: %.nw
+	noweave -x -delay $< | cpif $@
 
 %: %.tex
 	latex2html -split 0 $<
@@ -35,13 +39,16 @@ DIST = Makefile README emacsy.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 	pdflatex -shell-escape -halt-on-error $<
 
 
-all: $(SRCS)
+all: $(SRCS) $(HDRS)
 	$(MAKE) $(TARGET).tex
 	$(MAKE) $(TARGET).pdf
 	$(MAKE) lib$(TARGET).a
 
-$(SRCS): emacsy.w
-	nuweb -t $<
+#$(SRCS): emacsy.w
+#	nuweb -t $<
+
+$(SRCS) $(HDRS): emacsy.nw
+	notangle -R$@ $< | cpif $@
 
 tar: $(TARGET)doc.tex
 	mkdir $(TARGET)-$(VERSION)
@@ -54,20 +61,6 @@ distribution: all tar hello.pdf
 $(TARGET)doc.tex: $(TARGET).tex
 	sed -e '/^\\ifshowcode$$/,/^\\fi$$/d' $< > $@
 
-check: nuweb
-	@declare -i n=0; \
-        declare -i f=0; \
-	for i in test/*/*.sh ; do \
-	  echo "Testing $$i"; \
-	  sh $$i; \
-	  if test $$? -ne 0; \
-	  then echo "         $$i failed" ; \
-	    f+=1; \
-	  fi; \
-	  n+=1; \
-	done; \
-        echo "$$n done"; \
-        echo "$$f failed"
 
 clean:
 	-rm -f *.o emacsy.tex *.log *.dvi *~ *.blg *.lint $(TARGET)

@@ -1,10 +1,9 @@
-% emacsy.w
-  
 \documentclass{report}
 \newif\ifshowcode
 \showcodetrue
 
 %\usepackage{microtype}
+\usepackage{noweb} 
 \usepackage{multicol}
 \usepackage{etoolbox}
 \usepackage{units}
@@ -68,15 +67,6 @@
 }
 \definecolor{linkcolor}{rgb}{0, 0, 0.7}
 \usepackage[backref,raiselinks,pdfhighlight=/O,pagebackref,hyperfigures,breaklinks,colorlinks,pdfstartview=FitBH,linkcolor={linkcolor},anchorcolor={linkcolor},citecolor={linkcolor},filecolor={linkcolor},menucolor={linkcolor},pagecolor={linkcolor},urlcolor={linkcolor}]{hyperref}
-\NWuseHyperlinks
-%\renewcommand{\NWtarget}[2]{\hypertarget{#1}{#2}}
-%\renewcommand{\NWlink}[2]{\hyperlink{#1}{#2}} 
-\renewcommand{\NWtxtDefBy}{defined by}
-\renewcommand{\NWtxtRefIn}{referenced in}
-\renewcommand{\NWtxtNoRef}{not referenced}
-\renewcommand{\NWtxtIdentsUsed}{Fragment uses}
-\renewcommand{\NWtxtIdentsNotUsed}{(never used)}
-\renewcommand{\NWtxtIdentsDefed}{Fragment defines}
 
 \setlength{\oddsidemargin}{0in}
 \setlength{\evensidemargin}{0in}
@@ -172,7 +162,6 @@ in many dynamic languages: Python, Ruby, MATLAB, Mathematica, Lua to
 name a few.  The pseudo code is given below.
 
 <<Lisp REPL>>=
-
 (while #t
  (print (eval (read))))
 @ The REPL interaction pattern is to enter one complete expression, hit
@@ -193,7 +182,6 @@ editing.  I'd like to name this the Key-Lookup-Execute-Command-Loop
 (KLECL, pronounced clec-cull).
 
 <<KLECL>>=
-
 (while #t
  (execute-command (lookup-key (read-key))))
 @ Long-time Emacs users will be familiar with this idea, but new Emacs
@@ -364,9 +352,8 @@ The minimal C API is given below.
 
 <<Prototypes>>=
 
-
 /* Initialize Emacsy. */
-int  emacsy_init(void);// XXX spell initialize out?
+int  emacsy_initialize(void);
 
 /* Enqueue a keyboard event. */
 void emacsy_key_event(int char_code,
@@ -395,9 +382,8 @@ int  emacsy_run_hook_0(const char *hook_name);
 int  emacsy_minibuffer_point();
 
 /* Terminate Emacsy, runs termination hook. */
-void emacsy_terminate();
+int  emacsy_terminate();
 <<emacsy.h>>=
-
 /* emacsy.h
 
 <<+ Copyright>>
@@ -416,7 +402,6 @@ void emacsy_terminate();
 @ Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
 
 <<Defines>>=
-
 #define EY_MODKEY_COUNT   6
 
 #define EY_MODKEY_ALT     1 // A
@@ -426,13 +411,12 @@ void emacsy_terminate();
 #define EY_MODKEY_SUPER  16 // s
 #define EY_MODKEY_SHIFT  32 // S
 
-#define MOUSE_BUTTON_DOWN  0
-#define MOUSE_BUTTON_UP    1
-#define MOUSE_MOTION       2
+#define EY_MOUSE_BUTTON_DOWN  0
+#define EY_MOUSE_BUTTON_UP    1
+#define EY_MOUSE_MOTION       2
 @ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
 <<Defines>>=
-
 #define EY_QUIT_APPLICATION  1
 #define EY_ECHO_AREA_UPDATED 2
 #define EY_MODELINE_UPDATED  4
@@ -440,12 +424,10 @@ void emacsy_terminate();
 \verb|emacsy.h| are given below.
 
 <<Begin Header Guard>>=
-
 #ifdef __cplusplus
  extern "C" {
 #endif
 <<End Header Guard>>=
-
 #ifdef __cplusplus
  }
 #endif
@@ -454,36 +436,60 @@ void emacsy_terminate();
 \section{emacsy\_init}
 
 <<Functions>>=
-
-int emacsy_init()
+int emacsy_initialize()
 {
   /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
   /* scm_primitive_load_path(scm_from_locale_string(emacsy_file));  */
-  scm_c_use_module("emacsy");
+  /* Load the emacsy modules. */
 
-  /* load the emacsy modules */
+  SCM result = scm_internal_catch(SCM_BOOL_T, 
+                                  load_module, "emacsy", 
+                                  load_module_error, "emacsy");
+  if (scm_is_false(result)) {
+    fprintf(stderr, "error: Unable to load module (emacsy). Try setting the GUILE_LOAD_PATH environment variable.\n");
+    return 1; //EY_ERR_NO_MODULE;
+  }
+  //scm_c_use_module("emacsy");
+  /* XXX Deal with the error if the module can't be found. */
   return 0;
+}
+@ The function [[scm_c_use_module]] throws an exception if it cannot
+find the module, so we have to split that functionality into a body
+function [[load_module]] and an error handler [[load_module_error]].
+
+<<Utility Functions>>=
+SCM load_module(void *data) 
+{
+  scm_c_use_module((const char *)data);
+  return SCM_BOOL_T;
+}
+@ 
+
+<<Utility Functions>>=
+SCM load_module_error(void *data, SCM key, SCM args)
+{
+  //fprintf(stderr, "error: Unable to load module (%s).\n", (const char*) data);
+  return SCM_BOOL_F;
 }
 @ \section{emacsy\_key\_event}
 
 <<Functions>>=
-
 void emacsy_key_event(int char_code,
                       int modifier_key_flags)
 {
   // XXX I shouldn't have to do a CONTROL key fix here.
   SCM i = scm_from_int(char_code);
-  fprintf(stderr, "i = %d\n", scm_to_int(i));
+  //fprintf(stderr, "i = %d\n", scm_to_int(i));
   SCM c = scm_integer_to_char(i);
-  fprintf(stderr, "c = %d\n", scm_to_int(scm_char_to_integer(c)));
-  (void) scm_call_2(scm_c_public_ref("emacsy","emacsy-key-event"),
+  //fprintf(stderr, "c = %d\n", scm_to_int(scm_char_to_integer(c)));
+
+  (void) scm_call_2(scm_c_public_ref("emacsy", "emacsy-key-event"),
                     c,
                     modifier_key_flags_to_list(modifier_key_flags));
 }
 @ \section{emacsy\_mouse\_event}
 
 <<Functions>>=
-
 void emacsy_mouse_event(int x, int y, 
                         int state,
                         int button, 
@@ -495,16 +501,16 @@ void emacsy_mouse_event(int x, int y,
   SCM motion_sym = scm_c_string_to_symbol("motion");
   SCM state_sym;
   switch(state) {
-  case MOUSE_BUTTON_UP:   state_sym = up_sym;     break;
-  case MOUSE_BUTTON_DOWN: state_sym = down_sym;   break;
-  case MOUSE_MOTION:      state_sym = motion_sym; break;
+  case EY_MOUSE_BUTTON_UP:   state_sym = up_sym;     break;
+  case EY_MOUSE_BUTTON_DOWN: state_sym = down_sym;   break;
+  case EY_MOUSE_MOTION:      state_sym = motion_sym; break;
   default:
     fprintf(stderr, "warning: mouse event state received invalid input %d.\n",
             state);
     return;
   }
 
-  (void) scm_call_3(scm_c_public_ref("emacsy","emacsy-mouse-event"),
+  (void) scm_call_3(scm_c_public_ref("emacsy", "emacsy-mouse-event"),
                     scm_vector(scm_list_2(scm_from_int(x),
                                           scm_from_int(y))),
                     scm_from_int(button),
@@ -513,12 +519,11 @@ void emacsy_mouse_event(int x, int y,
 @ \section{emacsy\_tick}
 
 <<Functions>>=
-
 int emacsy_tick()
 {
-  int flags;
+  int flags = 0;
   (void) scm_call_0(scm_c_public_ref("emacsy",
-                                      "emacsy-tick"));
+                                     "emacsy-tick"));
   if (scm_is_true(scm_c_public_ref("emacsy",
                                    "emacsy-quit-application?")))
     flags |= EY_QUIT_APPLICATION;
@@ -529,25 +534,30 @@ int emacsy_tick()
 
 <<Functions>>=
 
-
 char *emacsy_message_or_echo_area()
 {
   return scm_to_locale_string(
     scm_call_0(scm_c_public_ref("emacsy",
-                                 "emacsy-message-or-echo-area")));
+                                "emacsy-message-or-echo-area")));
 }
 @ \section{emacsy\_modeline}
 
 <<Functions>>=
-
 char *emacsy_mode_line()
 {
   return scm_to_locale_string(
     scm_call_0(scm_c_public_ref("emacsy",
-                                 "emacsy-mode-line")));
+                                "emacsy-mode-line")));
+}
+@ \section{emacsy\_terminate}
+
+<<Functions>>=
+int emacsy_terminate()
+{
+  // XXX Call the termination hook.
+  return 0;
 }
 <<emacsy.c>>=
-
 #include "emacsy.h"
 #include <libguile.h>
 
@@ -555,7 +565,6 @@ char *emacsy_mode_line()
 
 <<Functions>>
 <<emacsy.c>>=
-
 int  emacsy_run_hook_0(const char *hook_name)
 {
   /* This should be protected from all sorts of errors that the hooks
@@ -565,15 +574,13 @@ int  emacsy_run_hook_0(const char *hook_name)
   return 0;
 }
 <<emacsy.c>>=
-
 int  emacsy_minibuffer_point()
 {
   return scm_to_int(
     scm_call_0(scm_c_public_ref("emacsy",
-                                 "emacsy-minibuffer-point")));  
+                                "emacsy-minibuffer-point")));  
 }
 <<Utility Functions>>=
-
 SCM scm_c_string_to_symbol(const char* str) {
   return scm_string_to_symbol(scm_from_locale_string(str));
 }
@@ -598,7 +605,6 @@ I expounded on the virtues of the Key Lookup Execute Command Loop
 KLECL.
 
 <<emacsy/klecl.scm>>=
-
 <<+ Lisp File Header>> 
 (define-module (emacsy klecl)
   <<Include Modules>>
@@ -609,7 +615,6 @@ KLECL.
 @ We will use the module check for most of our unit test needs.
 
 <<emacsy-tests.scm>>=
-
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 (eval-when (compile load eval)
@@ -629,15 +634,12 @@ DO NOT EDIT - automatically generated from emacsy.w.
 <<+ License>>
 |#
 <<+ Copyright>>=
-
 Copyright (C) 2012 Shane Celis 
 <<Definitions>>=
-
 (define (f x)
   (1+ x))
 @ %def f
 <<Tests>>=
-
 (define-test (test-f)
   (check (f 1) => 2)
   (check (f 0) => 1)
@@ -651,7 +653,6 @@ Emacsy.  If you want to offer windows that behave like Emacs windows,
 you can, but you aren't required to.  
 
 <<emacsy/windows.scm>>=
-
 <<+ Lisp File Header>>
 <<Module>>
 <<Classes>>
@@ -660,7 +661,6 @@ you can, but you aren't required to.
 <<Commands>>
 <<Key bindings>>
 <<Module>>=
-
 (define-module (emacsy windows)
   #:use-module (oop goops)
   #:use-module (emacsy)
@@ -674,7 +674,6 @@ The window class contains a renderable window that is associated with
 a buffer.  
 
 <<Classes>>=
-
 (define-class <window> ()
   (window-buffer #:accessor window-buffer #:init-value #f)
   (window-parent #:accessor window-parent #:init-value #f)
@@ -687,7 +686,6 @@ a buffer.
 @ The internal window class contains other windows.
 
 <<Classes>>=
-
 (define-class <internal-window> ()
   (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
   (window-parent #:accessor window-parent #:init-value #f)
@@ -696,16 +694,13 @@ a buffer.
   )
 @ %def <internal-window>
 <<Exported Symbols>>=
-
 <window> <internal-window> <pixel-window>
 <<Classes>>=
-
 (define-class <pixel-window> (<internal-window>)
   (window-child #:accessor window-child #:init-value #f)
   (pixel-size #:accessor pixel-size #:init-keyword #:pixel-size #:init-value '(640 480)))
 @ %def <pixel-window>
 <<Procedures>>=
-
 (define-method (initialize (obj <pixel-window>) initargs)
   (next-method)
   (let ((child-window (make <window>)))
@@ -716,55 +711,42 @@ a buffer.
 @ \section{Procedures}
 
 <<Procedures>>=
-
 (define (window? o)
   (or (is-a? o <window>) (is-a? o <internal-window>) (is-a? o <pixel-window>))
   )
 <<Exported Symbols>>=
-
 window?
-<<Tests>>=
-
+<<Windows Tests>>=
   (check (window? root-window) => #t)
 <<Procedures>>=
-
 (define (window-live? o)
   (is-a? o <window>))
-<<Tests>>=
-
+<<Windows Tests>>=
   (check (window-live? root-window) => #t)
 <<Procedures>>=
-
 (define (frame-root-window)
   root-window)
 <<State>>=
-
 (define root-window (make <window>))
 <<Include Modules>>=
-
   #:use-module (ice-9 match)
 @ Emacs uses the edges of windows \verb|(left top right bottom)|, but
 I'm more comfortable using bounded coordinate systems
 \verb|(left bottom width height)|.  So let's write some converters.
 
 <<Procedures>>=
-
 (define (edges->bcoords edges)
   (match edges
    ((left top right bottom)
     (list left bottom (- right left) (- top bottom)))))
-<<Tests>>=
-
+<<Windows Tests>>=
 (check (edges->bcoords '(0 1 1 0)) => '(0 0 1 1))
 <<Procedures>>=
-
 (define (bcoords->edges coords)
   (match coords
   ((x y w h)
     (list x (+ y h) (+ x w) y))))
-<<Tests>>=
-
-(check (bcoords->edges '(0 0 1 1)) => '(0 1 1 0))
+<<Windows Tests>>=(check (bcoords->edges '(0 0 1 1)) => '(0 1 1 0))
 @ The best way I can think to tile and scale all these windows is like
 this.  Let's use a normalized bounded coordinates for the internal
 windows.  This way the frame size can change and the pixel edges can
@@ -800,7 +782,6 @@ One thing we need is the absolute pixel bounded coordinates of the
 frame.  Emacsy integrators need to set and update this appropriately.
 
 <<State>>=
-
 (define emacsy-root-frame-absolute-pixel-bcoords '(0 0 640 320))
 @ \section{Units}
 
@@ -910,7 +891,6 @@ Here are a few identities.
 Again but in code this time.
 
 <<Procedures>>=
-
 (define (translate-2d tx ty)
  (vector 
   (vector 1 0 tx)
@@ -918,7 +898,6 @@ Again but in code this time.
   (vector 0 0 1)))
 @ %def translate-2d
 <<Procedures>>=
-
 (define (scale-2d sx sy)
  (vector 
   (vector sx 0  0)
@@ -931,7 +910,6 @@ Be careful with \verb|deep-clone|. If you deep clone one window that
 has references to other windows, you will clone entire object graph.
 
 <<Commands>>=
-
 (define-interactive (split-window #:optional 
                      (window (selected-window))
                      (size 0.5)
@@ -953,11 +931,9 @@ has references to other windows, you will clone entire object graph.
 <<Exported Symbols>>=
  split-window 
 <<Procedures>>=
-
 (define (selected-window)
   current-window)
 <<State>>=
-
 (define current-window #f)
 @ If the internal window size is changed, we want to update the sizes of
 its children.  Also, normally we'd only need to keep one matrix and
@@ -966,14 +942,12 @@ solver routine, so I'm just going to construct the matrix and its
 inverse.  (I wish guile-num were around.)
 
 <<Procedures>>=
-
 (define-method (update-window (window <internal-window>))
  (let ((children (window-children window)))
   (if (eq? (orientation window) 'vertical)
     <<Update vertical window.>>
     <<Update horizontal window.>>)))
 <<Update vertical window.>>=
-
 (let ((top-size (size window))
       (bottom-size (- 1 (size window))))
  (let ((top (car children))
@@ -987,7 +961,6 @@ inverse.  (I wish guile-num were around.)
   (set! (to-parent-transform bottom) to-parent)
   (set! (from-parent-transform bottom) from-parent)))
 <<Update horizontal window.>>=
-
 (let ((left-size (size window))
         (right-size (- 1 (size window))))
   (let ((left (car children))
@@ -1001,7 +974,6 @@ inverse.  (I wish guile-num were around.)
    (set! (to-parent-transform right) to-parent)
    (set! (from-parent-transform right) from-parent)))
 <<Include Modules>>=
-
 #:use-module (vector-math)
 @ \subsection{Window Project}
 
@@ -1009,7 +981,6 @@ Let's project a point in the current window to the point in its
 ultimate parent window.  
   
 <<Procedures>>=
-
 (define-method (window-project (window <window>) position)
   (let ((parent-position (matrix. (to-parent-transform window) position)))
     (if (window-parent window)
@@ -1018,18 +989,15 @@ ultimate parent window.
 @ For internal-windows, we just pass the information through.
 
 <<Procedures>>=
-
 (define-method (window-project (window <internal-window>) position)
   (if (window-parent window)
     (window-project (window-parent window) position)
     position))
 <<Procedures>>=
-
 (define-method (window-project (window <pixel-window>) position)
   (let ((psize (pixel-size window)))
     (matrix. (scale-2d (car psize) (cadr psize)) position)))
 <<Projection Tests>>=
-
 (check (window-project window #(0 0 1)) => #(0. .5 1.))
 (check (window-project window #(1. 1. 1.)) => #(1. 1. 1.))
 (check (window-unproject window #(0 .5 1.)) => #(0. 0. 1.))
@@ -1041,7 +1009,6 @@ in the given window.  Note that if the point is not within the bounds
 of the given window, the resulting point will not be within $[0, 1]^2$.
   
 <<Procedures>>=
-
 (define-method (window-unproject (window <window>) position)
   (let ((parent-position (window-unproject (window-parent window) position)))
     (if (window-parent window)
@@ -1050,18 +1017,15 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
 @ For internal-windows, we just pass the information through.
 
 <<Procedures>>=
-
 (define-method (window-unproject (window <internal-window>) position)
   (if (window-parent window)
     (window-unproject (window-parent window) position)
     position))
 <<Procedures>>=
-
 (define-method (window-unproject (window <pixel-window>) position)
   (let ((psize (pixel-size window)))
   (matrix. (scale-2d (/ 1 (car psize)) (/ 1 (cadr psize))) position)))
 <<Procedures>>=
-
 (define (window-pixel-bcoords window)
   (let ((origin (window-project window #(0 0 1)))
         (end    (window-project window #(1 1 0))))
@@ -1070,24 +1034,21 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
      (vector-ref origin 1)
      (vector-ref end 0)
      (vector-ref end 1))))
-<<Tests>>=
-
+<<Windows Tests>>=
 (define i-window (make <internal-window>))
 (define window (make <window>))
 (check (window? i-window) => #t)
 (check (window? window) => #t)
 @ Let's test window splitting.
 
-<<Tests>>=
-
+<<Windows Tests>>=
 (check (procedure? split-window) => #t)
 (define s-window (split-window window))
 (check (is-a? s-window <internal-window>) => #t)
 (check (window-pixel-bcoords s-window) => '(0 0 1 1))
 (check (window-pixel-bcoords window) => '(0. .5 1. .5))
 @ Let's test window splitting with a different size value.
-<<Tests>>=
-
+<<Windows Tests>>=
 (define small-window (make <window>))
 (define parent-window (split-window small-window 0.2))
 (define big-window (cdr (window-children parent-window)))
@@ -1096,8 +1057,7 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
 (check (window-pixel-bcoords big-window) => '(0. 0. 1. .8))
 @ Let's test window splitting with a different orientation.
 
-<<Tests>>=
-
+<<Windows Tests>>=
 (define left-window (make <window>))
 (define parent-window-2 (split-window left-window 0.2 'right))
 (define right-window (cdr (window-children parent-window-2)))
@@ -1106,8 +1066,7 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
 (check (window-pixel-bcoords right-window) => '(.2 .0 .8 1.))
 @ Let's test the pixel-window at the top of the hierarchy.
 
-<<Tests>>=
-
+<<Windows Tests>>=
 (define pixel-window (make <pixel-window> #:pixel-size '(500 400)))
 
 ;(update-window pixel-window)
@@ -1129,7 +1088,6 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
 @ \subsection{Window List}
 
 <<Procedures>>=
-
 (define-method (window-tree (w <internal-window>))
   (let ((cs (window-children w)))
     (list (window-tree (car cs))
@@ -1142,7 +1100,6 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
   (window-tree (window-child w)))
 <<Procedures>>=
 
-
 (define (flatten x)
     (cond ((null? x) '())
           ((not (pair? x)) (list x))
@@ -1151,8 +1108,7 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
 
 (define* (window-list #:optional (w root-window))
   (flatten (window-tree w)))
-<<Tests>>=
-
+<<Windows Tests>>=
 (let* ((w (make <window>))
        (sw (split-window w))
        (c (cdr (window-children sw)))
@@ -1167,7 +1123,6 @@ of the given window, the resulting point will not be within $[0, 1]^2$.
 @ \section{Window Commands}
 
 <<Commands>>=
-
 (define-interactive (split-window-below #:optional (size .5))
   (split-window (selected-window) size 'below))
 @ \section{Window Key Bindings}
@@ -1176,17 +1131,15 @@ It will come as no surprise that these key bindings will mimic the
 behavior of Emacs.
 
 <<Key bindings>>=
-
 (define-key global-mode-map (kbd "C-x 2") 'split-window-below)
 <<windows-tests.scm>>=
-
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 
 (use-modules (emacsy) (emacsy windows))
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy windows)))) 
-<<Tests>> 
+<<Windows Tests>> 
 <<Projection Tests>>
 
 <<+ Test Postscript>> 
@@ -1206,7 +1159,6 @@ support it.
 An example use of it might look like this:
 
 <<Line Pragma Example>>=
-
 (define (f x)
 #line 314 "increment-literately.w"
   (+ x 1)) 
@@ -1216,7 +1168,6 @@ especially within a particular form.  I'm not entirely sure how to fix
 that.
 
 <<Line Pragma Handler>>=
-
 (lambda (char port)
   (let* ((ine (read port))
          (lineno (read port))
@@ -1232,7 +1183,6 @@ documentation in embedded strings.  Something that might end up
 looking like this in the source code:
 
 <<Line Pragma Embedded String Example>>=
-
 (define (f x)
   "#line 352 "emacsy.w"
    The function f and its associated function h...
@@ -1244,7 +1194,6 @@ symbol emacsy.w, which will not do.  To get around this, I implemented
 another reader extension that will strip out any \#l lines within it.
 
 <<Liberal String Quote Reader>>=
-
 (lambda (char port)
   (let ((accum '()))
     (let loop ((entry (read-char port)))
@@ -1266,7 +1215,6 @@ another reader extension that will strip out any \#l lines within it.
                   (set! accum (cons entry accum))
                   (loop (read-char port)))))))))
 <<line-pragma.scm>>=
-
 (define-module (my-line-pragma)
   #:use-module (ice-9 rdelim))
 
@@ -1282,7 +1230,6 @@ association list (alist) \verb|unit-tests| will hold the symbol of the
 function and the procedure.
 
 <<check/harness.scm>>=
-
 (define-module (check harness)
   #:use-module (check)
   #:export (run-tests
@@ -1291,20 +1238,17 @@ function and the procedure.
 @ Set up the variables.
 
 <<check/harness.scm>>=
-
 (define unit-tests '())
 (define test-errors '())
 @ We can register any procedure to a test name.  
 
 <<check/harness.scm>>=
-
 (define (register-test name func)
   "Register a procedure to a test name."
   (set! unit-tests (acons name func unit-tests)))
 @ Typically, users will define and register their tests with this macro.
 
 <<check/harness.scm>>=
-
 (define-syntax define-test
   (syntax-rules ()
     ((define-test (name args ...) expr ...)
@@ -1315,7 +1259,6 @@ function and the procedure.
 @ We need to run the tests.
 
 <<check/harness.scm>>=
-
 (define (run-tests)
   (catch 'first-error
     (lambda () 
@@ -1323,7 +1266,6 @@ function and the procedure.
     (lambda args
       #f)))
 <<handle each test>>=
-
 (for-each 
  (lambda (elt)
    (format #t "TEST: ~a\n" (car elt))
@@ -1343,7 +1285,6 @@ function and the procedure.
        #f)))
  (reverse unit-tests))
 <<check/harness.scm>>=
-
 (define (run-tests-and-exit)
   (run-tests)
   (check-report)
@@ -1352,7 +1293,6 @@ function and the procedure.
       (format #t "NO ERRORs in tests."))
   (exit (if (and (= (length test-errors) 0) (= 0 (length check:failed))) 0 1)))
 <<test functions>>=
-
 (define unit-tests '())
 
 (define (register-test name func)
@@ -1364,7 +1304,6 @@ the user to call it, so we'll define a macro that will automatically
 call it.
 
 <<test macro>>=
-
 (define-syntax define-test
   (syntax-rules ()
     ((define-test (name args ...) expr ...)
@@ -1375,7 +1314,6 @@ call it.
 @ Finally, now we just need a way to run all the unit tests.
 
 <<run tests>>=
-
 (define test-errors '())
 (define (run-tests)
   (catch 'first-error
@@ -1403,7 +1341,6 @@ call it.
 @ Finally, let's provide this as our testing preamble.
 
 <<+ Test Preamble>>=
-
 (use-modules (check))
 (use-modules (ice-9 pretty-print))
 
@@ -1413,7 +1350,6 @@ call it.
 @ Let's run these tests at the end.
 
 <<+ Test Postscript>>=
-
 
 (run-tests)
 (check-report)
@@ -1436,7 +1372,6 @@ call it.
   \comp_\bv b \bv a &= \bv a \cdot \bhv b \\
   &= \frac{\bv a \cdot \bv b}{||\bv b||}
 \end{align*}
-
   
 <<Vector Definitions>>=
 (define (vector-component a b)
