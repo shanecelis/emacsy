@@ -1,0 +1,256 @@
+\chapter{C API} 
+
+Emacsy is divided into the following modules: klecl, buffer.
+
+\lstset{language=C}
+
+The minimal C API is given below.
+
+<<Prototypes>>=
+
+/* Initialize Emacsy. */
+int  emacsy_initialize(void);
+
+/* Enqueue a keyboard event. */
+void emacsy_key_event(int char_code,
+                      int modifier_key_flags);
+
+/* Enqueue a mouse event. */
+void emacsy_mouse_event(int x, int y, 
+                        int state,
+                        int button,
+                        int modifier_key_flags);
+
+/* Run an iteration of Emacsy's event loop 
+   (will not block). */
+int emacsy_tick(); 
+
+/* Return the message or echo area. */
+char *emacsy_message_or_echo_area();
+
+/* Return the mode line. */
+char *emacsy_mode_line();
+
+/* Run a hook. */
+int  emacsy_run_hook_0(const char *hook_name);
+
+/* Return the minibuffer point. */
+int  emacsy_minibuffer_point();
+
+/* Terminate Emacsy, runs termination hook. */
+int  emacsy_terminate();
+<<emacsy.h>>=
+/* emacsy.h
+
+<<+ Copyright>>
+
+<<+ License>>
+*/
+
+<<Begin Header Guard>>
+
+<<Defines>>
+
+<<Prototypes>>
+
+<<End Header Guard>>
+
+@ Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
+
+<<Defines>>=
+#define EY_MODKEY_COUNT   6
+
+#define EY_MODKEY_ALT     1 // A
+#define EY_MODKEY_CONTROL 2 // C
+#define EY_MODKEY_HYPER   4 // H
+#define EY_MODKEY_META    8 // M
+#define EY_MODKEY_SUPER  16 // s
+#define EY_MODKEY_SHIFT  32 // S
+
+#define EY_MOUSE_BUTTON_DOWN  0
+#define EY_MOUSE_BUTTON_UP    1
+#define EY_MOUSE_MOTION       2
+@ Here are the return flags that may be returned by \verb|emacsy_tick|.
+
+<<Defines>>=
+#define EY_QUIT_APPLICATION  1
+#define EY_ECHO_AREA_UPDATED 2
+#define EY_MODELINE_UPDATED  4
+@ The boilerplate guards so that a C++ program may include
+\verb|emacsy.h| are given below.
+
+<<Begin Header Guard>>=
+#ifdef __cplusplus
+ extern "C" {
+#endif
+<<End Header Guard>>=
+#ifdef __cplusplus
+ }
+#endif
+@ The implementation of the API calls similarly named Scheme procedures.
+
+\section{emacsy\_init}
+
+<<Functions>>=
+int emacsy_initialize()
+{
+  /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
+  /* scm_primitive_load_path(scm_from_locale_string(emacsy_file));  */
+  /* Load the emacsy modules. */
+
+  SCM result = scm_internal_catch(SCM_BOOL_T, 
+                                  load_module, "emacsy", 
+                                  load_module_error, "emacsy");
+  if (scm_is_false(result)) {
+    fprintf(stderr, "error: Unable to load module (emacsy). Try setting the GUILE_LOAD_PATH environment variable.\n");
+    return 1; //EY_ERR_NO_MODULE;
+  }
+  //scm_c_use_module("emacsy");
+  /* XXX Deal with the error if the module can't be found. */
+  return 0;
+}
+@ The function [[scm_c_use_module]] throws an exception if it cannot
+find the module, so we have to split that functionality into a body
+function [[load_module]] and an error handler [[load_module_error]].
+
+<<Utility Functions>>=
+SCM load_module(void *data) 
+{
+  scm_c_use_module((const char *)data);
+  return SCM_BOOL_T;
+}
+@ 
+
+<<Utility Functions>>=
+SCM load_module_error(void *data, SCM key, SCM args)
+{
+  //fprintf(stderr, "error: Unable to load module (%s).\n", (const char*) data);
+  return SCM_BOOL_F;
+}
+@ \section{emacsy\_key\_event}
+
+<<Functions>>=
+void emacsy_key_event(int char_code,
+                      int modifier_key_flags)
+{
+  // XXX I shouldn't have to do a CONTROL key fix here.
+  SCM i = scm_from_int(char_code);
+  //fprintf(stderr, "i = %d\n", scm_to_int(i));
+  SCM c = scm_integer_to_char(i);
+  //fprintf(stderr, "c = %d\n", scm_to_int(scm_char_to_integer(c)));
+
+  (void) scm_call_2(scm_c_public_ref("emacsy", "emacsy-key-event"),
+                    c,
+                    modifier_key_flags_to_list(modifier_key_flags));
+}
+@ \section{emacsy\_mouse\_event}
+
+<<Functions>>=
+void emacsy_mouse_event(int x, int y, 
+                        int state,
+                        int button, 
+                        int modifier_key_flags)
+{
+
+  SCM down_sym   = scm_c_string_to_symbol("down");
+  SCM up_sym     = scm_c_string_to_symbol("up");
+  SCM motion_sym = scm_c_string_to_symbol("motion");
+  SCM state_sym;
+  switch(state) {
+  case EY_MOUSE_BUTTON_UP:   state_sym = up_sym;     break;
+  case EY_MOUSE_BUTTON_DOWN: state_sym = down_sym;   break;
+  case EY_MOUSE_MOTION:      state_sym = motion_sym; break;
+  default:
+    fprintf(stderr, "warning: mouse event state received invalid input %d.\n",
+            state);
+    return;
+  }
+
+  (void) scm_call_3(scm_c_public_ref("emacsy", "emacsy-mouse-event"),
+                    scm_vector(scm_list_2(scm_from_int(x),
+                                          scm_from_int(y))),
+                    scm_from_int(button),
+                    state_sym);
+}
+@ \section{emacsy\_tick}
+
+<<Functions>>=
+int emacsy_tick()
+{
+  int flags = 0;
+  (void) scm_call_0(scm_c_public_ref("emacsy",
+                                     "emacsy-tick"));
+  if (scm_is_true(scm_c_public_ref("emacsy",
+                                   "emacsy-quit-application?")))
+    flags |= EY_QUIT_APPLICATION;
+  return flags;
+}
+
+@ \section{emacsy\_message\_or\_echo\_area}
+
+<<Functions>>=
+
+char *emacsy_message_or_echo_area()
+{
+  return scm_to_locale_string(
+    scm_call_0(scm_c_public_ref("emacsy",
+                                "emacsy-message-or-echo-area")));
+}
+@ \section{emacsy\_modeline}
+
+<<Functions>>=
+char *emacsy_mode_line()
+{
+  return scm_to_locale_string(
+    scm_call_0(scm_c_public_ref("emacsy",
+                                "emacsy-mode-line")));
+}
+@ \section{emacsy\_terminate}
+
+<<Functions>>=
+int emacsy_terminate()
+{
+  // XXX Call the termination hook.
+  return 0;
+}  
+<<emacsy.c>>=
+#include "emacsy.h"
+#include <libguile.h>
+
+<<Utility Functions>>
+
+<<Functions>>
+<<emacsy.c>>=
+int  emacsy_run_hook_0(const char *hook_name)
+{
+  /* This should be protected from all sorts of errors that the hooks
+     could throw. */
+  scm_run_hook(scm_c_private_ref("guile-user", hook_name),
+               SCM_EOL);
+  return 0;
+}
+<<emacsy.c>>=
+int  emacsy_minibuffer_point()
+{
+  return scm_to_int(
+    scm_call_0(scm_c_public_ref("emacsy",
+                                "emacsy-minibuffer-point")));  
+}
+<<Utility Functions>>=
+SCM scm_c_string_to_symbol(const char* str) {
+  return scm_string_to_symbol(scm_from_locale_string(str));
+}
+
+SCM modifier_key_flags_to_list(int modifier_key_flags)
+{
+  const char* modifiers[] = { "alt", "control", "hyper", "meta", "super", "shift" };
+  SCM list = SCM_EOL;
+  for (int i = 0; i < EY_MODKEY_COUNT; i++) {
+    if (modifier_key_flags & (1 @<< i)) {
+      list = scm_cons(scm_c_string_to_symbol(modifiers[i]), list);
+    }
+  }
+  
+  return list;
+}
+@

@@ -5,49 +5,60 @@ CFLAGS = -g $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.
 TARGET = emacsy
 VERSION = 0.1
 
-OBJS = emacsy.o
+#PDFS = $(TARGET).pdf
 
-SRCS = emacsy-tests.scm emacsy.c emacsy/windows.scm windows-tests.scm
+LITSRCS = emacsy.nw emacsy-c-api.nw
+
+DEFS = emacsy.defs emacsy-c-api.defs
+
+SRCS = emacsy-tests.scm emacsy/windows.scm windows-tests.scm emacsy.c 
 
 HDRS = emacsy.h
+
+OBJS = emacsy.o
 
 BIBS = 
 
 STYS = 
 
-DIST = Makefile README emacsy.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
+DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 
 .PHONY : all
-
-#%.tex: %.w
-#	nuweb -lr $<
-
 
 %.tex: %.nw
 	noweave -x -delay $< | cpif $@
 
-%: %.tex
-	latex2html -split 0 $<
+%.c: %.nw
+	notangle -R$@ $< | cpif $@
+
+%.h: %.nw
+	notangle -R$@ $< | cpif $@
 
 %.hw: %.w
 	cp $< $@
 
 %.dvi: %.tex
+	noindex $<
 	latex $<
 
 %.pdf: %.tex
+	noindex $<
 	pdflatex -shell-escape -halt-on-error $<
 
+%.defs: %.nw
+	nodefs $< > $@
 
-all: $(SRCS) $(HDRS)
-	$(MAKE) $(TARGET).tex
+all: $(HDRS) $(SRCS) 
 	$(MAKE) $(TARGET).pdf
 	$(MAKE) lib$(TARGET).a
 
-#$(SRCS): emacsy.w
-#	nuweb -t $<
+all.defs: $(DEFS)
+	sort -u $^ | cpif $@
 
-$(SRCS) $(HDRS): emacsy.nw
+emacsy.h emacsy.c: emacsy-c-api.nw
+	notangle -R$@ $< | cpif $@
+
+emacsy-tests.scm emacsy/windows.scm windows-tests.scm: emacsy.nw
 	notangle -R$@ $< | cpif $@
 
 tar: $(TARGET)doc.tex
@@ -56,34 +67,21 @@ tar: $(TARGET)doc.tex
 	tar -zcf $(TARGET)-$(VERSION).tar.gz $(TARGET)-$(VERSION)
 	rm -rf $(TARGET)-$(VERSION)
 
-distribution: all tar hello.pdf 
-
-$(TARGET)doc.tex: $(TARGET).tex
-	sed -e '/^\\ifshowcode$$/,/^\\fi$$/d' $< > $@
-
+distribution: all tar $(TARGET).pdf 
 
 clean:
-	-rm -f *.o emacsy.tex *.log *.dvi *~ *.blg *.lint $(TARGET)
+	$(RM) *.o $(SRCS) $(HDRS) *.log *.dvi *~ *.blg *.lint $(TARGET).pdf
 
-veryclean:
-	-rm -f *.o *.c *.h *.log *.dvi *~ *.blg *.lint *.aux *.bbl *.out
-
-view:	$(TARGET).dvi
-	xdvi $(TARGET).dvi
-
-print:	$(TARGET).dvi
-	lpr -d $(TARGET).dvi
+veryclean: clean
+	$(RM) *.aux *.bbl *.out
 
 preview: $(TARGET).pdf
 	preview -r Emacs $(TARGET).pdf
 
-lint:
-	lint $(SRCS) > nuweb.lint
-
-$(OBJS): 
-
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)
+
+$(TARGET).pdf: emacsy.tex emacsy-c-api.tex
 
 test: emacsy-tests.scm windows-tests.scm
 	guile -l line-pragma.scm -L . -L .. emacsy-tests.scm
