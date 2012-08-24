@@ -7,7 +7,6 @@ Emacsy is divided into the following modules: klecl, buffer.
 The minimal C API is given below.
 
 <<Prototypes>>=
-
 /* Initialize Emacsy. */
 int  emacsy_initialize(void);
 
@@ -89,7 +88,7 @@ int  emacsy_terminate();
 #endif
 @ The implementation of the API calls similarly named Scheme procedures.
 
-\section{emacsy\_init}
+\section{emacsy\_initialize}
 
 <<Functions>>=
 int emacsy_initialize()

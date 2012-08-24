@@ -7,9 +7,11 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw
 
-DEFS = emacsy.defs emacsy-c-api.defs
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex
+
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs
 
 SRCS = emacsy-tests.scm emacsy/windows.scm windows-tests.scm emacsy.c 
 
@@ -58,8 +60,11 @@ all.defs: $(DEFS)
 emacsy.h emacsy.c: emacsy-c-api.nw
 	notangle -R$@ $< | cpif $@
 
-emacsy-tests.scm emacsy/windows.scm windows-tests.scm: emacsy.nw
+emacsy-tests.scm: emacsy.nw
 	notangle -R$@ $< | cpif $@
+
+emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
+	notangle -R$@ $^ | cpif $@
 
 tar: $(TARGET)doc.tex
 	mkdir $(TARGET)-$(VERSION)
@@ -76,12 +81,14 @@ veryclean: clean
 	$(RM) *.aux *.bbl *.out
 
 preview: $(TARGET).pdf
-	preview -r Emacs $(TARGET).pdf
+	open -a Skim.app $<
+
+#preview -r Emacs $(TARGET).pdf
 
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)
 
-$(TARGET).pdf: emacsy.tex emacsy-c-api.tex
+$(TARGET).pdf: $(TEXS)
 
 test: emacsy-tests.scm windows-tests.scm
 	guile -l line-pragma.scm -L . -L .. emacsy-tests.scm
