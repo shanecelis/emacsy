@@ -345,7 +345,10 @@ These are the core features from Emacs that will be implemented in Emacsy.
 
 I expounded on the virtues of the Key Lookup Execute Command Loop
 (KLECL) in \ref{klecl-treasure}.  Now we're going to implement a
-KLECL.
+KLECL, which requires fleshing out some concepts.  We need keys or,
+more generally, events; keymaps; and commands.  Let's begin with events.
+
+\include{event}
 
 <<emacsy/klecl.scm>>=
 <<+ Lisp File Header>> 
@@ -394,6 +397,7 @@ Copyright (C) 2012 Shane Celis
 @ \appendix 
 \part{Appendix} 
 \chapter{Support Code} 
+\input{util}
 \section{Literate Programming Support}
 
 All the code for this project is generated from \verb|emacsy.w|.  To
@@ -426,6 +430,7 @@ that.
     (set-port-line! port lineno)
     (set-port-column! port 0)
     ;; Return unspecified on purpose.
+    (if #f #t) 
     ))
 @ One problem that popped up was I sometimes wanted to include pieces of
 documentation in embedded strings.  Something that might end up
@@ -464,10 +469,11 @@ another reader extension that will strip out any \#l lines within it.
                   (set! accum (cons entry accum))
                   (loop (read-char port)))))))))
 <<line-pragma.scm>>=
-(define-module (my-line-pragma)
+(define-module (line-pragma)
   #:use-module (ice-9 rdelim))
 
 (eval-when (compile load eval)
+ (read-hash-extend #\l #f)
  (read-hash-extend #\l <<Line Pragma Handler>>)
  (read-hash-extend #\" <<Liberal String Quote Reader>>))
 

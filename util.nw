@@ -1,0 +1,61 @@
+\section{Utility Module}
+
+The [[util]] module is a grab bag of all sorts of miscellaneous
+functionality.  Rather than defining it here in one place.  I thought
+it'd be best to define each piece where it is actually introduced and
+used.  
+
+
+<<util:macro>>=
+(define-syntax define-syntax-public
+  (syntax-rules ()
+    ((define-syntax-public name e ...)
+     (begin
+       (define-syntax name e ...)
+       (export-syntax name)))))
+(export-syntax define-syntax-public)
+@ 
+
+<<util:macro>>=
+(define-syntax-public string-case
+  (syntax-rules (else)
+    ((_ str (else e1 ...))
+     (begin e1 ...))
+    ((_ str (e1 e2 ...))
+     (when (string=? str e1) e2 ...))
+    ((_ str (e1 e2 ...) c1 ...)
+     (if (string=? str e1)
+         (begin e2 ...)
+         (string-case str c1 ...)))))
+@ 
+
+<<util:macro>>=
+(define-syntax-public define-method-public
+  (syntax-rules ()
+    ((define-method-public (name args ...) e ...)
+     (begin
+       (define-method (name args ...) e ...)
+       (export name)))))
+@ 
+
+<<util:macro>>=
+(define-syntax-public define-generic-public
+  (syntax-rules ()
+    ((define-generic-public name)
+     (begin
+       (define-generic name)
+       (export name)))))
+@ 
+
+
+<<emacsy/util.scm>>=
+(define-module (emacsy util)
+  #:use-module (ice-9 optargs)
+  #:use-module (ice-9 pretty-print)
+  #:use-module (ice-9 receive)
+  #:use-module (srfi srfi-1)
+  #:use-module (debugging assert))
+
+<<util:macro>>
+<<util:procedure>>
+@ 

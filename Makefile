@@ -7,13 +7,17 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs
 
-SRCS = emacsy-tests.scm emacsy/windows.scm windows-tests.scm emacsy.c 
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm
+
+#TESTS = emacsy-tests.scm windows-tests.scm event-tests.scm
+
+TESTS = event-tests.scm
 
 HDRS = emacsy.h
 
@@ -58,12 +62,21 @@ all.defs: $(DEFS)
 	sort -u $^ | cpif $@
 
 emacsy.h emacsy.c: emacsy-c-api.nw
-	notangle -R$@ $< | cpif $@
+	notangle -R$@ $^ | cpif $@
 
 emacsy-tests.scm: emacsy.nw
-	notangle -R$@ $< | cpif $@
+	notangle -R$@ $^ | cpif $@
 
 emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
+	notangle -R$@ $^ | cpif $@
+
+emacsy/event.scm event-tests.scm: event.nw emacsy.nw
+	notangle -R$@ $^ | cpif $@
+
+emacsy/util.scm: util.nw event.nw
+	notangle -R$@ $^ | cpif $@
+
+line-pragma.scm: emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 tar: $(TARGET)doc.tex
@@ -90,9 +103,10 @@ $(TARGET): $(OBJS)
 
 $(TARGET).pdf: $(TEXS)
 
-test: emacsy-tests.scm windows-tests.scm
-	guile -l line-pragma.scm -L . -L .. emacsy-tests.scm
-	guile -l line-pragma.scm -L . -L .. windows-tests.scm
+test: $(SRCS) $(TESTS)
+	for test in $^; do \
+		guile -l line-pragma.scm -L . -L .. $$test; \
+	done
 
 libemacsy.a: emacsy.o
 	ar rcs libemacsy.a emacsy.o
