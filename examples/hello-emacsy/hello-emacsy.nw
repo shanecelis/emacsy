@@ -271,7 +271,7 @@ Now let's use these new procedures to create interactive commands and
 bind them to keys by changing our config file \verb|.hello-emacsy|.
 
 <<.hello-emacsy>>=
-(use-modules (emacsy))
+(use-modules (emacsy emacsy))
 
 (define-interactive (incr-counter)
  (set-counter! (1+ (get-counter))))

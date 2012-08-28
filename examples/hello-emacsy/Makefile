@@ -4,7 +4,7 @@ EMACSY_LIB := /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79
 GUILE_CFLAGS := $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --cflags)
 
 CPPFLAGS = -g  $(GUILE_CFLAGS) -I/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo/noweb-emacsy
-LDFLAGS =  -framework OpenGL -framework GLUT $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --libs) $(EMACSY_LIB)
+LDFLAGS =  -framework OpenGL -framework GLUT $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --libs) 
 
 TARGET = hello-emacsy
 VERSION = 0.1
@@ -96,7 +96,7 @@ lint:
 $(OBJS): 
 
 #$(TARGET): $(OBJS)
-hello-emacsy: $(OBJS) 
+hello-emacsy: $(OBJS) $(EMACSY_LIB)
 
 upload: hello-emacsy.pdf
 	cp hello-emacsy.pdf minimal-emacsy-example.pdf

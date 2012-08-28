@@ -96,16 +96,14 @@ int emacsy_initialize()
   /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
   /* scm_primitive_load_path(scm_from_locale_string(emacsy_file));  */
   /* Load the emacsy modules. */
-
+  const char *module = "emacsy emacsy"; 
   SCM result = scm_internal_catch(SCM_BOOL_T, 
-                                  load_module, "emacsy emacsy", 
-                                  load_module_error, "emacsy emacsy");
+                                  load_module, module,
+                                  load_module_error, module);
   if (scm_is_false(result)) {
-    fprintf(stderr, "error: Unable to load module (emacsy emacsy). Try setting the GUILE_LOAD_PATH environment variable.\n");
+    fprintf(stderr, "error: Unable to load module (%s). Try setting the GUILE_LOAD_PATH environment variable.\n", module);
     return 1; //EY_ERR_NO_MODULE;
   }
-  //scm_c_use_module("emacsy");
-  /* XXX Deal with the error if the module can't be found. */
   return 0;
 }
 @ The function [[scm_c_use_module]] throws an exception if it cannot
@@ -138,7 +136,7 @@ void emacsy_key_event(int char_code,
   SCM c = scm_integer_to_char(i);
   //fprintf(stderr, "c = %d\n", scm_to_int(scm_char_to_integer(c)));
 
-  (void) scm_call_2(scm_c_public_ref("emacsy", "emacsy-key-event"),
+  (void) scm_call_2(scm_c_public_ref("emacsy emacsy", "emacsy-key-event"),
                     c,
                     modifier_key_flags_to_list(modifier_key_flags));
 }
@@ -165,7 +163,7 @@ void emacsy_mouse_event(int x, int y,
     return;
   }
 
-  (void) scm_call_3(scm_c_public_ref("emacsy", "emacsy-mouse-event"),
+  (void) scm_call_3(scm_c_public_ref("emacsy emacsy", "emacsy-mouse-event"),
                     scm_vector(scm_list_2(scm_from_int(x),
                                           scm_from_int(y))),
                     scm_from_int(button),
@@ -177,9 +175,9 @@ void emacsy_mouse_event(int x, int y,
 int emacsy_tick()
 {
   int flags = 0;
-  (void) scm_call_0(scm_c_public_ref("emacsy",
+  (void) scm_call_0(scm_c_public_ref("emacsy emacsy",
                                      "emacsy-tick"));
-  if (scm_is_true(scm_c_public_ref("emacsy",
+  if (scm_is_true(scm_c_public_ref("emacsy emacsy",
                                    "emacsy-quit-application?")))
     flags |= EY_QUIT_APPLICATION;
   return flags;
@@ -192,7 +190,7 @@ int emacsy_tick()
 char *emacsy_message_or_echo_area()
 {
   return scm_to_locale_string(
-    scm_call_0(scm_c_public_ref("emacsy",
+    scm_call_0(scm_c_public_ref("emacsy emacsy",
                                 "emacsy-message-or-echo-area")));
 }
 @ \section{emacsy\_modeline}
@@ -201,7 +199,7 @@ char *emacsy_message_or_echo_area()
 char *emacsy_mode_line()
 {
   return scm_to_locale_string(
-    scm_call_0(scm_c_public_ref("emacsy",
+    scm_call_0(scm_c_public_ref("emacsy emacsy",
                                 "emacsy-mode-line")));
 }
 @ \section{emacsy\_terminate}
@@ -232,7 +230,7 @@ int  emacsy_run_hook_0(const char *hook_name)
 int  emacsy_minibuffer_point()
 {
   return scm_to_int(
-    scm_call_0(scm_c_public_ref("emacsy",
+    scm_call_0(scm_c_public_ref("emacsy emacsy",
                                 "emacsy-minibuffer-point")));  
 }
 <<Utility Functions>>=
