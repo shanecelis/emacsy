@@ -7,11 +7,11 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.def
 
 SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm
 
@@ -28,6 +28,8 @@ BIBS =
 STYS = 
 
 DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
+
+GRAPHICS_PATH = examples/hello-emacsy
 
 .PHONY : all
 
@@ -49,7 +51,7 @@ DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS
 
 %.pdf: %.tex
 	noindex $<
-	pdflatex -shell-escape -halt-on-error $<
+	TEXINPUTS=.:$(GRAPHICS_PATH): pdflatex -shell-escape -halt-on-error $<
 
 %.defs: %.nw
 	nodefs $< > $@

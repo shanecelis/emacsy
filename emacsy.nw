@@ -335,7 +335,7 @@ These are the core features from Emacs that will be implemented in Emacsy.
 %% %\item Make code available on github
 %% \end{enumerate}
 
-\subsection{Minimal Emacsy Example}
+\include{examples/hello-emacsy/hello-emacsy}
 
 \part{Implementation} 
 \include{emacsy-c-api}

@@ -40,7 +40,7 @@ int  emacsy_terminate();
 \end{figure} 
 
 \section{The Simplest Application Ever}
-
+ 
 Let's exercise these functions in a minimal GLUT program we'll call
 \verb|hello-emacsy|.\footnote{Note: Emacsy does not rely on GLUT. One
   could use Qt, Cocoa, or ncurses.}  This simple program will display
@@ -233,7 +233,7 @@ extended the user interface to accept new commands \verb|+| and
 \verb|-| to change the state.
 
 %\newpage
-\appendix
+%\appendix
 
 \section{Plaintext Please}
 Here are the plaintext files: \href{http://gnufoo.org/emacsy/emacsy.h}{emacsy.h},
