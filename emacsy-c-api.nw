@@ -98,10 +98,10 @@ int emacsy_initialize()
   /* Load the emacsy modules. */
 
   SCM result = scm_internal_catch(SCM_BOOL_T, 
-                                  load_module, "emacsy", 
-                                  load_module_error, "emacsy");
+                                  load_module, "emacsy emacsy", 
+                                  load_module_error, "emacsy emacsy");
   if (scm_is_false(result)) {
-    fprintf(stderr, "error: Unable to load module (emacsy). Try setting the GUILE_LOAD_PATH environment variable.\n");
+    fprintf(stderr, "error: Unable to load module (emacsy emacsy). Try setting the GUILE_LOAD_PATH environment variable.\n");
     return 1; //EY_ERR_NO_MODULE;
   }
   //scm_c_use_module("emacsy");
