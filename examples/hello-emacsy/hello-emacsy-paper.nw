@@ -1,0 +1,111 @@
+\documentclass[letterpaper,twocolumn]{article}
+% minimal-emacsy-example.nw
+\usepackage{multicol}
+%\usepackage{knoweb}
+\usepackage{noweb}
+\pagestyle{noweb}
+\noweboptions{smallcode,nomargintag,shift} 
+\usepackage{latexsym}
+%\usepackage{html}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{color}
+%\usepackage{framed}
+\usepackage{textcomp}
+%\definecolor{listinggray}{gray}{0.9}
+%\definecolor{shadecolor}{HTML}{211e1e}
+\lstset{
+	tabsize=2,
+	language=C,
+  keepspaces=true,
+  upquote=true,
+  aboveskip=0pt,
+  belowskip=0pt,
+  framesep=0pt,
+  rulesep=0pt,
+  columns=fixed,
+  showstringspaces=true,
+  extendedchars=true,
+  breaklines=true,
+  prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+  frame=none,
+  framerule=0pt,
+  showtabs=false,
+  showspaces=false,
+  showstringspaces=false,
+  %basicstyle=\color[HTML]{dadada},
+	%rulecolor=\color[HTML]{dadada},
+	%backgroundcolor=\color[HTML]{211E1E},
+  %identifierstyle=\color[HTML]{bec337},%\ttfamily,
+  %keywordstyle=\color[HTML]{6f61ff},
+  %commentstyle=\color[HTML]{ED5B15},
+  %stringstyle=\color[HTML]{ad9361}
+}
+\definecolor{linkcolor}{rgb}{0, 0, 0.7}
+\usepackage[
+  backref,
+  raiselinks,
+  pdfhighlight=/O,
+  pagebackref,
+  hyperfigures,
+  breaklinks,
+  colorlinks,
+  pdfstartview=FitBH,
+  linkcolor={linkcolor},
+  anchorcolor={linkcolor},
+  citecolor={linkcolor},
+  filecolor={linkcolor},
+  menucolor={linkcolor},
+  pagecolor={linkcolor},
+  urlcolor={linkcolor}]{hyperref}
+
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{0in}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\setlength{\textheight}{8.9in}
+\setlength{\textwidth}{6.5in}
+\setlength{\marginparwidth}{0.5in}
+% For a larger page size use the following \nwstartdeflinemarkup
+% For twocolumn us the following:
+\codehsize=47\wd0 % 88 columns wasn't enough; I don't know why
+
+% Let's let the page breaks a little more liberally
+\def\nwendcode{\endtrivlist \endgroup \vfil\penalty10\vfilneg}
+\let\nwdocspar=\smallbreak
+
+%\nwmarginglue=0.05in
+\title{Hello, Emacsy! \\ \Large{A Minimal Emacsy Example Program}}
+\date{}
+\author{Shane Celis
+\\ {\sl shane.celis@gmail.com}} 
+
+\begin{document}
+\maketitle
+%\begin{multicols}{2} 
+
+\input{hello-emacsy}
+
+%% \section{List of Code Fragments}
+%% \nowebchunks
+%\begin{multicols}{2}[
+%% \section*{Index} 
+%% Here is a list of the identifiers used, and where they appear.
+%% Underlined entries indicate the place of definition.
+%% This index is generated automatically.
+%% %]
+%% \nowebindex
+%\end{multicols}
+
+%% \section{hello-emacsy.c}
+
+%% %\inputminted[bgcolor=bg]{hello-emacs.c}{c}
+%% %% \begin{minted}[bgcolor=bg]{c}
+%% %% 
+%% %% \end{minted}
+%% \lstinputlisting[basicstyle=\footnotesize,breaklines=false]{hello-emacsy.c}
+%\end{multicols}
+
+%% 
+\end{document}

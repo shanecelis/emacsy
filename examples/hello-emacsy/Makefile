@@ -2,55 +2,69 @@ CC = cc
 
 EMACSY_LIB := /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo/noweb-emacsy/libemacsy.a
 GUILE_CFLAGS := $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --cflags)
+CFLAGS = -g $(GUILE_CFLAGS) -I/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo/noweb-emacsy
 
-CPPFLAGS = -g  $(GUILE_CFLAGS) -I/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo/noweb-emacsy
 LDFLAGS =  -framework OpenGL -framework GLUT $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --libs) 
 
 TARGET = hello-emacsy
 VERSION = 0.1
 
-OBJS = hello-emacsy.o
+#PDFS = $(TARGET).pdf
 
-SRCS = hello-emacsy.c .hello-emacsy
+LITSRCS = hello-emacsy-paper.nw hello-emacsy.nw
+
+TEXS = hello-emacsy-paper.tex hello-emacsy.tex
+
+DEFS = hello-emacsy-paper.defs hello-emacsy.defs
+
+SRCS = .hello-emacsy hello-emacsy.c
+
+TESTS = 
 
 HDRS = 
+
+OBJS = hello-emacsy.o
 
 BIBS = 
 
 STYS = 
 
-DIST = Makefile README hello.w $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
+DIST = Makefile README hello-emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 
-%.tex: %.w
-	nuweb -lr $<
+.PHONY : all
 
 %.tex: %.nw
 	noweave -x -delay $< | cpif $@
+
+%.c: %.nw
+	notangle -R$@ $< | cpif $@
+
+%.h: %.nw
+	notangle -R$@ $< | cpif $@
 
 %.hw: %.w
 	cp $< $@
 
 %.dvi: %.tex
+	noindex $<
 	latex $<
 
 %.pdf: %.tex
-	pdflatex -shell-escape $<
+	noindex $<
+	pdflatex -shell-escape -halt-on-error $<
 
-%.x: %.c
-	guile-snarf -o $@ $(GUILE_CFLAGS) $<
+%.defs: %.nw
+	nodefs $< > $@
 
-all: $(SRCS)
-	$(MAKE) $(TARGET).tex
-	$(MAKE) $(TARGET).pdf
+all: $(HDRS) $(SRCS) 
 	$(MAKE) $(TARGET)
+	$(MAKE) $(TARGET)-paper.pdf
 
-$(SRCS): hello-emacsy.nw
-	notangle -R$@ $< | cpif $@
+all.defs: $(DEFS)
+	sort -u $^ | cpif $@
 
-$(HDRS): hello-emacsy.nw
-	notangle -R$@ $< | cpif $@
-
-hello-emacsy.o: hello-emacsy.c hello-emacsy.x
+.hello-emacsy hello-emacsy.scm: hello-emacsy.nw
+	notangle -R$@ $^ | cpif $@
 
 tar: $(TARGET)doc.tex
 	mkdir $(TARGET)-$(VERSION)
@@ -58,46 +72,25 @@ tar: $(TARGET)doc.tex
 	tar -zcf $(TARGET)-$(VERSION).tar.gz $(TARGET)-$(VERSION)
 	rm -rf $(TARGET)-$(VERSION)
 
-distribution: all tar $(TARGET).pdf
-
-$(TARGET)doc.tex: $(TARGET).tex
-	sed -e '/^\\ifshowcode$$/,/^\\fi$$/d' $< > $@
-
-check: nuweb
-	@declare -i n=0; \
-        declare -i f=0; \
-	for i in test/*/*.sh ; do \
-	  echo "Testing $$i"; \
-	  sh $$i; \
-	  if test $$? -ne 0; \
-	  then echo "         $$i failed" ; \
-	    f+=1; \
-	  fi; \
-	  n+=1; \
-	done; \
-        echo "$$n done"; \
-        echo "$$f failed"
+distribution: all tar $(TARGET).pdf 
 
 clean:
-	-rm -f *.o *.tex *.log *.dvi *~ *.blg *.lint $(TARGET)
+	$(RM) *.o $(SRCS) $(HDRS) *.log *.dvi *~ *.blg *.lint $(TARGET).pdf
 
-veryclean:
-	-rm -f *.o $(SRCS) $(HDRS) $(TARGET).pdf $(TARGET) *.log *.dvi *~ *.blg *.lint *.aux *.bbl *.out
+veryclean: clean
+	$(RM) *.aux *.bbl *.out
 
-view:	$(TARGET).dvi
-	xdvi $(TARGET).dvi
+preview: $(TARGET).pdf
+	open -a Skim.app $<
 
-print:	$(TARGET).dvi
-	lpr -d $(TARGET).dvi
+#preview -r Emacs $(TARGET).pdf
 
-lint:
-	lint $(SRCS) > nuweb.lint
+$(TARGET): $(OBJS) $(EMACSY_LIB)
 
-$(OBJS): 
+$(TARGET).pdf: hello-emacsy-paper.tex
 
-#$(TARGET): $(OBJS)
-hello-emacsy: $(OBJS) $(EMACSY_LIB)
+test: $(SRCS) $(TESTS)
+	for test in $(TESTS); do \
+		guile -l line-pragma.scm -L . -L .. $$test; \
+	done
 
-upload: hello-emacsy.pdf
-	cp hello-emacsy.pdf minimal-emacsy-example.pdf
-	scp minimal-emacsy-example.pdf hello-emacsy.c .hello-emacsy emacsy-stub.c emacsy.h gnufoo.org:www/emacsy
