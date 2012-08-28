@@ -3,9 +3,9 @@
 Let's define an root event class.
 
 <<event:class>>=
-(define-class <event> ()
+(define-class-public <event> ()
   (time #:getter time #:init-thunk (lambda () (emacsy-time))))
-(export <event>)
+(export time)
 @
 
 This defines the class [[<event>]].  It relies on [[emacsy-time]] that
@@ -18,16 +18,18 @@ of.
   (exact->inexact (/ (tms:clock (times)) internal-time-units-per-second)))
 @ 
 
+\subsection{Key Event}
 Now let's give ourselves an event that'll capture key strokes
 including the modifier keys.
 
 <<event:class>>=
-(define-class <key-event> (<event>)
+(define-class-public <key-event> (<event>)
   (modifier-keys #:getter modifier-keys 
                  #:init-keyword #:modifier-keys 
                  #:init-value '())
   (command-char #:getter command-char 
                 #:init-keyword #:command-char))
+(export modifier-keys command-char)
 @
 
 <<event:test>>=
@@ -43,9 +45,9 @@ One of the idioms we want to capture from Emacs is this.
 They [[keymap]] and [[command]] module will deal with most of the
 above, except for the [[kbd]] procedure.  That's something events will
 be concerned with.  One may define a converter for a [[kbd-entry]] to
-an event of the proper type.  One note a [[kbd-string]] is broken into
-multiple [[kbd-entries]] on whitespace boundaries, e.g., ``C-x C-f''
-is a [[kbd-string]] that when parsed becomes two [[kbd-entries]]
+an event of the proper type.  Note that a [[kbd-string]] is broken
+into multiple [[kbd-entries]] on whitespace boundaries, e.g., ``C-x
+C-f'' is a [[kbd-string]] that when parsed becomes two [[kbd-entries]]
 ``C-x'' and ``C-f''.
 
 
@@ -57,18 +59,18 @@ does not match the event-type, we return false [[#f]].
 <<event:procedure>>=
 (define (kbd-entry->key-event kbd-entry)
   (let ((regex "^(([ACHMsS]-)*)([^ ]|RET|DEL|ESC|TAB|SPC)$"))
-    (define (get-modifier-keys match)
-      (let* ((str (match:substring match 1)))
-        (if str
-            (map modifier-char->symbol 
-                 (filter (lambda (x) (not (char=? x #\-))) (string->list str)))
-            '())))
     (let ((match (string-match regex kbd-entry)))
       (if match
           (let* ((char (string->command-char (match:substring match 3)))
-                 (mod-keys (get-modifier-keys match)))
+                 (mod-keys (get-modifier-keys (match:substring match 1))))
             (make <key-event> #:command-char char #:modifier-keys mod-keys))
           #f))))
+
+(define (get-modifier-keys str)
+      (if str
+          (map modifier-char->symbol 
+               (filter (lambda (x) (not (char=? x #\-))) (string->list str)))
+          '()))
 @ 
 
 For the modifier keys, we are going to emulate Emacs to a fault.
@@ -113,7 +115,7 @@ know about this and any other converter function.  So let's register it.
 @ 
 
 <<event:procedure>>=
-(define (register-kbd-converter function-name function)
+(define-public (register-kbd-converter function-name function)
   (set! kbd-converter-functions
         (assq-set! kbd-converter-functions function-name function)))
 @ 
@@ -128,7 +130,7 @@ Rather than doing this for every given converter, let's just write a
 macro.
 
 <<event:macro>>=
-(define-syntax define-kbd-converter
+(define-syntax-public define-kbd-converter
   (syntax-rules ()
     ((define-kbd-converter (name args ...) expr ...)
      (begin (define* (name args ...)
@@ -140,7 +142,7 @@ macro.
 @ 
 
 <<event:test>>=
-(check (map car kbd-converter-functions) => '(kbd-entry->key-event))
+(check-true (memq 'kbd-entry->key-event (alist-keys kbd-converter-functions)))
 @ 
 
 One issue we have with the above is the following:
@@ -150,10 +152,10 @@ One issue we have with the above is the following:
 @ 
 
 Our code doesn't account for duplicate modifier keys.  For the keymap,
-we want a unique identifier of the events.  Rather than massaging the
+we want a unique identifier of an event.  Rather than massaging the
 conversion while in its string form, it seems reasonable to convert
-the [[kbd-entry]] into an event, and then make the event canonical,
-then convert back into a string.  [[kbd]] will look like this:
+the [[kbd-entry]] into an event, then make the event canonical, then
+convert back into a string.  [[kbd]] will look like this:
 
 <<event:procedure>>=
 (define*-public (kbd key-string #:optional (canonical? #t))
@@ -163,29 +165,63 @@ then convert back into a string.  [[kbd]] will look like this:
 @ 
 
 <<event:procedure>>=
-(define (kbd->events kbd-string)
-  (define (kbd-entry->event kbd-entry)
+(define (kbd-entry->event kbd-entry)
     (or (find-first (lambda (f) (f kbd-entry)) 
                  (alist-values kbd-converter-functions))
         (throw 'invalid-kbd-entry kbd-entry)))
+@ 
+
+The procedure [[find-first]] is similar to [[find]]; however,
+[[(find-first f (x . xs))]] returns the first [[(f x)]] that not false
+rather than the first [[x]] for which [[(f x)]] is true.
+
+<<util:procedure>>=
+(define-public (find-first f lst)
+  "Return the first result f which is not false and #f if no such result is found."
+  (if (null? lst)
+      #f
+      (or (f (car lst))
+          (find-first f (cdr lst)))))
+@ 
+
+<<util:procedure>>=
+(define-public (alist-values alist)
+  (map cdr alist))
+
+(define-public (alist-keys alist)
+  (map car alist))
+@ 
+
+
+<<event:procedure>>=
+(define (kbd->events kbd-string)
   (let ((kbd-entries (string-tokenize kbd-string)))
         (map kbd-entry->event kbd-entries)))
 @ 
 
 <<event:procedure>>=
-(define-method (canonize-event! (event <key-event>))
+(define-method-public (canonize-event! (event <key-event>))
   <<Deal with shift key.>>
   (let ((mod-keys (modifier-keys event)))
     ;; Put them in alphabetical order: ACHMsS.
     (slot-set! event 'modifier-keys 
-               (filter (lambda (x) (memq x mod-keys)) '(alt control hyper meta super shift))))
+               (intersect-order mod-keys 
+                                '(alt control hyper meta super shift))))
   event)
 @ 
 
-<<Deal with shift key>>=
+<<util:procedure>>=
+(define-public (intersect-order list ordered-list )
+  "Returns the intersection of the two lists ordered according to the
+second argument."
+  (filter (lambda (x) (memq x list)) 
+          ordered-list))
+@ 
+
+<<Deal with shift key.>>=
 (if (memq 'shift (modifier-keys event))
     (if (char-set-contains? char-set:requires-shift-key (command-char event))
-        ;; Deal with extraneous shift.
+        ;; Remove extraneous shift.
         (slot-set! event 'modifier-keys (delq 'shift (modifier-keys event)))
         ;; No shift required, but there is a shift in the kbd-entry.
         (if (char-lower-case? (command-char event))
@@ -194,7 +230,24 @@ then convert back into a string.  [[kbd]] will look like this:
               (slot-set! event 'command-char (char-upcase (command-char event)))
               ;; Get rid of the shift.
               (slot-set! event 'modifier-keys (delq 'shift (modifier-keys event)))))))
+@
+
+Let's test our canonization of a properly formed but non-canonical event.
+
+<<event:test>>=
+(let ((key-event (kbd-entry->event "S-C-C-S-a")))
+  (check (modifier-keys key-event) => '(shift control control shift))
+  (check (command-char key-event) => #\a)
+  (canonize-event! key-event)
+  (check (modifier-keys key-event) => '(control))
+  (check (command-char key-event) => #\A))
 @ 
+
+<<event:test>>=
+(check (kbd "S-C-C-S-a") => '("C-A"))
+(check (kbd "S-C-C-S-A") => '("C-A"))
+@ 
+
 
 <<event:state>>=
 (define char-set:requires-shift-key (char-set-union
@@ -207,13 +260,8 @@ then convert back into a string.  [[kbd]] will look like this:
 
 Now we convert the [[<key-event>]] back to a [[kbd-entry]].
 
-<<event:state>>=
-;(define-generic-public event->kbd)
-(define-generic event->kbd)
-(export event->kbd)
-@ 
 <<event:procedure>>=
-(define-method (event->kbd (event <key-event>))
+(define-method-public (event->kbd (event <key-event>))
   (let ((mods (map string (map modifier-symbol->char (modifier-keys event))))
         (cmd-char (command-char->string (command-char event))))
    (string-join `(,@mods ,cmd-char) "-")))
@@ -225,7 +273,6 @@ module.  This mimics the functionality of [[define-public]].  In
 general, any *-public macro will export the symbol or syntax to the
 current module.
 
-
 <<event:procedure>>=
 (define (modifier-symbol->char sym)
     (case sym
@@ -235,7 +282,7 @@ current module.
       ((meta) #\M)
       ((super) #\s)
       ((shift) #\S)
-      (else (error "Bad modifier " sym))))
+      (else (error "Bad modifier symbol " sym))))
 @ 
 
 <<event:procedure>>=
@@ -250,7 +297,8 @@ current module.
 @ 
 
 <<event:test>>=
-(check (event->kbd (make <key-event> #:command-char #\a #:modifier-keys '(control))) => "C-a")
+(check (event->kbd (make <key-event> #:command-char #\a 
+                         #:modifier-keys '(control))) => "C-a")
 @ 
 
 Now we can display the [[<key-event>]] in a nice way.
@@ -265,13 +313,131 @@ Now we can display the [[<key-event>]] in a nice way.
 A few procedures to determine whether what kind of objects is nice.
 
 <<event:procedure>>=
-(define (event? obj)
+(define-public (event? obj)
   (is-a? obj <event>))
 
-(define (key-event? obj)
+(define-public (key-event? obj)
   (is-a? obj <key-event>))
 @ 
 
+\subsection{Mouse Event}
+
+We also want to be able to deal with mouse events captured by the
+class [[<mouse-event>]].  
+
+<<event:class>>=
+(define-class-public <mouse-event> (<event>)
+  (modifier-keys #:getter modifier-keys #:init-keyword #:modifier-keys #:init-value '())
+  (position #:getter position #:init-keyword #:position)
+  (button #:getter button #:init-keyword #:button)
+  (state #:getter state #:init-keyword #:state))
+(export modifier-keys position button state)
+@ 
+
+Mouse drags require a little bit of extra information, for that we
+have the [[<drag-mouse-event>]] class.
+
+<<event:class>>=
+(define-class-public <drag-mouse-event> (<mouse-event>)
+  (rect #:getter rect #:init-keyword #:rect))
+@ 
+
+<<event:procedure>>=
+(define-method (canonize-event! (event <mouse-event>))
+  (let ((mod-keys (modifier-keys event)))
+    ;; Put them in alphabetical order: ACHMsS.
+    (slot-set! event 'modifier-keys 
+               (intersect-order mod-keys 
+                                '(alt control hyper meta super shift)))
+    event))
+@ 
+
+The [[kbd-entry]] for mouse events is similar to key events.  The
+regular expression is
+\verb|^(([ACHMsS]-)*)((up-|down-|drag-)?mouse-([123]))\$|.
+
+<<event:procedure>>=
+(define-kbd-converter (kbd-entry->mouse-event kbd-entry)
+  (let* ((regex "^(([ACHMsS]-)*)((up-|down-|drag-)?mouse-([123]))$")
+        (match (string-match regex kbd-entry)))
+      (if match
+          (let* ((symbol (string->symbol (match:substring match 3)))
+                 (modifier-keys (get-modifier-keys (match:substring match 1))))
+            ;; mouse event
+            (make <mouse-event> #:position #f 
+                  #:button (string->number (match:substring match 5))
+                  #:state (let ((state-string (match:substring match 4))) 
+                            (if state-string
+                                (string->symbol 
+                                 (string-trim-right state-string #\-))
+                                'click))
+                  #:modifier-keys modifier-keys))
+          #f)))
+@ 
+
+<<event:procedure>>=
+(define-method (event->kbd (event <mouse-event>))
+  (define (state->list state)
+    (case state
+      ((up down drag)
+       (list (symbol->string state)))
+      ((click)
+       '())
+      (else
+       (error "Bad state state for mouse event " state))))
+  (let ((mods (map string (map modifier-symbol->char (modifier-keys event))))
+        (state-list (state->list (state event))))
+    (string-join 
+     `(,@mods ,@state-list "mouse" ,(number->string (button event)))
+     "-")))
+@ 
+
+<<event:test>>=
+(check (kbd "mouse-1") => '("mouse-1"))
+(check (kbd "S-S-mouse-1") => '("S-mouse-1"))
+@ 
+
+Finally, let's add some interrogative procedures that mirror Emacs'.
+
+<<event:procedure>>=
+(define*-public (mouse-event? obj #:optional (of-state #f))
+  (and (is-a? obj <mouse-event>)
+       (if of-state 
+           (eq? of-state (state obj))
+           #t)))
+
+(define-public (up-mouse-event? e)
+  (mouse-event? e 'up))
+
+(define-public (down-mouse-event? e)
+  (mouse-event? e 'down))
+
+(define-public (drag-mouse-event? e)
+  (mouse-event? e 'drag))
+
+(define-public (click-mouse-event? e)
+  (mouse-event? e 'click))
+
+(define-public (motion-mouse-event? e)
+  (mouse-event? e 'motion))
+@ 
+
+\subsection{Dummy Event}
+
+Finally, have a dummy event, which is useful to record when used
+temporal macros.
+
+<<event:class>>=
+(define-class-public <dummy-event> (<event>))
+
+@ 
+<<event:procedure>>=
+(define-method (canonize-event! (event <dummy-event>))
+  event)
+
+(define-method (event->kbd (event <dummy-event>))
+  #f)
+@ 
 
 \subsection{File Layout}
 
@@ -279,10 +445,12 @@ A few procedures to determine whether what kind of objects is nice.
 (define-module (emacsy event)
   #:use-module (ice-9 q)
   #:use-module (ice-9 regex)
-  #:use-module (oop goops)
   #:use-module (ice-9 optargs)
+  #:use-module (srfi srfi-1)
+  #:use-module (oop goops)
   #:use-module (emacsy util)
 )
+<<event:macro>>
 <<event:class>>
 <<event:state>>
 <<event:procedure>>

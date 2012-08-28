@@ -350,15 +350,9 @@ more generally, events; keymaps; and commands.  Let's begin with events.
 
 \include{event}
 
-<<emacsy/klecl.scm>>=
-<<+ Lisp File Header>> 
-(define-module (emacsy klecl)
-  <<Include Modules>>
-  #:export ( <<Exported Symbols>> )
-  #:export-syntax ( <<Exported Syntax>> ) )
-<<Variables>>
-<<Procedures>>
-@ We will use the module check for most of our unit test needs.
+\include{keymap}
+
+ 
 
 <<emacsy-tests.scm>>=
 <<+ Lisp File Header>>  

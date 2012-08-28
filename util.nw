@@ -9,9 +9,9 @@ used.
 <<util:macro>>=
 (define-syntax define-syntax-public
   (syntax-rules ()
-    ((define-syntax-public name e ...)
+    ((define-syntax-public name . body)
      (begin
-       (define-syntax name e ...)
+       (define-syntax name . body)
        (export-syntax name)))))
 (export-syntax define-syntax-public)
 @ 
@@ -30,31 +30,46 @@ used.
 @ 
 
 <<util:macro>>=
-(define-syntax-public define-method-public
+(define-syntax-public define-class-public
   (syntax-rules ()
-    ((define-method-public (name args ...) e ...)
+    ((define-class-public name . body)
      (begin
-       (define-method (name args ...) e ...)
-       (export name)))))
+       (define-class name . body)
+       (export name)
+       ))))
 @ 
 
 <<util:macro>>=
-(define-syntax-public define-generic-public
+(define-syntax-public define-method-public
+  (syntax-rules ()
+    ((define-method-public (name . args) . body)
+     (begin
+       (define-method (name . args) . body)
+       (export name)
+       ))))
+@ 
+
+<<util:macro>>=
+(define-syntax define-generic-public
   (syntax-rules ()
     ((define-generic-public name)
      (begin
        (define-generic name)
        (export name)))))
+(export define-generic-public)
 @ 
 
 
 <<emacsy/util.scm>>=
 (define-module (emacsy util)
   #:use-module (ice-9 optargs)
+  #:use-module (oop goops)
   #:use-module (ice-9 pretty-print)
   #:use-module (ice-9 receive)
   #:use-module (srfi srfi-1)
-  #:use-module (debugging assert))
+  #:use-module (debugging assert)
+  ;#:export-syntax (define-syntax-public)
+)
 
 <<util:macro>>
 <<util:procedure>>
