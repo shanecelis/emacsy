@@ -1,0 +1,140 @@
+\section{Command Module}
+
+
+
+The command module is responsible for a couple things.  In Emacs one
+defines commands by using the special form [[(interactive)]] within
+the body of the procedure.  Consider this simple command.
+
+\begin{verbatim}
+(defun hello-command ()
+  (interactive)
+  (message "Hello, Emacs!"))
+\end{verbatim}
+
+Emacsy uses a more Scheme-like means of defining commands as shown
+below.
+
+\begin{verbatim}
+(define-interactive (hello-command)
+  (message "Hello, Emacsy!"))
+\end{verbatim}
+
+One deviation from Emacs I want to see within Emacsy is to have the
+commands be more context sensitive.  To illustrate the problem when I
+hit \verb|M-x TAB TAB| it autocompletes all the available commands
+into a buffer.  In my case that buffer contains 4,840 commands.  This
+doesn't seem to hurt command usability, but it does hurt the command
+discoverability.
+
+I want Emacsy to have command maps that are analogous to keymaps.
+There will be a global command map [[global-cmdmap]] similar to the
+global keymap [[global-map]].  And in the same way that major and
+minor modes may add keymaps to a particular buffer, so too may they
+add command maps.
+
+\todo[inline]{Figure out where to look up any given
+  function/variable using this kind of code (apropos-internal
+  "\^emacsy.*").  Refer to ice-9 readline package for an example of
+  its usage.}
+
+The class holds the entries, a string completer for tab completion,
+and potentially a parent command map.
+
+\todo[inline]{Wouldn't this better be thought of as a command set
+  rather than map.  Also, having it as a map means there could be two
+  different implementations of the command; the one referred to by the
+  procedure, and the one referred to in the map.  They could be become
+  unsynchronized.}
+
+<<command:class>>=
+(define-class-public <command-map> ()
+  (entries #:getter entries #:init-thunk (lambda () (make-hash-table)))
+  (completer #:getter completer #:init-thunk (lambda () (make <string-completer>)))
+  (parent #:accessor parent #:init-keyword #:parent #:init-value #f))
+(export completer)
+@ 
+
+We have getters and setters.  Note that the getter may look into the
+parent, while the setter never changes the parent.
+
+<<command:procedure>>=
+(define-method-public (command-ref (cmap <command-map>) command-symbol)
+  (or (hash-ref (entries cmap) command-symbol)
+      (and (parent cmap)
+           (command-ref (parent cmap) command-symbol))))
+
+(define-method-public (command-set! (cmap <command-map>) command-symbol command)
+  (if (not (has-command? cmap command-symbol)) 
+      (add-strings! (completer cmap) (list (symbol->string command-symbol))))
+  (hash-set! (entries cmap) command-symbol command))
+@ 
+
+We define the global command map.
+
+<<command:state>>=
+(define-public global-cmdmap (make <command-map>))
+@ 
+
+<<command:macro>>=
+(define-syntax-public define-interactive
+  (syntax-rules ()
+    ((define-interactive (name args ...) expr ...)
+     (begin (define* (name args ...)
+        expr ...)
+     (export name)
+     (command-set! global-cmdmap 'name name)))
+    ((define-interactive name value)
+     (begin (define* name value)
+     (command-set! global-cmdmap 'name name)))))
+@ 
+
+<<command:procedure>>=
+(define-public (register-interactive name proc)
+  (command-set! global-cmdmap name proc))
+@ 
+
+<<command:procedure>>=
+(define-method-public (has-command? (cmap <command-map>) command-symbol)
+  (if (command-ref cmap command-symbol)
+      #t
+      #f))
+@ 
+
+\todo[inline]{This command? predicate is no good.  It should probably
+  just be, thunk?. I don't see any other reason to restrict it.}
+<<command:procedure>>=
+(define (command? object)
+  (or (and (symbol? object) (command-ref global-cmdmap object) #t)
+      (and (not (keymap? object)) (pair? object) (eq? 'lambda (car object)))))
+@ 
+
+
+\subsection{File Layout}
+
+<<emacsy/command.scm>>=
+(define-module (emacsy command)
+  #:use-module (string completion)
+  #:use-module (oop goops)
+  #:use-module (emacsy util))
+<<command:macro>>
+<<command:class>>
+<<command:state>>
+<<command:procedure>>
+<<command:process>>
+@ 
+
+Layout for tests.
+<<command-tests.scm>>=
+(use-modules (emacsy command)
+             (emacsy event)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy command))))
+
+<<+ Test Preamble>>
+<<command:test>>
+<<+ Test Postscript>>
+@ 

@@ -1,0 +1,266 @@
+\section{Keymap Module}
+
+The keymap stores the mapping between key strokes---or events---and
+commands.  Emacs uses lists for its representation of keymaps. Emacsy
+instead uses a class that stores entries in a hash table.  Another
+difference for Emacsy is that it does not convert \verb|S-C-a| to a
+different representation like \verb|[33554433]|; it leaves it as a
+string that is expected to be turned into a canonical representation
+``C-A''.
+
+Here is an example of the keymap representation in Emacs.
+
+\begin{verbatim}
+> (let ((k (make-sparse-keymap)))
+    (define-key k (kbd "a")         'self-insert-command)
+    (define-key k (kbd "<mouse-1>") 'mouse-drag-region)
+    (define-key k (kbd "C-x C-f")   'find-file-at-point) 
+    k)
+
+(keymap
+ (24 keymap
+     (6 . find-file-at-point))
+ (mouse-1 . mouse-drag-region)
+ (97 . self-insert-command))
+\end{verbatim} 
+
+When I initially implemented Emacsy, I replicated Emacs' keymap
+representation, but I realized it wasn't necessary.  And it seems
+preferrable to make the representation more transparent to casual
+inspection.  Also, Emacsy isn't directly responsible for the
+conversion of keyboard events into [[key-event]]s---that's a lower
+level detail that the embedding application must handle.  Here is the
+same keymap as above but in Emacsy.
+
+\begin{verbatim}
+> (let ((k (make-keymap)))
+    (define-key k (kbd "a")       'self-insert-command)
+    (define-key k (kbd "mouse-1") 'mouse-drag-region)
+    (define-key k (kbd "C-x C-f") 'find-file-at-point) 
+    k)
+
+#<keymap 
+  a self-insert-command
+  C-x #<keymap 
+        C-f find-file-at-point>
+  mouse-1 mouse-drag-region>
+\end{verbatim}
+
+There are a few differences in how the keymap is produced, and the
+representation looks slightly different too.  For one thing it's not a
+list.  
+
+\todo[inline]{Justify decisions that deviate from Emacs' design.}
+
+Our keymap class has a hashtable of entries and possibly a parent
+keymap.
+
+<<keymap:class>>=
+(define-class-public <keymap> ()
+  (entries #:getter entries #:init-thunk (lambda () (make-hash-table)))
+  (parent #:accessor parent #:init-keyword #:parent #:init-value #f))
+@ 
+
+<<keymap:test>>=
+(check-true (make <keymap>))
+@ 
+
+The core functionality of the keymap is being able to define and look
+up key bindings.
+
+\subsection{Lookup Key}
+
+The procedure [[lookup-key]] return a keymap or symbol for a given
+list of keys.  Consider this test keymap
+
+<<keymap:test>>=
+(define k (make-keymap))
+(define-key k (kbd "a")       'self-insert-command)
+(define-key k (kbd "mouse-1") 'mouse-drag-region)
+(define-key k (kbd "C-x C-f") 'find-file-at-point)
+@ 
+\noindent [[lookup-key]] should behave in the following way.
+
+<<keymap:test>>=
+(check (lookup-key k '("a")) => 'self-insert-command)
+(check (lookup-key k (kbd "a")) => 'self-insert-command)
+(check (lookup-key k '("b")) => #f)
+(check (lookup-key k (kbd "M-x b")) => #f)
+(check-true (keymap? (lookup-key k '("C-x"))))
+(check (lookup-key k (kbd "C-x C-f a b") #f) => 2)
+@ 
+
+<<keymap:procedure>>=
+(define*-public (lookup-key keymap keys #:optional (follow-parent? #t))
+  (if (null? keys)
+      keymap
+      (let ((entry (hash-ref (entries keymap) (car keys))))
+        (if entry
+            (if (keymap? entry)
+                ;; Recurse into the next keymap.
+                (1+if-number (lookup-key entry (cdr keys) follow-parent?))
+                ;; Entry exists.
+                (if (null? (cdr keys))
+                    ;; Specifies the right number of keys; return
+                    ;; entry.
+                    entry
+                    ;; Entry exists but there are more keys; return a
+                    ;; number.
+                    1))
+            ;; No entry; try the parent.
+            (if (and follow-parent? (parent keymap))
+                (lookup-key (parent keymap) keys follow-parent?)
+                ;; No entry; no parent.
+                #f)))))
+@ 
+
+We propagate the error using a number using the following procedure.
+
+<<keymap:procedure>>=
+(define (1+if-number x)
+  (if (number? x)
+      (1+ x)
+      x))
+@ 
+
+Because delivering the errors using booleans and numbers is a little
+cumbersome (and perhaps should be replaced with exceptions?),
+sometimes we just want to see if there is something in the keymap.
+
+<<keymap:test>>=
+(check (lookup-key? k (kbd "C-x")) => #f)
+(check (lookup-key? k (kbd "C-x C-f")) => #t)
+(check (lookup-key? k (kbd "a")) => #t)
+@ 
+
+<<keymap:procedure>>=
+(define* (lookup-key? keymap keys #:optional (keymap-ok? #f))
+   (let ((result (lookup-key keymap keys)))
+     (if keymap-ok?
+         (and (not (boolean? result)) 
+              (not (number? result)))
+         (and (not (keymap? result)) 
+              (not (boolean? result)) 
+              (not (number? result))))))
+@ 
+
+\subsection{Define Key}
+
+The procedure [[define-key]] may return a number indicating an error,
+or a keymap indicating it worked.
+
+<<keymap:test>>=
+;(check (define-key k (kbd "C-x C-f C-a C-b") 'nope) => 2)
+@ 
+
+
+
+<<keymap:procedure>>=
+(define-public (define-key keymap keys function-or-keymap)
+  (let ((entry (lookup-key keymap (list (car keys)) #f)))
+    (cond
+     ;; Error
+     ((number? entry)
+      (error "Terminal key binding already found for ~a keys." entry))
+     ;; Keymap available for the first key; recurse!
+     ((keymap? entry)
+      (define-key entry (cdr keys) function-or-keymap))
+     (else
+      (if (= 1 (length keys))
+          ;; This is our last key, just add it to our keymap.
+          (begin 
+            (hash-set! (entries keymap) (car keys) function-or-keymap)
+            keymap)
+          ;; We've got a lot of keys left that need to be hung on some
+          ;; keymap.
+          (define-key keymap (rcdr keys)
+            (define-key (make-keymap) (list (rcar keys)) function-or-keymap)))))))
+@ 
+
+I use some procedures to access the last item of a list, which I call
+the [[rcar]], and the tail of the list with respect to its end instead
+of its head [[rcdr]].  These aren't efficient and should be replaced
+later.
+
+<<util:procedure>>=
+(define-public (rcar lst)
+  (car (reverse lst)))
+
+(define-public (rcdr lst)
+  (reverse (cdr (reverse lst))))
+@ 
+
+Let's define a keymap predicate, which is defined in Emacs as
+[[keymapp]] ('p' for predicate).  I am adopting Scheme's question mark
+for predicates which seems more natural.
+
+<<keymap:procedure>>=
+(define-public (keymap? obj)
+  (is-a? obj <keymap>))
+@ 
+
+<<keymap:test>>=
+(check-true  (keymap? (make <keymap>)))
+(check-false (keymap? 1))
+@ 
+
+<<keymap:procedure>>=
+(define*-public (make-keymap #:optional (parent #f))
+  (make <keymap> #:parent parent))
+@ 
+
+
+<<keymap:procedure>>=
+(define-method (write (obj <keymap>) port)
+  (write-keymap obj port))
+
+(define* (write-keymap obj port #:optional (keymap-print-prefix 0))
+  (display  "#<keymap " port)
+  (hash-for-each (lambda (key value)
+                   (do ((i 1 (1+ i)))
+                       ((> i keymap-print-prefix))
+                     (display " " port))
+                   (display "\n" port)
+                   (display key port)
+                   (display " " port)
+                   (if (keymap? value)
+                       (write-keymap value port (+ 2 keymap-print-prefix))
+                       (display value port))) 
+                 (entries obj))
+  (if (parent obj)
+      (write-keymap (parent obj) port (+ 2 keymap-print-prefix)))
+  (display ">" port))
+@ 
+
+
+
+
+\subsection{File Layout}
+
+<<emacsy/keymap.scm>>=
+(define-module (emacsy keymap)
+  #:use-module (ice-9 regex)
+  #:use-module (ice-9 optargs)
+  #:use-module (oop goops)
+  #:use-module (emacsy util))
+<<keymap:macro>>
+<<keymap:class>>
+<<keymap:state>>
+<<keymap:procedure>>
+<<keymap:process>>
+@ 
+
+Layout for tests.
+<<keymap-tests.scm>>=
+(use-modules (emacsy keymap)
+             (emacsy event)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy keymap))))
+
+<<+ Test Preamble>>
+<<keymap:test>>
+<<+ Test Postscript>>
+@ 

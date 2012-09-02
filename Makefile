@@ -7,17 +7,18 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.def
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.def command.defs buffer.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm
 
-#TESTS = emacsy-tests.scm windows-tests.scm event-tests.scm
+#TESTS = emacsy-tests.scm windows-tests.scm event-tests.scm  \
+         keymap-tests.scm command-tests.scm buffer-tests.scm
 
-TESTS = event-tests.scm keymap-tests.scm
+TESTS = buffer-tests.scm
 
 HDRS = emacsy.h
 
@@ -72,13 +73,19 @@ emacsy-tests.scm: emacsy.nw
 emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
+emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw
+	notangle -R$@ $^ | cpif $@
+
 emacsy/event.scm event-tests.scm: event.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 emacsy/keymap.scm keymap-tests.scm: keymap.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
-emacsy/util.scm: util.nw event.nw
+emacsy/command.scm command-tests.scm: command.nw emacsy.nw
+	notangle -R$@ $^ | cpif $@
+
+emacsy/buffer.scm buffer-tests.scm: buffer.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 line-pragma.scm: emacsy.nw

@@ -1,6 +1,6 @@
 \section{Event Module}
 
-Let's define an root event class.
+Let's define an root event class.  \todo{Rename time to event-time.}
 
 <<event:class>>=
 (define-class-public <event> ()
@@ -359,20 +359,24 @@ regular expression is
 <<event:procedure>>=
 (define-kbd-converter (kbd-entry->mouse-event kbd-entry)
   (let* ((regex "^(([ACHMsS]-)*)((up-|down-|drag-)?mouse-([123]))$")
-        (match (string-match regex kbd-entry)))
+         (match (string-match regex kbd-entry)))
       (if match
           (let* ((symbol (string->symbol (match:substring match 3)))
                  (modifier-keys (get-modifier-keys (match:substring match 1))))
-            ;; mouse event
-            (make <mouse-event> #:position #f 
-                  #:button (string->number (match:substring match 5))
-                  #:state (let ((state-string (match:substring match 4))) 
-                            (if state-string
-                                (string->symbol 
-                                 (string-trim-right state-string #\-))
-                                'click))
-                  #:modifier-keys modifier-keys))
+            <<Make and return mouse event.>>)
+          ;; It doesn't specify a mouse event; return false.
           #f)))
+@ 
+
+<<Make and return mouse event.>>=
+(make <mouse-event> #:position #f 
+      #:button (string->number (match:substring match 5))
+      #:state (let ((state-string (match:substring match 4))) 
+                (if state-string
+                    (string->symbol 
+                     (string-trim-right state-string #\-))
+                    'click))
+      #:modifier-keys modifier-keys)
 @ 
 
 <<event:procedure>>=
@@ -425,17 +429,19 @@ Finally, let's add some interrogative procedures that mirror Emacs'.
 \subsection{Dummy Event}
 
 Finally, have a dummy event, which is useful to record when used
-temporal macros.
+temporal macros.  
+
+\todo[inline]{This should probably be placed in the [[kbd-macro]] module.}
 
 <<event:class>>=
 (define-class-public <dummy-event> (<event>))
-
 @ 
+
 <<event:procedure>>=
-(define-method (canonize-event! (event <dummy-event>))
+(define-method (canonize-event! (event <event>))
   event)
 
-(define-method (event->kbd (event <dummy-event>))
+(define-method (event->kbd (event <event>))
   #f)
 @ 
 

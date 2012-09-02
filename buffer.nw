@@ -1,0 +1,373 @@
+\section{Buffer Module}
+
+A buffer in Emacs represents text, including its mode, local
+variables, etc.  A Emacsy buffer is not necessarily text.  It can be
+extended to hold whatever the host application is interested in.
+Emacs' concepts of buffer, window, and mode are directly analogous to
+the model, view, and controller or MVC pattern.
+
+<<buffer:class>>=
+(define-class-public <buffer> ()
+  (name #:init-keyword #:name)
+  (keymap #:accessor local-keymap #:init-keyword #:keymap)
+  (locals #:accessor local-variables #:init-form '())
+  (buffer-enter-hook #:accessor buffer-enter-hook #:init-form (make-hook 0))
+  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0)))
+@ 
+
+Buffer's have a name, and there is always a current buffer or it's
+false.  Note that methods do not work as easily with optional
+arguments.  It seems best to define each method with a different
+number of arguments as shown below.
+
+
+<<buffer:procedure>>=
+(define-method-public (buffer-name)
+  (buffer-name (current-buffer)))
+
+(define-method-public (buffer-name (buffer <buffer>))
+  (slot-ref buffer 'name))
+
+(define-method (write (obj <buffer>) port)
+  (write (string-concatenate (list "#<buffer '" (buffer-name obj) "'>")) port))
+@ 
+
+<<buffer:string>>=
+(define-method-public (buffer-string)
+  (buffer-string (current-buffer)))
+
+(define-method-public (buffer-string (buffer <buffer>))
+  (format #f "~a" buffer))
+@ 
+
+<<buffer:test>>=
+(define b (make <buffer> #:name "*test-buffer*"))
+(check (buffer-name b) => "*test-buffer*")
+(check (object->string b) => "\"#<buffer '*test-buffer*'>\"")
+(check (current-buffer) => #f)
+@
+
+\subsection{Buffer List}
+The buffer module also keeps track of the live buffers and the current
+one.
+
+\todo[inline]{Rewrite this buffer handling to use a Most Recently Used
+  (MRU) stack.  So that it's not such a mess!  Consider the following
+  operations push, pop, recall, roll.}
+
+\subsubsection{Most Recently Used Stack}
+<<buffer:class>>=
+(define-class-public <mru-stack> ()
+  (queue #:accessor q #:init-thunk (lambda () (make-q)))
+  (index #:accessor index #:init-value 0))
+@ 
+
+<<buffer:procedure>>=
+(define-method (mru-add! (s <mru-stack>) x)
+  (q-push! (q s) x))
+(define-method (mru-remove! (s <mru-stack>) x)
+  (let ((orig-x (mru-ref s)))
+    (q-remove! (q s) x)
+    (if (not (eq? orig-x x))
+        (mru-set! s orig-x))))
+(define-method (mru-recall! (s <mru-stack>) x)
+  (q-remove! (q s) x)
+  (q-push! (q s) x)
+  (set! (index s) 0)
+  (mru-list s))
+(define-method (mru-set! (s <mru-stack>) x)
+  (when (not (mru-empty? s))
+   (let ((i (member-ref x (mru-list s))))
+     (if i
+         (set! (index s) i)
+         (mru-next! s)))))
+(define-method (mru-list (s <mru-stack>))
+  (car (q s)))
+(define-method (mru-ref (s <mru-stack>))
+  (and (not (mru-empty? s))
+   (list-ref (mru-list s) (index s))))
+(define-method (mru-empty? (s <mru-stack>))
+  (q-empty? (q s)))
+(define-method (mru-next! (s <mru-stack>) count)
+  (when (not (mru-empty?  s))
+   (set! (index s) 
+         (modulo (+ (index s) count) 
+                 (length (mru-list s))))
+   (mru-ref s)))
+(define-method (mru-prev! (s <mru-stack>) count)
+  (mru-next! s (- count)))
+(define-method (mru-prev! (s <mru-stack>))
+  (mru-prev! s 1))
+(define-method (mru-next! (s <mru-stack>))
+  (mru-next! s 1))
+@ 
+
+<<buffer:test>>=
+(define s (make <mru-stack>))
+(mru-add! s 'a)
+(mru-add! s 'b)
+(mru-add! s 'c)
+(check (mru-list s) => '(c b a))
+(check (mru-recall! s 'a) => '(a c b))
+(check (mru-ref s) => 'a)
+(mru-next! s)
+(check (mru-ref s) => 'c)
+(mru-next! s)
+(check (mru-ref s) => 'b)
+(mru-next! s)
+(check (mru-ref s) => 'a)
+(mru-prev! s)
+(check (mru-ref s) => 'b)
+(check (mru-list s) => '(a c b))
+(mru-remove! s 'c)
+(check (mru-list s) => '(a b))
+(check (mru-ref s) => 'b)
+(mru-remove! s 'a)
+(mru-remove! s 'b)
+(check (mru-list s) => '())
+(check (mru-ref s) => #f)
+(mru-next! s)
+(check (mru-ref s) => #f)
+(mru-add! s 'a)
+(mru-add! s 'b)
+(mru-add! s 'c)
+(check (mru-list s) => '(c b a))
+(mru-remove! s 'c)
+(check (mru-list s) => '(b a))
+(check (mru-ref s) => 'b)
+@ 
+
+<<buffer:state>>=
+(define buffer-stack (make <mru-stack>))
+(define buffer-index -1)
+(define buffers '())
+(define last-buffer #f)
+@ 
+
+<<buffer:procedure>>=
+(define (current-buffer)
+  (mru-ref buffer-stack))
+@ 
+
+<<buffer:procedure>>=
+(define (add-buffer! buffer)
+  (mru-add! buffer-stack buffer))
+@ 
+
+<<buffer:procedure>>=
+(define (remove-buffer! buffer)
+  (mru-remove! buffer-stack buffer))
+
+(define-interactive (next-buffer #:optional (incr 1))
+  (mru-next! buffer-stack incr)
+  (switch-to-buffer (mru-ref buffer-stack)))
+
+(define-interactive (prev-buffer #:optional (incr 1))
+  (next-buffer (- incr)))
+
+(define (set-buffer! buffer)
+  (mru-set! buffer-stack buffer))
+
+(define-interactive (kill-buffer)
+  (remove-buffer! (current-buffer)))
+
+(define-interactive (other-buffer #:optional (count 1))
+  (next-buffer count))
+
+@ 
+
+[[member-ref]] returns the index of the element in the list if there
+is one.
+
+<<util:procedure>>=
+(define-public (member-ref x list)
+  (let ((sublist (member x list)))
+    (if sublist
+        (- (length list) (length sublist)) 
+        #f)))
+@ 
+
+\todo{This interactive is not a thunk.  It should fail, ideally.}
+<<buffer:procedure>>=
+(define-interactive (switch-to-buffer buffer)
+  (run-hook (buffer-exit-hook (current-buffer)))
+  (set! last-buffer (current-buffer))
+  (mru-recall! buffer-stack buffer)
+  (run-hook (buffer-enter-hook (current-buffer))))
+@ 
+
+<<buffer:test>>=
+(add-buffer! b)
+(check (buffer-name) => "*test-buffer*")
+(remove-buffer! b)
+(check (current-buffer) => #f)
+@ 
+
+\subsection{Text Buffer}
+
+Our minibuffer and messages buffer require a text buffer.
+
+<<buffer:class>>=
+(define-class <text-buffer> (<buffer>)
+  (gap-buffer #:accessor gap-buffer #:init-form (make-gap-buffer "")))
+@ 
+
+<<buffer:procedure>>=
+(define-method-public (buffer-string (buffer <text-buffer>))
+  (gb->string (gap-buffer buffer)))
+@ 
+
+\subsubsection{Point}
+Now, let's implement the point procedures that control where the
+insertion point is within the buffer.
+
+<<buffer:procedure>>=
+(define-method-public (point)
+  (point (current-buffer)))
+
+(define-method-public (point (buffer <text-buffer>))
+  (gb-point (gap-buffer buffer)))
+
+(define-method-public (point-min)
+  (point-min (current-buffer)))
+
+(define-method-public (point-min (buffer <text-buffer>))
+  (gb-point-min (gap-buffer buffer)))
+
+(define-method-public (point-max)
+  (point-max (current-buffer)))
+
+(define-method-public (point-max (buffer <text-buffer>))
+  (gb-point-max (gap-buffer buffer)))
+@ 
+
+Move the point around.  It's very tempting to change the name from
+[[goto-char]] to [[goto-point!]] because [[goto-char]] is misleading.
+You don't actually go to a character, you go to a place between
+characters, a point.  \todo{Change goto-char to goto-point!}
+
+<<buffer:procedure>>=
+(define-method-public (goto-char point)
+  (goto-char point (current-buffer)))
+
+(define-method-public (goto-char point (buffer <text-buffer>))
+  (gb-goto-char (gap-buffer buffer) point))
+;(define goto-point! goto-char)
+@ 
+
+Some commands to move the point around and insert or delete characters.
+
+<<buffer:procedure>>=
+(define-interactive (kill-line #:optional (n 1))
+  (gb-delete-char! (gap-buffer (current-buffer)) (- (point-max) (point))))
+
+(define-interactive (delete-backward-char #:optional (n 1))
+  (gb-delete-char! (gap-buffer (current-buffer)) (- n)))
+
+(define-interactive (forward-delete-char #:optional (n 1))
+  (gb-delete-char! (gap-buffer (current-buffer)) n))
+
+(define-interactive (forward-char #:optional (n 1))
+  (goto-char (+ (point) n)))
+
+(define-interactive (move-beginning-of-line #:optional (n 1))
+  ;(gb-beginning-of-line (gap-buffer (current-buffer)) n)
+  (goto-char (point-min)))
+
+(define-interactive (move-end-of-line #:optional (n 1))
+  ;(gb-beginning-of-line (gap-buffer (current-buffer)) n)
+  (goto-char (point-max)))
+
+(define-interactive (backward-char #:optional (n 1))
+  (forward-char (- n)))
+@ 
+
+Finally, we can insert text.
+
+<<buffer:procedure>>=
+(define* (insert #:rest args)
+  (if (null? args)
+      0 
+      (let ((arg (car args)))
+        (cond
+         ((string? arg)
+          (gb-insert-string! (gap-buffer (current-buffer)) arg))
+         ((char? arg)
+          (gb-insert-char! (gap-buffer (current-buffer)) arg))
+         (else #f)))))
+@ 
+
+A convenience macro to work with a given buffer.
+
+<<buffer:macro>>=
+(define-syntax with-buffer
+  (syntax-rules ()
+    ((with-buffer buffer e ...)
+     (let ((old-buffer (current-buffer)))
+       (in-out-guard
+         (lambda () (set-buffer! buffer))
+         (lambda () e ...)
+         (lambda () (set-buffer! old-buffer)))))))
+@ 
+
+This macro requires a procedure [[in-out-guard]] defined in the
+[[util]] module.
+
+<<util:procedure>>=
+(define-public (in-out-guard in thunk out)
+  (run-thunk in)
+  (receive (result . my-values) 
+      (catch #t
+        thunk
+        (lambda (key . args)
+          (run-thunk out)
+          (apply throw key args)))
+    (run-thunk out)
+    (apply values result my-values)))
+
+;; Make code a little more obvious.
+(define-public (run-thunk t)
+  (t))
+@ 
+<<util:macro>>=
+(define-syntax-public in-out
+  (syntax-rules ()
+    ((in-out in thunk out)
+     (in-out-guard (lambda () in)
+                   (lambda () thunk)
+                   (lambda () out)))))
+@ 
+
+
+\subsection{File Layout}
+
+<<emacsy/buffer.scm>>=
+(define-module (emacsy buffer)
+  #:use-module (ice-9 q)
+  #:use-module (ice-9 gap-buffer)
+  #:use-module (ice-9 receive)
+  #:use-module (string completion)
+  #:use-module (oop goops)
+  #:use-module (emacsy util)
+  #:use-module (emacsy command))
+<<buffer:macro>>
+<<buffer:class>>
+<<buffer:state>>
+<<buffer:procedure>>
+<<buffer:process>>
+@ 
+
+Layout for tests.
+<<buffer-tests.scm>>=
+(use-modules (emacsy buffer)
+             (emacsy event)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy buffer))))
+
+<<+ Test Preamble>>
+<<buffer:test>>
+<<+ Test Postscript>>
+@ 

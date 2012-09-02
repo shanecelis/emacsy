@@ -59,6 +59,9 @@ used.
 (export define-generic-public)
 @ 
 
+<<util:procedure>>=
+(define-public pp pretty-print)
+@ 
 
 <<emacsy/util.scm>>=
 (define-module (emacsy util)

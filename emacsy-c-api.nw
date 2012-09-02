@@ -1,10 +1,8 @@
 \chapter{C API} 
-
-Emacsy is divided into the following modules: klecl, buffer.
-
 \lstset{language=C}
 
-The minimal C API is given below.
+Emacsy provides a C API to ease integration with C and C++
+programs. The C API is given below.
 
 <<Prototypes>>=
 /* Initialize Emacsy. */
@@ -93,13 +91,11 @@ int  emacsy_terminate();
 <<Functions>>=
 int emacsy_initialize()
 {
-  /* const char *load_path = "/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo"; */
-  /* scm_primitive_load_path(scm_from_locale_string(emacsy_file));  */
-  /* Load the emacsy modules. */
+  /* Load the (emacsy emacsy) module. */
   const char *module = "emacsy emacsy"; 
   SCM result = scm_internal_catch(SCM_BOOL_T, 
-                                  load_module, module,
-                                  load_module_error, module);
+                                  load_module,       (void *)module,
+                                  load_module_error, (void *) module);
   if (scm_is_false(result)) {
     fprintf(stderr, "error: Unable to load module (%s). Try setting the GUILE_LOAD_PATH environment variable.\n", module);
     return 1; //EY_ERR_NO_MODULE;
@@ -130,7 +126,6 @@ SCM load_module_error(void *data, SCM key, SCM args)
 void emacsy_key_event(int char_code,
                       int modifier_key_flags)
 {
-  // XXX I shouldn't have to do a CONTROL key fix here.
   SCM i = scm_from_int(char_code);
   //fprintf(stderr, "i = %d\n", scm_to_int(i));
   SCM c = scm_integer_to_char(i);
@@ -207,7 +202,9 @@ char *emacsy_mode_line()
 <<Functions>>=
 int emacsy_terminate()
 {
-  // XXX Call the termination hook.
+  SCM result;
+  result = scm_call_0(scm_c_public_ref("emacsy emacsy",
+                                       "emacsy-terminate"));
   return 0;
 }  
 <<emacsy.c>>=

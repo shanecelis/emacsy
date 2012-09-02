@@ -1,4 +1,4 @@
-\documentclass{report}
+\documentclass{book}
 
 %\usepackage{microtype}
 \usepackage{noweb} 
@@ -12,6 +12,7 @@
 \usepackage{latexsym}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
 %\usepackage{url}
 %\usepackage{html} 
 
@@ -79,7 +80,7 @@
 %\newminted{scheme}{bgcolor=bg,mathescape,texcl}
 
 %\title{Emacsy: An Extensible Macro System}
-\title{Emacsy: An Extensible, Embedable, Emacs-like Macro System}
+\title{Emacsy: An Extensible, Embeddable, Emacs-like Macro System}
 %\title{Emacsey: An Embedable Macro System for Embedding }
 \date{}
 \author{Shane Celis
@@ -87,9 +88,72 @@
 
 \input{commands}
 \begin{document}
+\frontmatter
 \maketitle
 \tableofcontents
 \newpage 
+\chapter{Preface}
+
+This project is an experiment, actually two experiments.  Firstly, it's
+an experiment to see whether there's any interest and utility in an
+embeddable Emacs-like environment.  Secondly, I'd like to see how
+literate programming fares in comparison to the conventional approach.
+Let me elaborate a little on each.
+
+Emacs is the extensible programmer's text editor.  For decades, it's
+gobbled up functionality that sometimes seems far removed from text
+editing.  I will expand upon why I believe this is the case and what
+particular functionality I hope to replicate later.  I'd like to
+discuss a little about why I'm bothering to start with Emacs rather
+than just writing something entirely new. Emacs has fostered a
+community of people that are comfortable using, customising, and
+extending Emacs while its running.  The last part is most important in
+my mind.  Extending Emacs is a natural part of its use; it's a
+tinkerer's dream toy.  And I want to grease the rails for people who
+already \emph{get} what kind of tool I'm trying to provide.  Had I
+chosen another perfectly competent language like Lua instead of a
+Lisp, that would erect a barrier to that track.  Were I to write a
+completely different API, that's yet another barrier.  Were I to
+``modernize'' the terminology used by Emacs, e.g., say ``key
+shortcut'' instead of ``key binding'', or ``window'' instead of
+``frame'', that's a barrier to drawing the community of people that
+already \emph{get it} to try this out.
+
+Let me say a little about why I'm choosing to do this as a literate
+program.  I've written a lot of code, none of which was written
+literately.  Recently I had an experience that made me want to try
+something different. I began a group project.  There wasn't \emph{that} much
+code.  Yet not too far into the project, it had become opaque to one
+of the original contributors.  This was a small codebase with someone
+who was there from the start, and already we were having problems.
+Maybe the code was bad.  Maybe we were bad programmers (Eek!).
+Whatever the case, assuming there's no simple fix for opaque code, it
+is something that can be addressed.  Unfortunately, the cure is better
+communication about the code.  So I would like to invest a good faith
+effort in attempting to write this program in a literate fashion.
+
+A few notes on my personal goals for this document and the code.  The
+writing style I'm leaving as informal for purposes of expediency and
+lowering the barrier of contribution.  Also for expediency, my initial
+interest is in fleshing out the functionality.  I'm not concerned
+about optimality of the implementation yet.  Only in cases where the
+current design cannot be reimplemented to more optimal would I be
+concerned.  If we can make a useable system, optimization will follow
+and hopefully be informed by profiling.
+
+There's a ton of work left to do!  Please feel free to contribute to
+the effort.  
+
+
+%Some might say, ``Good code isn't opaque.  Good code is transparent.
+%Good code can be concisely described with the appropriate design
+%patterns.''  
+
+\newpage
+
+\todototoc 
+\listoftodos[TODO List] 
+\mainmatter 
 \part{Usage}
 \chapter{Introduction}
 %\section{Introduction}
@@ -335,10 +399,10 @@ These are the core features from Emacs that will be implemented in Emacsy.
 %% %\item Make code available on github
 %% \end{enumerate}
 
-\include{examples/hello-emacsy/hello-emacsy}
+\input{examples/hello-emacsy/hello-emacsy}
 
 \part{Implementation} 
-\include{emacsy-c-api}
+\input{emacsy-c-api}
 
 \lstset{language=lisp}
 \chapter{KLECL} 
@@ -348,9 +412,13 @@ I expounded on the virtues of the Key Lookup Execute Command Loop
 KLECL, which requires fleshing out some concepts.  We need keys or,
 more generally, events; keymaps; and commands.  Let's begin with events.
 
-\include{event}
+\input{event}
 
-\include{keymap}
+\input{keymap}
+
+\input{command}  
+
+\input{buffer}  
 
  
 
@@ -388,8 +456,10 @@ Copyright (C) 2012 Shane Celis
 @ 
 
 \input{windows} 
-@ \appendix 
-\part{Appendix} 
+@
+%\backmatter  
+\appendix 
+\part{Appendix}  
 \chapter{Support Code} 
 \input{util}
 \section{Literate Programming Support}

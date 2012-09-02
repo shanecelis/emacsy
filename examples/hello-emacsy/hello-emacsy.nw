@@ -174,10 +174,9 @@ void primitives_init()
 {
   #include "hello-emacsy.x"
 }
-@ We generate the file \verb|hello-emacsy.x| by running
-the command: \verb|guile-snarf hello-emacsy.c|.
-
-Emacsy can now access and alter the application's internal state.
+@ We generate the file \verb|hello-emacsy.x| by running the command:
+\verb|guile-snarf hello-emacsy.c|. Emacsy can now access and alter the
+application's internal state.
 
 \section{Changing the UI}
 Now let's use these new procedures to create interactive commands and

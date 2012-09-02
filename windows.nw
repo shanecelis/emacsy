@@ -17,7 +17,7 @@ you can, but you aren't required to.
 <<Module>>=
 (define-module (emacsy windows)
   #:use-module (oop goops)
-  #:use-module (emacsy)
+  #:use-module (emacsy emacsy)
   <<Include Modules>>
   #:export ( <<Exported Symbols>> )
   #:export-syntax ( <<Exported Syntax>> ) 
