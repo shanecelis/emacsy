@@ -235,7 +235,7 @@ for predicates which seems more natural.
 
 
 
-\subsection{File Layout}
+\subsection*{File Layout}
 
 <<emacsy/keymap.scm>>=
 (define-module (emacsy keymap)

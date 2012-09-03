@@ -76,6 +76,9 @@ We define the global command map.
 (define-public global-cmdmap (make <command-map>))
 @ 
 
+\todo[inline]{Perhaps procedure-properties should be used to denote a
+  procedure as a command?}
+
 <<command:macro>>=
 (define-syntax-public define-interactive
   (syntax-rules ()
@@ -110,7 +113,7 @@ We define the global command map.
 @ 
 
 
-\subsection{File Layout}
+\subsection*{File Layout}
 
 <<emacsy/command.scm>>=
 (define-module (emacsy command)

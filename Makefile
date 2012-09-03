@@ -7,18 +7,19 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw block.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex block.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.def command.defs buffer.defs
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm
 
 #TESTS = emacsy-tests.scm windows-tests.scm event-tests.scm  \
-         keymap-tests.scm command-tests.scm buffer-tests.scm
+         keymap-tests.scm command-tests.scm buffer-tests.scm \
+	       block-tests.scm
 
-TESTS = buffer-tests.scm
+TESTS = block-tests.scm
 
 HDRS = emacsy.h
 
@@ -34,8 +35,8 @@ GRAPHICS_PATH = examples/hello-emacsy
 
 .PHONY : all
 
-%.tex: %.nw
-	noweave -x -delay $< | cpif $@
+%.tex: %.nw all.defs
+	noweave -x -delay -indexfrom all.defs $< | cpif $@
 
 %.c: %.nw
 	notangle -R$@ $< | cpif $@
@@ -51,6 +52,7 @@ GRAPHICS_PATH = examples/hello-emacsy
 	latex $<
 
 %.pdf: %.tex
+	TEXINPUTS=.:$(GRAPHICS_PATH): pdflatex -shell-escape -halt-on-error $<
 	noindex $<
 	TEXINPUTS=.:$(GRAPHICS_PATH): pdflatex -shell-escape -halt-on-error $<
 
@@ -73,7 +75,7 @@ emacsy-tests.scm: emacsy.nw
 emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
-emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw
+emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw block.nw
 	notangle -R$@ $^ | cpif $@
 
 emacsy/event.scm event-tests.scm: event.nw emacsy.nw
@@ -86,6 +88,9 @@ emacsy/command.scm command-tests.scm: command.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 emacsy/buffer.scm buffer-tests.scm: buffer.nw emacsy.nw
+	notangle -R$@ $^ | cpif $@
+
+emacsy/block.scm block-tests.scm: block.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 line-pragma.scm: emacsy.nw
@@ -113,7 +118,7 @@ preview: $(TARGET).pdf
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS)
 
-$(TARGET).pdf: $(TEXS)
+$(TARGET).pdf: $(TEXS) $(DEFS)
 
 test: $(SRCS) $(TESTS)
 	for test in $(TESTS); do \

@@ -445,7 +445,7 @@ temporal macros.
   #f)
 @ 
 
-\subsection{File Layout}
+\subsection*{File Layout}
 
 <<emacsy/event.scm>>=
 (define-module (emacsy event)

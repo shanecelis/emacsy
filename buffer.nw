@@ -1,5 +1,7 @@
 \section{Buffer Module}
 
+\epigraph{And when you gaze long into an abyss the abyss also gazes into you.}{Beyond Good and Evil \\Friedrich Nietzsche}
+
 A buffer in Emacs represents text, including its mode, local
 variables, etc.  A Emacsy buffer is not necessarily text.  It can be
 extended to hold whatever the host application is interested in.
@@ -336,10 +338,10 @@ This macro requires a procedure [[in-out-guard]] defined in the
      (in-out-guard (lambda () in)
                    (lambda () thunk)
                    (lambda () out)))))
-@ 
+@%def in-out
 
 
-\subsection{File Layout}
+\subsection*{File Layout}
 
 <<emacsy/buffer.scm>>=
 (define-module (emacsy buffer)
