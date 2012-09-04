@@ -134,7 +134,7 @@ sometimes we just want to see if there is something in the keymap.
 @ 
 
 <<keymap:procedure>>=
-(define* (lookup-key? keymap keys #:optional (keymap-ok? #f))
+(define*-public (lookup-key? keymap keys #:optional (keymap-ok? #f))
    (let ((result (lookup-key keymap keys)))
      (if keymap-ok?
          (and (not (boolean? result)) 
@@ -232,6 +232,10 @@ for predicates which seems more natural.
   (display ">" port))
 @ 
 
+<<keymap:procedure>>=
+(define-public (lookup-key-entry? result)
+  (and (not (boolean? result)) (not (number? result))))
+@ 
 
 
 

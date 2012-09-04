@@ -502,7 +502,7 @@ behavior of Emacs.
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 
-(use-modules (emacsy) (emacsy windows))
+(use-modules (emacsy windows))
 (eval-when (compile load eval)
            (module-use! (current-module) (resolve-module '(emacsy windows)))) 
 <<Windows Tests>> 

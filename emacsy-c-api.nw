@@ -97,7 +97,8 @@ int emacsy_initialize()
                                   load_module,       (void *)module,
                                   load_module_error, (void *) module);
   if (scm_is_false(result)) {
-    fprintf(stderr, "error: Unable to load module (%s). Try setting the GUILE_LOAD_PATH environment variable.\n", module);
+    fprintf(stderr, "error: Unable to load module (%s). Try setting the "
+                    "GUILE_LOAD_PATH environment variable.\n", module);
     return 1; //EY_ERR_NO_MODULE;
   }
   return 0;
@@ -188,8 +189,9 @@ char *emacsy_message_or_echo_area()
     scm_call_0(scm_c_public_ref("emacsy emacsy",
                                 "emacsy-message-or-echo-area")));
 }
-@ \section{emacsy\_modeline}
+@ \section{emacsy\_mode\_line}
 
+\todo[inline]{Change name from modeline to mode-line.}
 <<Functions>>=
 char *emacsy_mode_line()
 {

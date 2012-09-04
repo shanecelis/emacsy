@@ -1,6 +1,7 @@
 \section{Buffer Module}
 
 \epigraph{And when you gaze long into an abyss the abyss also gazes into you.}{Beyond Good and Evil \\Friedrich Nietzsche}
+\todo[inline]{This should be moved out of the KLECL chapter.}
 
 A buffer in Emacs represents text, including its mode, local
 variables, etc.  A Emacsy buffer is not necessarily text.  It can be
@@ -302,7 +303,7 @@ Finally, we can insert text.
 A convenience macro to work with a given buffer.
 
 <<buffer:macro>>=
-(define-syntax with-buffer
+(define-syntax-public with-buffer
   (syntax-rules ()
     ((with-buffer buffer e ...)
      (let ((old-buffer (current-buffer)))
@@ -338,7 +339,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
      (in-out-guard (lambda () in)
                    (lambda () thunk)
                    (lambda () out)))))
-@%def in-out
+@ %def in-out
 
 
 \subsection*{File Layout}

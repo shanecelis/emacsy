@@ -1,0 +1,385 @@
+\section{KLECL Module}
+
+\epigraph{...}{...}
+
+We finally have all the pieces to properly build the KLECL.  First, we
+have to accept input.
+
+\subsection{emacsy-event}
+
+The embedding application will handle the actual IO, but it'll pass
+events to Emacsy for processing.  
+
+<<klecl:procedure>>=
+(define (emacsy-event event)
+  (enq! event-queue event))
+@ 
+
+<<klecl:state>>=
+(define-public event-queue (make-q))
+@ 
+
+A convenience procedure to enqueue a key event.
+
+<<klecl:procedure>>=
+(define*-public (emacsy-key-event char #:optional (modifier-keys '()))
+  (emacsy-event (make <key-event> 
+                  #:modifier-keys modifier-keys 
+                  #:command-char char)))
+@ 
+
+
+\subsection{read-event}
+
+[[read-event]] is the lowest-level procedure for grabbing events.  It
+will block if there are no events to read.
+
+<<klecl:procedure>>=
+(define*-public (read-event #:optional (prompt #f))
+  (if prompt
+      (message prompt))
+  ;(if (q-empty? event-queue)
+  (block-while (lambda () (q-empty? event-queue)) #t)
+  (let ((event (deq! event-queue)))
+    (run-hook read-event-hook event)
+    event))
+@ 
+
+<<klecl:state>>=
+(define-public read-event-hook (make-hook 1))
+@ 
+
+<<klecl:test>>=
+(define last-event #f)
+(define (test-read-event)
+  (set! last-event (read-event)))
+(with-blockable (test-read-event))
+(check (blocking?) => #t)
+(emacsy-key-event #\a)
+(check last-event => #f)
+(block-tick)
+(check (blocking?) => #f)
+(check (command-char last-event) => #\a)
+@ 
+
+\subsection{read-key}
+
+Read key is slightly more high level than [[read-event]].  It may do a
+little processing of coalesing of events.  For instance, down and up
+mouse events may be changed into click or drag events.\todo{There's probably a better way of handling disparate classes of events---use polymorphism!}
+
+<<klecl:procedure>>=
+(define last-down-mouse-event #f)
+
+(define* (read-key #:optional (prompt #f))
+  (define* (new-mouse-state new-state event #:optional (event2 #f))
+    (let ((e (make (if event2 <drag-mouse-event> <mouse-event>) 
+             #:modifier-keys (modifier-keys event)
+             #:position (position event)
+             #:button (button event)
+             #:state new-state)))
+      (if event2
+          (slot-set! e 'rect (list (position event) (position event2))))
+      e))
+  ;; XXX Can this be refashioned into a nice handle-event method?
+  ;; That would split up all these mouse key concerns.
+  (let loop ((event (read-event prompt)))
+    (if (is-a? event <dummy-event>)
+        ;; Ignore it.
+        (loop (read-event prompt))
+        (if (down-mouse-event? event)
+            (begin
+              (set! last-down-mouse-event event)
+              (loop (read-event prompt)))
+            (if (and last-down-mouse-event
+                     (down-mouse-event? last-down-mouse-event)
+                     (up-mouse-event? event))
+                (let ((new-event
+                       (if (vector= (position last-down-mouse-event) (position event))
+                           ;; Is it a click?
+                           (new-mouse-state 'click event)
+                           ;; Or a drag?
+                           (new-mouse-state 'drag last-down-mouse-event event ))))
+                  (set! last-down-mouse-event #f)
+                  new-event)
+                event)))))
+@ 
+
+<<util:procedure>>=
+(define-public (vector= a b)
+  (assert (vector? a) (vector? b) report: "vector= ")
+  (let ((len (vector-length a)))
+   (and (= (vector-length a) (vector-length b))
+        (let loop ((i 0))
+          (if (>= i len)
+              #t
+              (if (= (vector-ref a i) (vector-ref b i))
+               (loop (1+ i))
+               #f))))))
+@ 
+
+\subsection{read-key-sequence}
+
+[[read-key-sequence]] is a higher level than [[read-key]].  It
+considers the currently active keymaps.  If a sequence is defined in
+the keymap, it returns that event sequence.  If it doesn't match a
+sequence yet, it continues to read more keys.  If it cannot match any
+sequence, it returns that event sequence.\todo{Consider using values
+to return multiple values.}
+
+<<klecl:procedure>>=
+(define* (read-key-sequence #:optional (prompt #f))
+  (let loop ((events (list (read-key prompt))))
+    (let* ((keys (reverse (map (compose event->kbd canonize-event!) events)))
+           (last-key (rcar keys)))
+     ;; Do we have enough keys?
+     (if (or
+          ;; Does one of the keymaps points to a command (or is it the
+          ;; quit key)?
+          (or (quit-key? last-key)
+              (any (lambda (keymap)
+                     (lookup-key? keymap keys))
+                   (default-klecl-maps)))
+          ;; OR does none of the keymaps point to a command or keymap (or
+          ;; is the quit key)?
+          (not (or (quit-key? last-key)
+                   (any (lambda (keymap)
+                          (lookup-key? keymap keys #t))
+                        (default-klecl-maps)))))
+         ;; Yes. We have enough keys.
+         (reverse events)
+         ;; No.  Let's get some more.
+         (loop (cons (read-key prompt) events))))))
+@ 
+
+We also check all the maps for a quit key, typically defined as \verb|C-g|.
+
+<<klecl:procedure>>=
+(define (quit-key? aKey)
+  (define (quit-key?* key keymap)
+   (let ((result (lookup-key keymap (list key))))
+     (and (not (keymap? result)) (lookup-key-entry? result)
+          (eq? 'keyboard-quit result))))
+  (any (lambda (keymap) (quit-key?* aKey keymap)) (default-klecl-maps)))
+@ 
+
+Since we have no keymaps defined, [[read-key-sequence]] should quickly
+return any single key inputs.
+
+<<klecl:test>>=
+(define last-key-seq #f)
+(define (read-key-sequence*)
+  (set! last-key-seq #f)
+  (set! last-key-seq (map command-char (read-key-sequence))))
+(with-blockable (read-key-sequence*))
+(emacsy-key-event #\a)
+(block-tick)
+(check last-key-seq => '(#\a))
+@ 
+
+\noindent However, if we add a keymap with only the sequence
+\verb|a b c|, we will see that it'll behave differently.
+
+<<klecl:test>>=
+(define test-keymap (make-keymap))
+(set! default-klecl-maps (lambda () (list test-keymap)))
+(define-key test-keymap (kbd "a b c") 'no-command)
+(with-blockable (read-key-sequence*))
+(emacsy-key-event #\a)
+(block-tick)
+(check last-key-seq => #f) ;; Not enough keys to return.
+@ 
+
+Let's test a sequence that is not in the keymap.
+
+<<klecl:test>>=
+(emacsy-key-event #\z)
+(block-tick)
+(check last-key-seq => '(#\a #\z)) ;; No way "a z" is an actual key-sequence.
+@ 
+
+<<klecl:test>>=
+(with-blockable (read-key-sequence*))
+(emacsy-key-event #\a)
+(emacsy-key-event #\b)
+(block-tick)
+(check last-key-seq => #f) ;; Not enough keys to return yet.
+(emacsy-key-event #\c)
+(block-tick)
+(check last-key-seq => '(#\a #\b #\c)) ;; Got it!
+@ 
+
+Let's test keyboard quitting.
+
+<<klecl:test>>=
+(define-key test-keymap (kbd "q") 'keyboard-quit)
+(with-blockable (read-key-sequence*))
+(emacsy-key-event #\a)
+(block-tick)
+(check last-key-seq => #f) ;; Not enough keys to return yet.
+(emacsy-key-event #\q)
+(block-tick)
+(check last-key-seq => '(#\a #\q)) ;; Got it!
+@ 
+
+
+\todo{Rename default-klecl-maps to current-active-maps.}
+<<klecl:procedure>>=
+(define (default-klecl-maps)
+  (list))
+@ 
+
+I find it convenient to begin emitting messages in case of error.
+However, I would like for there to be a clean separation between
+Emacsy and its KLECL such that someone may write a clean Vimy using
+it.  So this message will merely go to the stdout; however, it will be
+redefined later.
+
+<<klecl:procedure>>=
+(define (message . args) 
+  (apply format #t args))
+@ 
+
+\subsection{What is a command?}
+
+<<klecl:procedure>>=
+(define (command-execute command)
+  (let ((cmd-proc (command->proc command)))
+    (if cmd-proc
+        (let* ((exception #f)
+               (result #f))
+          (catch #t
+            (lambda () 
+              (with-backtrace* (lambda () (set! result (apply cmd-proc '())))
+                               '(quit-command quit-command-loop)))
+            (lambda (key . args)
+              (set! exception (cons key args))
+              (case key
+                ((quit-command)
+                 (message "Quit!")
+                 (values #f 'quit-command))
+                ((quit-command-loop)
+                 ;; Rethrow this one.
+                 (apply throw key args))
+                (else
+                 (format 
+                  (current-error-port)
+                  "command-execute: Uncaught throw to '~a: ~a\n" key args)))))
+          (values result exception))
+        (begin
+          (message "No interactive command '~a'" command)
+          (values #f (list 'no-command command))))))
+@
+
+<<util:procedure>>=
+(define*-public (with-backtrace* thunk #:optional (no-backtrace-for-keys '()))
+  (with-throw-handler 
+   #t
+   thunk
+   (lambda (key . args)
+     (when (not (memq key no-backtrace-for-keys))
+       (format 
+        (current-error-port)
+        "ERROR: Throw to key `~a' with args `~a'." key args)
+       (backtrace)))))
+@ 
+
+\subsection{Command Loop}
+
+The command loop is a very important part of the KLECL.  One note
+about loops is I sometimes write the body of a loop separate from the
+rest.  Each iteration I call usually suffix with the name [[-tick]].  
+
+<<LOOP example>>=
+(define (X-loop)
+  (let loop ((count 0))
+    (if (X-tick)
+        (loop (1+ count)))))
+@ 
+
+With the command loop I've also adopted a prefix of [[primitive-]]
+which signifies that it does not do any error handling.  The command
+loop sets up a far amount of state.
+
+<<klecl:state>>=
+(define this-command #f)
+(define this-command-event #f)
+
+(define last-command #f)
+(define last-command-event #f)
+
+(define pre-command-hook (make-hook))
+(define post-command-hook (make-hook))
+@ 
+
+<<klecl:procedure>>=
+(define* (primitive-command-tick)
+  "We do one iteration of the command-loop without any error handling."
+  (let* ((events (read-key-sequence))
+         (keymaps (default-klecl-maps))
+         (key-sequence (map event->kbd events))
+         (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
+    (if keymap
+        (begin
+          (set! last-command this-command)
+          (set! last-command-event this-command-event)
+          (set! this-command (lookup-key keymap key-sequence))
+          (set! this-command-event (rcar events))
+          (in-out 
+           (run-hook pre-command-hook)
+           (command-execute this-command)
+           (run-hook post-command-hook)))
+        ;; Maybe this should be done by an undefined-command command?
+        (begin (message "~a is undefined."
+                        (string-join key-sequence " "))
+               (values #f 'no-such-command)))))
+@ 
+
+<<klecl:test>>=
+(define my-command-count 0)
+(define-interactive (my-command)
+  (incr! my-command-count))
+(define-key test-keymap (kbd "c") 'my-command)
+(emacsy-key-event #\c)
+(check my-command-count => 0)
+(with-blockable (primitive-command-tick))
+(check my-command-count => 1)
+@ 
+
+
+
+\subsection*{File Layout} 
+
+<<emacsy/klecl.scm>>=
+(define-module (emacsy klecl)
+  #:use-module (ice-9 optargs)
+  #:use-module (ice-9 q)
+  #:use-module (srfi srfi-1)
+  #:use-module (oop goops)
+  #:use-module (emacsy util)
+  #:use-module (emacsy keymap)
+  #:use-module (emacsy event)
+  #:use-module (emacsy command)
+  #:use-module (emacsy block))
+<<klecl:macro>>
+<<klecl:class>>
+<<klecl:state>>
+<<klecl:procedure>>
+<<klecl:process>>
+@ 
+
+Layout for tests.
+<<klecl-tests.scm>>=
+(use-modules (emacsy klecl)
+             (emacsy event)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy klecl))))
+
+<<+ Test Preamble>>
+<<klecl:test>>
+<<+ Test Postscript>>
+@ 
+ 

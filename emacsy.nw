@@ -123,22 +123,23 @@ already \emph{get it} to try this out.
 Let me say a little about why I'm choosing to do this as a literate
 program.  I've written a lot of code, none of which was written
 literately.  Recently I had an experience that made me want to try
-something different. I began a group project.  There wasn't \emph{that} much
-code.  Yet not too far into the project, it had become opaque to one
-of the original contributors.  This was a small codebase with someone
-who was there from the start, and already we were having problems.
-Maybe the code was bad.  Maybe we were bad programmers (Eek!).
-Whatever the case, assuming there's no simple fix for opaque code, it
-is something that can be addressed.  Unfortunately, the cure is better
-communication about the code.  So I would like to invest a good faith
-effort in attempting to write this program in a literate fashion.
+something different. I began a group project.  There wasn't
+\emph{that} much code.  Yet not too far into the project, it had
+become opaque to one of the original contributors.  This was a small
+codebase with someone who was there from the start, and already we
+were having problems.  Maybe the code was bad.  Maybe we were bad
+programmers (Eek!).  Whatever the case, assuming there's no simple fix
+for opaque code, it is something that can be addressed.  Better
+communication about the code may help.  So I would like to invest a
+good faith effort in attempting to write this program in a literate
+fashion.
 
 A few notes on my personal goals for this document and the code.  The
 writing style I'm leaving as informal for purposes of expediency and
 lowering the barrier of contribution.  Also for expediency, my initial
 interest is in fleshing out the functionality.  I'm not concerned
 about optimality of the implementation yet.  Only in cases where the
-current design cannot be reimplemented to more optimal would I be
+design cannot be reimplemented to be more efficient would I be
 concerned.  If we can make a useable system, optimization will follow
 and hopefully be informed by profiling.
 
@@ -150,10 +151,8 @@ the effort.
 %Good code can be concisely described with the appropriate design
 %patterns.''  
 
-\newpage
-
-\todototoc 
 \listoftodos[TODO List] 
+\todototoc 
 \mainmatter 
 \part{Usage}
 \chapter{Introduction}
@@ -371,7 +370,7 @@ These are the core features from Emacs that will be implemented in Emacsy.
 \end{enumerate}
 
 
-\chapter{Usage}
+\chapter{Hello, Emacsy!}
 
 %% \section{Implementation Plan}
 
@@ -422,6 +421,8 @@ more generally, events; keymaps; and commands.  Let's begin with events.
 \input{buffer}  
 
 \input{block}  
+ 
+\input{klecl}  
 
  
 

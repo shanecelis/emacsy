@@ -1,6 +1,6 @@
 \section{Command Module}
 
-
+\epigraph{If words of command are not clear and distinct, if orders are not thoroughly understood, then the general is to blame.}{Sun Tzu}
 
 The command module is responsible for a couple things.  In Emacs one
 defines commands by using the special form [[(interactive)]] within
@@ -27,8 +27,8 @@ into a buffer.  In my case that buffer contains 4,840 commands.  This
 doesn't seem to hurt command usability, but it does hurt the command
 discoverability.
 
-I want Emacsy to have command maps that are analogous to keymaps.
-There will be a global command map [[global-cmdmap]] similar to the
+I want Emacsy to have command sets that are analogous to keymaps.
+There will be a global command set [[global-cmdset]] similar to the
 global keymap [[global-map]].  And in the same way that major and
 minor modes may add keymaps to a particular buffer, so too may they
 add command maps.
@@ -48,32 +48,39 @@ and potentially a parent command map.
   unsynchronized.}
 
 <<command:class>>=
-(define-class-public <command-map> ()
-  (entries #:getter entries #:init-thunk (lambda () (make-hash-table)))
-  (completer #:getter completer #:init-thunk (lambda () (make <string-completer>)))
+(define-class-public <command-set> ()
+  (commands #:getter commands #:init-form (list))
+  (completer #:getter completer #:init-form (make <string-completer>))
   (parent #:accessor parent #:init-keyword #:parent #:init-value #f))
-(export completer)
+(export commands completer)
 @ 
 
-We have getters and setters.  Note that the getter may look into the
-parent, while the setter never changes the parent.
+We have accessors for adding, removing, and testing what's in the
+set. Note that the parent set is never mutated.
 
 <<command:procedure>>=
-(define-method-public (command-ref (cmap <command-map>) command-symbol)
-  (or (hash-ref (entries cmap) command-symbol)
-      (and (parent cmap)
-           (command-ref (parent cmap) command-symbol))))
+(define-method-public (command-contains? (cmap <command-set>) command-symbol)
+  (or (memq command-symbol (commands cmap))
+      (and (parent cmap) (command-contains? (parent cmap) command-symbol))))
 
-(define-method-public (command-set! (cmap <command-map>) command-symbol command)
-  (if (not (has-command? cmap command-symbol)) 
-      (add-strings! (completer cmap) (list (symbol->string command-symbol))))
-  (hash-set! (entries cmap) command-symbol command))
+(define-method-public (command-add! (cmap <command-set>) command-symbol)
+  (when (not (command-contains? cmap command-symbol)) 
+      (add-strings! (completer cmap) (list (symbol->string command-symbol)))
+      (slot-set! cmap 'commands (cons command-symbol (commands cmap)))))
+
+(define-method-public (command-remove! (cmap <command-set>) command-symbol)
+  (when (command-contains? cmap command-symbol) 
+    (slot-set! cmap 'commands (delq! command-symbol (commands cmap)))
+    ;; Must rebuild the completer.
+    (let ((c (make <string-completer>)))
+      (add-strings! c (map symbol->string (commands cmap)))
+      (slot-set! cmap 'completer c))))
 @ 
 
 We define the global command map.
 
 <<command:state>>=
-(define-public global-cmdmap (make <command-map>))
+(define-public global-cmdset (make <command-set>))
 @ 
 
 \todo[inline]{Perhaps procedure-properties should be used to denote a
@@ -85,33 +92,49 @@ We define the global command map.
     ((define-interactive (name args ...) expr ...)
      (begin (define* (name args ...)
         expr ...)
-     (export name)
-     (command-set! global-cmdmap 'name name)))
+            (export name)
+            (command-add! global-cmdset 'name)))
     ((define-interactive name value)
      (begin (define* name value)
-     (command-set! global-cmdmap 'name name)))))
+            (command-add! global-cmdset 'name)))))
+@ 
+
+<<command:macro>>=
+(define-syntax-public define-cmd
+  (syntax-rules ()
+    ((define-cmd cmap (name . args) expr ...)
+     (begin (define* (name . args)
+        expr ...)
+        (export name)
+        (command-add! cmap 'name)))
+    ((define-cmd cmap name value)
+     (begin (define* name value)
+        (export name)
+        (command-add! cmap 'name)))))
 @ 
 
 <<command:procedure>>=
 (define-public (register-interactive name proc)
-  (command-set! global-cmdmap name proc))
+  (command-add! global-cmdset name))
+@ 
+
+
+<<command:procedure>>=
+(define-public (command->proc command)
+  (cond
+   ((thunk? command)
+    command)
+   ((symbol? command)
+    (eval command (interaction-environment)))
+   (else
+    (warn "command->proc not given a command")
+    #f)))
 @ 
 
 <<command:procedure>>=
-(define-method-public (has-command? (cmap <command-map>) command-symbol)
-  (if (command-ref cmap command-symbol)
-      #t
-      #f))
+(define-public (command? object)
+  (procedure? (command->proc object)))
 @ 
-
-\todo[inline]{This command? predicate is no good.  It should probably
-  just be, thunk?. I don't see any other reason to restrict it.}
-<<command:procedure>>=
-(define (command? object)
-  (or (and (symbol? object) (command-ref global-cmdmap object) #t)
-      (and (not (keymap? object)) (pair? object) (eq? 'lambda (car object)))))
-@ 
-
 
 \subsection*{File Layout}
 
@@ -119,6 +142,7 @@ We define the global command map.
 (define-module (emacsy command)
   #:use-module (string completion)
   #:use-module (oop goops)
+  #:use-module (ice-9 optargs)
   #:use-module (emacsy util))
 <<command:macro>>
 <<command:class>>

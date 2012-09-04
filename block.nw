@@ -111,6 +111,15 @@ If the thunk aborts, it adds an instance of the class
     bc))
 @ 
 
+Let's add a little syntactic sugar [[with-blockable]].
+
+<<block:macro>>=
+(define-syntax-public with-blockable
+  (syntax-rules ()
+    ((with-blockable e ...)
+     (call-blockable (lambda () e ...)))))
+@ 
+
 <<Make blocking continuation.>>=
 (make <blocking-continuation>
   #:tag 'block-until
@@ -167,6 +176,14 @@ resumed.
      (when (null? blocking-continuations)
        (run-hook no-blocking-continuations-hook))
     #t)
+@ 
+
+\todo[inline]{Maybe get rid of no-blocking-continuations-hook and just have a
+predicate to test for whether any blocks exist?}
+
+<<block:procedure>>=
+(define*-public (blocking?)
+  (> (length blocking-continuations) 0))
 @ 
 
 <<block:procedure>>=
