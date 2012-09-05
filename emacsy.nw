@@ -409,8 +409,8 @@ These are the core features from Emacs that will be implemented in Emacsy.
 
 I expounded on the virtues of the Key Lookup Execute Command Loop
 (KLECL) in \ref{klecl-treasure}.  Now we're going to implement a
-KLECL, which requires fleshing out some concepts.  We need keys or,
-more generally, events; keymaps; and commands.  Let's begin with events.
+KLECL, which requires fleshing out some concepts.  We need events,
+keymaps, and commands.  Let's begin with events.
 
 \input{event}
 
@@ -418,11 +418,16 @@ more generally, events; keymaps; and commands.  Let's begin with events.
 
 \input{command}  
 
-\input{buffer}  
-
 \input{block}  
  
-\input{klecl}  
+\input{klecl}
+
+\chapter{Emacs-like Personality}
+
+We now want to take our KLECL and implement an Emacs-like UI on top of
+it.  This will include buffers, keyboard macros, and a minibuffer.  
+
+\input{buffer} 
 
  
 

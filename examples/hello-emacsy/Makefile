@@ -49,10 +49,6 @@ DIST = Makefile README hello-emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) 
 	noindex $<
 	latex $<
 
-%.pdf: %.tex
-	noindex $<
-	pdflatex -shell-escape -halt-on-error $<
-
 %.defs: %.nw
 	nodefs $< > $@
 
@@ -82,6 +78,11 @@ veryclean: clean
 
 preview: $(TARGET).pdf
 	open -a Skim.app $<
+
+$(TARGET)-paper.pdf: $(TEXS)
+	noindex $<
+	pdflatex -shell-escape -halt-on-error $<
+
 
 #preview -r Emacs $(TARGET).pdf
 

@@ -1,17 +1,18 @@
 \section{KLECL Module}
 
-\epigraph{...}{...}
+
+\epigraph{A box without hinges, key, or lid, yet golden treasure inside is hid.}{The Hobbit \\ J. R. R. Tolkien}
 
 We finally have all the pieces to properly build the KLECL.  First, we
 have to accept input.
 
 \subsection{emacsy-event}
 
-The embedding application will handle the actual IO, but it'll pass
-events to Emacsy for processing.  
+The embedding application will handle the actual IO, but it passes
+events to Emacsy for processing which are stored in a queue.
 
 <<klecl:procedure>>=
-(define (emacsy-event event)
+(define-public (emacsy-event event)
   (enq! event-queue event))
 @ 
 
@@ -19,13 +20,26 @@ events to Emacsy for processing.
 (define-public event-queue (make-q))
 @ 
 
-A convenience procedure to enqueue a key event.
+This is a convenience procedure to enqueue a key event.
 
 <<klecl:procedure>>=
 (define*-public (emacsy-key-event char #:optional (modifier-keys '()))
   (emacsy-event (make <key-event> 
                   #:modifier-keys modifier-keys 
                   #:command-char char)))
+@ 
+
+And mainly for testing purposes we also want to discard all input.  Or
+there are cases where we want to unread an event and push it to the
+front of the queue rather than the rear.
+
+<<klecl:procedure>>=
+(define (emacsy-discard-input!)
+  (while (not (q-empty? event-queue))
+    (deq! event-queue)))
+
+(define (emacsy-event-unread event)
+  (q-push! event-queue event))
 @ 
 
 
@@ -71,7 +85,7 @@ mouse events may be changed into click or drag events.\todo{There's probably a b
 <<klecl:procedure>>=
 (define last-down-mouse-event #f)
 
-(define* (read-key #:optional (prompt #f))
+(define*-public (read-key #:optional (prompt #f))
   (define* (new-mouse-state new-state event #:optional (event2 #f))
     (let ((e (make (if event2 <drag-mouse-event> <mouse-event>) 
              #:modifier-keys (modifier-keys event)
@@ -128,7 +142,7 @@ sequence, it returns that event sequence.\todo{Consider using values
 to return multiple values.}
 
 <<klecl:procedure>>=
-(define* (read-key-sequence #:optional (prompt #f))
+(define*-public (read-key-sequence #:optional (prompt #f))
   (let loop ((events (list (read-key prompt))))
     (let* ((keys (reverse (map (compose event->kbd canonize-event!) events)))
            (last-key (rcar keys)))
@@ -155,7 +169,7 @@ to return multiple values.}
 We also check all the maps for a quit key, typically defined as \verb|C-g|.
 
 <<klecl:procedure>>=
-(define (quit-key? aKey)
+(define-public (quit-key? aKey)
   (define (quit-key?* key keymap)
    (let ((result (lookup-key keymap (list key))))
      (and (not (keymap? result)) (lookup-key-entry? result)
@@ -225,7 +239,7 @@ Let's test keyboard quitting.
 
 \todo{Rename default-klecl-maps to current-active-maps.}
 <<klecl:procedure>>=
-(define (default-klecl-maps)
+(define-public (default-klecl-maps)
   (list))
 @ 
 
@@ -236,21 +250,22 @@ it.  So this message will merely go to the stdout; however, it will be
 redefined later.
 
 <<klecl:procedure>>=
-(define (message . args) 
+(define-public (message . args) 
   (apply format #t args))
 @ 
 
 \subsection{What is a command?}
 
 <<klecl:procedure>>=
-(define (command-execute command)
+(define-public (command-execute command)
   (let ((cmd-proc (command->proc command)))
     (if cmd-proc
         (let* ((exception #f)
                (result #f))
           (catch #t
             (lambda () 
-              (with-backtrace* (lambda () (set! result (apply cmd-proc '())))
+              (with-backtrace* (lambda () 
+                                 (set! result (apply cmd-proc '())))
                                '(quit-command quit-command-loop)))
             (lambda (key . args)
               (set! exception (cons key args))
@@ -302,18 +317,18 @@ which signifies that it does not do any error handling.  The command
 loop sets up a far amount of state.
 
 <<klecl:state>>=
-(define this-command #f)
-(define this-command-event #f)
+(define-public this-command #f)
+(define-public this-command-event #f)
 
-(define last-command #f)
-(define last-command-event #f)
+(define-public last-command #f)
+(define-public last-command-event #f)
 
-(define pre-command-hook (make-hook))
-(define post-command-hook (make-hook))
+(define-public pre-command-hook (make-hook))
+(define-public post-command-hook (make-hook))
 @ 
 
 <<klecl:procedure>>=
-(define* (primitive-command-tick)
+(define*-public (primitive-command-tick)
   "We do one iteration of the command-loop without any error handling."
   (let* ((events (read-key-sequence))
          (keymaps (default-klecl-maps))
@@ -346,7 +361,65 @@ loop sets up a far amount of state.
 (check my-command-count => 1)
 @ 
 
+Now let's write the command loop without any error handling.  This
+seems a little messy with the continue predicate procedure being
+passed along.  I'm not sure yet, how best to organize it.
 
+<<klecl:procedure>>=
+(define*-public (primitive-command-loop #:optional (continue-pred (const #t)))
+  "We iterate with command-tick but we do not handle any errors."
+  (with-fluids ((continue-command-loop? #t))
+    (let loop ((continue? (call-with-values 
+                              primitive-command-tick
+                            continue-pred)))
+      (if (and (fluid-ref continue-command-loop?) continue?)
+          (loop (call-with-values 
+                    primitive-command-tick
+                  continue-pred))
+          (decr! command-loop-count)))))
+@ 
+
+Each command loop is given a different number.
+
+<<klecl:state>>=
+(define command-loop-count 0)
+@ 
+
+Finally, here's our command loop with error handling.
+
+<<klecl:procedure>>=
+(define*-public (command-loop #:optional (continue-pred (const #t)))
+  "We iterate with command-tick and handle errors."
+  (catch #t
+    (lambda () 
+      (with-backtrace* (lambda ()
+                         (primitive-command-loop continue-pred))
+                       '(silent-quit quit-command-loop)))
+    (lambda (key . args)
+      (case key
+        ((silent-quit)
+         (display "GOT SILENT QUIT in command-loop\n"))
+        ((quit-command-loop)
+         (display "GOT QUIT-COMMAND-LOOP in command-loop\n")
+         (apply throw key args))
+        ((encoding-error)
+         (display "ENCODING-ERROR '")
+         (pp event-queue)
+         (display "'")
+         ;(throw 'done)
+         )
+        (else
+         (format (current-error-port)
+                 "command-loop: Uncaught throw to '~a: ~a\n" key args))))))
+@ 
+
+We have finished the KLECL.  Note that although we have used
+Emacs-like function names, we have not implemented the Emacs-like UI
+yet: We have not defined any default key bindings.  I want to
+encourage people to explore different user interfaces based on the
+KLECL, and one can start from this part of the code.  If one wanted to
+create a modal UI, one could use the [[(emacsy klecl)]] module and not
+have to worry about any ``pollution'' of Emacs-isms.  
 
 \subsection*{File Layout} 
 

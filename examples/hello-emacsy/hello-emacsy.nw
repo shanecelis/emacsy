@@ -223,6 +223,20 @@ Now we can hit \verb|M-x change-counter| and we'll be prompted for the
 new value we want.  There we have it.  We have made the simplest
 application ever more \emph{Emacs-y}.
 
+\section{Changing it at Runtime}
+
+We can add commands easily by changing and reloading the file.  But
+we can do better.  Let's start a REPL we can connect to.
+
+<<.hello-emacsy>>=
+(use-modules (system repl server))
+
+;; Start a server on port 37146.
+(spawn-server)
+@ 
+
+Now we can \verb|telnet localhost 37146| to get a REPL.  
+
 \section{Conclusion}
 We implemented a simple interactive application that displays a
 number.  We embedded Emacsy into it: sending events to Emacsy and

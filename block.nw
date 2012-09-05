@@ -111,6 +111,11 @@ If the thunk aborts, it adds an instance of the class
     bc))
 @ 
 
+<<block:state>>=
+;; I want to get rid of this state if I can.
+(define-public continue-command-loop? (make-unbound-fluid))
+@ 
+
 Let's add a little syntactic sugar [[with-blockable]].
 
 <<block:macro>>=
@@ -361,7 +366,6 @@ The [[incr!]] macro is just a little bit of syntactic sugar.
 Layout for tests.
 <<block-tests.scm>>=
 (use-modules (emacsy block)
-             (emacsy event)
              (oop goops))
 
 (eval-when (compile load eval)

@@ -59,6 +59,9 @@ one.
   operations push, pop, recall, roll.}
 
 \subsubsection{Most Recently Used Stack}
+The buffers are kept in a most recently used stack that has the
+following operators: add!, remove!, contains?, recall!, and list.
+
 <<buffer:class>>=
 (define-class-public <mru-stack> ()
   (queue #:accessor q #:init-thunk (lambda () (make-q)))
@@ -79,18 +82,25 @@ one.
   (set! (index s) 0)
   (mru-list s))
 (define-method (mru-set! (s <mru-stack>) x)
+  ;; Should this add the buffer if it's not already there?
   (when (not (mru-empty? s))
    (let ((i (member-ref x (mru-list s))))
      (if i
          (set! (index s) i)
          (mru-next! s)))))
-(define-method (mru-list (s <mru-stack>))
-  (car (q s)))
 (define-method (mru-ref (s <mru-stack>))
   (and (not (mru-empty? s))
-   (list-ref (mru-list s) (index s))))
+       (list-ref (mru-list s) (index s))))
+(define-method (mru-list (s <mru-stack>))
+  (car (q s)))
 (define-method (mru-empty? (s <mru-stack>))
   (q-empty? (q s)))
+@ 
+
+The order of the elements may not change yet the index may be moved
+around.
+
+<<buffer:procedure>>=
 (define-method (mru-next! (s <mru-stack>) count)
   (when (not (mru-empty?  s))
    (set! (index s) 
@@ -142,13 +152,13 @@ one.
 
 <<buffer:state>>=
 (define buffer-stack (make <mru-stack>))
-(define buffer-index -1)
-(define buffers '())
 (define last-buffer #f)
 @ 
 
 <<buffer:procedure>>=
 (define (current-buffer)
+  ;; Perhaps instead of returning #f for no buffer there should be an
+  ;; immutable void-buffer class.
   (mru-ref buffer-stack))
 @ 
 
@@ -171,8 +181,8 @@ one.
 (define (set-buffer! buffer)
   (mru-set! buffer-stack buffer))
 
-(define-interactive (kill-buffer)
-  (remove-buffer! (current-buffer)))
+(define-interactive (kill-buffer #:optional (buffer (current-buffer)))
+  (remove-buffer! buffer))
 
 (define-interactive (other-buffer #:optional (count 1))
   (next-buffer count))

@@ -1,0 +1,176 @@
+\section{Keyboard Macro Module}
+
+
+\epigraph{...}{...}
+
+We will now add a keyboard macro facility familiar to Emacs users.  We
+hook into the [[read-event]] procedure using a hook.
+
+<<kbd-macro:procedure>>=
+;; XXX This also may record the key event that stops the keyboard
+;; macro, which it shouldn't.
+(define (kbd-read-event-hook event)
+  (when defining-kbd-macro?
+      (message "RECORDING ~a" event)
+      (cons! event last-kbd-macro)))
+@ 
+
+<<kbd-macro:process>>=
+;; How do I ensure this only happens once?
+(add-hook! read-event-hook kbd-read-event-hook)
+@ 
+
+\subsection{kmacro-start-macro}
+
+<<kbd-macro:procedure>>=
+(define-interactive (kmacro-start-macro)
+  (set! last-kbd-macro '())
+  (set! defining-kbd-macro? #t))
+@ 
+
+<<kbd-macro:state>>=
+(define-public defining-kbd-macro?  #f)
+(define-public last-kbd-macro '())
+@ 
+
+\subsection{kmacro-end-macro}
+
+<<kbd-macro:procedure>>=
+(define-interactive (kmacro-end-macro)
+  (set! defining-kbd-macro? #f))
+@ 
+
+\subsection{kmacro-end-and-call-macro}
+<<kbd-macro:procedure>>=
+(define-interactive (kmacro-end-and-call-macro)
+  (if defining-kbd-macro?
+      (kmacro-end-macro))
+  (execute-kbd-macro last-kbd-macro))
+@ 
+
+\subsection{execute-kbd-macro}
+
+<<kbd-macro:procedure>>=
+(define-interactive 
+  (execute-kbd-macro kbd-macro
+                     #:optional (count 1) (loopfunc #f))
+  (let ((orig-event-queue event-queue)
+        (new-event-queue  (make-q)))
+    (map (lambda (x) 
+           (enq! new-event-queue x)) (reverse last-kbd-macro))
+    (in-out-guard
+     (lambda ()
+       (set! event-queue new-event-queue)
+       (set! executing-kbd-macro? #t))
+     (lambda () 
+       (command-loop (lambda args (not (q-empty? event-queue)))))
+     ;; Turn off the executing-kbd-macro?.
+     (lambda () 
+       (set! executing-kbd-macro? #f)
+       (set! event-queue orig-event-queue)
+       (run-hook kbd-macro-termination-hook)))))
+@
+
+<<kbd-macro:state>>=
+(define-public executing-kbd-macro? #f)
+(define-public kbd-macro-termination-hook (make-hook))
+@ 
+
+Let's set up a command to test our functionality with.
+
+<<kbd-macro:test>>=
+(define test-command-called 0)
+(define test-keymap (make-keymap))
+(define-interactive (test-command)
+  (incr! test-command-called))
+
+(define-key test-keymap (kbd "a") 'test-command)
+(set! default-klecl-maps (lambda () (list test-keymap)))
+
+(check test-command-called => 0)
+(kmacro-start-macro)
+(emacsy-key-event #\a)
+(emacsy-key-event #\b) ;; this executes no command.
+(primitive-command-loop (lambda args #f))
+(primitive-command-loop (lambda args #f))
+(kmacro-end-macro)
+(check test-command-called => 1)
+(check (map command-char last-kbd-macro) => '(#\b #\a))
+(execute-kbd-macro last-kbd-macro)
+(check test-command-called => 2)
+@ 
+
+\subsection{execute-temporal-kbd-macro}
+
+In addition to regular keyboard macros, Emacsy can execute keyboard
+macros such that they reproduce the keys at the same pace as they were
+recorded.
+
+<<kbd-macro:procedure>>=
+(define-interactive 
+  (execute-temporal-kbd-macro #:optional (kbd-macro last-kbd-macro))
+  (in-out
+   (set! executing-kbd-macro? #t)
+   (let* ((start-time (emacsy-time))
+          (macro-start-time (time (last kbd-macro))))
+     (let loop ((macro (reverse kbd-macro)))
+       (when (not (null? macro))
+         (block-until (lambda () 
+                       (let ((duration (- (emacsy-time) start-time) ))
+                         (run-hook executing-temporal-kbd-macro-hook duration)
+                         (>= duration
+                             (- (time (car macro)) macro-start-time)))))
+         (emacsy-event (car macro))
+         (loop (cdr macro)))))
+   (begin 
+     (set! executing-kbd-macro? #f)
+     (run-hook kbd-macro-termination-hook))))
+@ 
+
+<<kbd-macro:state>>=
+(define executing-temporal-kbd-macro-hook (make-hook 1))
+@ 
+
+<<kbd-macro:test>>=
+(check test-command-called => 2)
+(execute-temporal-kbd-macro last-kbd-macro)
+(primitive-command-loop (lambda args #f))
+(check test-command-called => 3)
+@ 
+
+
+\subsection*{File Layout} 
+
+<<emacsy/kbd-macro.scm>>=
+(define-module (emacsy kbd-macro)
+  #:use-module (ice-9 q)
+  #:use-module (srfi srfi-1)
+  #:use-module (emacsy util)
+  #:use-module (emacsy event)
+  #:use-module (emacsy command)
+  #:use-module (emacsy keymap)
+  #:use-module (emacsy klecl)
+  #:use-module (emacsy block))
+<<kbd-macro:macro>>
+<<kbd-macro:class>>
+<<kbd-macro:state>>
+<<kbd-macro:procedure>>
+<<kbd-macro:process>>
+@ 
+
+Layout for tests.
+<<kbd-macro-tests.scm>>=
+(use-modules (emacsy kbd-macro)
+             (emacsy event)
+             (emacsy klecl)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy kbd-macro))))
+
+<<+ Test Preamble>>
+<<kbd-macro:test>>
+<<+ Test Postscript>>
+@ 
+ 

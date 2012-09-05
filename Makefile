@@ -7,20 +7,20 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw block.nw klecl.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw block.nw klecl.nw kbd-macro.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex block.tex klecl.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex block.tex klecl.tex kbd-macro.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm
 
 TESTS = emacsy-tests.scm event-tests.scm  \
         keymap-tests.scm command-tests.scm buffer-tests.scm \
-        block-tests.scm klecl-tests.scm
+        block-tests.scm klecl-tests.scm kbd-macro-tests.scm
 
 #windows-tests.scm
-#TESTS = klecl-tests.scm
+TESTS = kbd-macro-tests.scm
 
 HDRS = emacsy.h
 
@@ -96,6 +96,9 @@ emacsy/block.scm block-tests.scm: block.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 emacsy/klecl.scm klecl-tests.scm: klecl.nw emacsy.nw
+	notangle -R$@ $^ | cpif $@
+
+emacsy/kbd-macro.scm kbd-macro-tests.scm: kbd-macro.nw emacsy.nw
 	notangle -R$@ $^ | cpif $@
 
 line-pragma.scm: emacsy.nw
