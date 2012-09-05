@@ -16,6 +16,7 @@ the model, view, and controller or MVC pattern.
   (locals #:accessor local-variables #:init-form '())
   (buffer-enter-hook #:accessor buffer-enter-hook #:init-form (make-hook 0))
   (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0)))
+(export local-keymap local-variables buffer-enter-hook buffer-exit-hook)
 @ 
 
 Buffer's have a name, and there is always a current buffer or it's
@@ -83,11 +84,14 @@ following operators: add!, remove!, contains?, recall!, and list.
   (mru-list s))
 (define-method (mru-set! (s <mru-stack>) x)
   ;; Should this add the buffer if it's not already there?
-  (when (not (mru-empty? s))
-   (let ((i (member-ref x (mru-list s))))
-     (if i
-         (set! (index s) i)
-         (mru-next! s)))))
+  (if (mru-empty? s)
+      #f
+      (let ((i (member-ref x (mru-list s))))
+        (if i
+            (begin (set! (index s) i)
+                   #t)
+            (begin (mru-next! s)
+                   #f)))))
 (define-method (mru-ref (s <mru-stack>))
   (and (not (mru-empty? s))
        (list-ref (mru-list s) (index s))))
@@ -151,15 +155,16 @@ around.
 @ 
 
 <<buffer:state>>=
-(define buffer-stack (make <mru-stack>))
-(define last-buffer #f)
+(define-public buffer-stack (make <mru-stack>))
+(define-public last-buffer #f)
 @ 
 
 <<buffer:procedure>>=
-(define (current-buffer)
+(define-public (current-buffer)
   ;; Perhaps instead of returning #f for no buffer there should be an
   ;; immutable void-buffer class.
-  (mru-ref buffer-stack))
+  (or aux-buffer
+      (mru-ref buffer-stack)))
 @ 
 
 <<buffer:procedure>>=
@@ -178,15 +183,20 @@ around.
 (define-interactive (prev-buffer #:optional (incr 1))
   (next-buffer (- incr)))
 
-(define (set-buffer! buffer)
-  (mru-set! buffer-stack buffer))
+(define-public (set-buffer! buffer)
+  (if (mru-set! buffer-stack buffer)
+      (set! aux-buffer #f)
+      (set! aux-buffer buffer)))
 
 (define-interactive (kill-buffer #:optional (buffer (current-buffer)))
   (remove-buffer! buffer))
 
 (define-interactive (other-buffer #:optional (count 1))
   (next-buffer count))
+@ 
 
+<<buffer:state>>=
+(define-public aux-buffer #f)
 @ 
 
 [[member-ref]] returns the index of the element in the list if there
@@ -221,8 +231,9 @@ is one.
 Our minibuffer and messages buffer require a text buffer.
 
 <<buffer:class>>=
-(define-class <text-buffer> (<buffer>)
+(define-class-public <text-buffer> (<buffer>)
   (gap-buffer #:accessor gap-buffer #:init-form (make-gap-buffer "")))
+(export gap-buffer)
 @ 
 
 <<buffer:procedure>>=
@@ -298,7 +309,7 @@ Some commands to move the point around and insert or delete characters.
 Finally, we can insert text.
 
 <<buffer:procedure>>=
-(define* (insert #:rest args)
+(define*-public (insert #:rest args)
   (if (null? args)
       0 
       (let ((arg (car args)))
@@ -308,6 +319,16 @@ Finally, we can insert text.
          ((char? arg)
           (gb-insert-char! (gap-buffer (current-buffer)) arg))
          (else #f)))))
+@
+
+<<buffer:procedure>>=
+(define-interactive (self-insert-command #:optional (n 1))
+  (if (< n 1)
+      ;; We're done.
+      #f
+      (let* ((event this-command-event))
+        ;; Do I have to do anything for shifted characters?
+        (insert (command-char event)))))
 @ 
 
 A convenience macro to work with a given buffer.
@@ -356,13 +377,16 @@ This macro requires a procedure [[in-out-guard]] defined in the
 
 <<emacsy/buffer.scm>>=
 (define-module (emacsy buffer)
+  #:use-module (ice-9 optargs)
   #:use-module (ice-9 q)
   #:use-module (ice-9 gap-buffer)
   #:use-module (ice-9 receive)
   #:use-module (string completion)
   #:use-module (oop goops)
   #:use-module (emacsy util)
-  #:use-module (emacsy command))
+  #:use-module (emacsy event)
+  #:use-module (emacsy command)
+  #:use-module (emacsy klecl))
 <<buffer:macro>>
 <<buffer:class>>
 <<buffer:state>>
@@ -373,6 +397,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
 Layout for tests.
 <<buffer-tests.scm>>=
 (use-modules (emacsy buffer)
+             
              (emacsy event)
              (oop goops))
 

@@ -429,6 +429,8 @@ it.  This will include buffers, keyboard macros, and a minibuffer.
 
 \input{buffer} 
 
+\input{minibuffer} 
+
  
 
 <<emacsy-tests.scm>>=
@@ -732,9 +734,13 @@ for the code.
 \section{Index of Filenames}
 
 \section{Index of Fragments}
+\begin{multicols}{2}
 \nowebchunks 
+\end{multicols}
 \section{Index of User Specified Identifiers} 
+\begin{multicols}{2}
 \nowebindex 
+\end{multicols}
  
 \end{document}
 

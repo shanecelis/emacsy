@@ -34,11 +34,11 @@ there are cases where we want to unread an event and push it to the
 front of the queue rather than the rear.
 
 <<klecl:procedure>>=
-(define (emacsy-discard-input!)
+(define-public (emacsy-discard-input!)
   (while (not (q-empty? event-queue))
     (deq! event-queue)))
 
-(define (emacsy-event-unread event)
+(define-public (emacsy-event-unread event)
   (q-push! event-queue event))
 @ 
 
@@ -175,6 +175,11 @@ We also check all the maps for a quit key, typically defined as \verb|C-g|.
      (and (not (keymap? result)) (lookup-key-entry? result)
           (eq? 'keyboard-quit result))))
   (any (lambda (keymap) (quit-key?* aKey keymap)) (default-klecl-maps)))
+@ 
+
+<<klecl:command>>=
+(define-interactive (keyboard-quit)
+  (throw 'quit-command))
 @ 
 
 Since we have no keymaps defined, [[read-key-sequence]] should quickly
@@ -350,6 +355,30 @@ loop sets up a far amount of state.
                (values #f 'no-such-command)))))
 @ 
 
+<<klecl:procedure>>=
+(define*-public (command-tick #:optional (continue-pred (const #t)))
+  "We do one iteration of command-tick and handle errors."
+  (catch #t
+    (lambda () 
+      (with-backtrace* (lambda ()
+                         (primitive-command-tick))
+                       '(silent-quit quit-command-loop)))
+    (lambda (key . args)
+      (case key
+        ((silent-quit)
+         (display "GOT SILENT QUIT in command-tick\n"))
+        ((quit-command-loop)
+         (display "GOT QUIT-COMMAND-LOOP in command-tick\n")
+         (apply throw key args))
+        ((encoding-error)
+         (display "ENCODING-ERROR '")
+         (pp event-queue)
+         (display "'"))
+        (else
+         (format (current-error-port)
+                 "command-tick: Uncaught throw to '~a: ~a\n" key args))))))
+@ 
+
 <<klecl:test>>=
 (define my-command-count 0)
 (define-interactive (my-command)
@@ -438,6 +467,7 @@ have to worry about any ``pollution'' of Emacs-isms.
 <<klecl:class>>
 <<klecl:state>>
 <<klecl:procedure>>
+<<klecl:command>>
 <<klecl:process>>
 @ 
 

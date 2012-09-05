@@ -1,0 +1,307 @@
+\section{Minibuffer}
+
+\epigraph{...}{...}
+
+The minibuffer provides a rich interactive textual input system.  It
+offers \verb|TAB| completion and history.  The implementation of it
+inherits from the [[<text-buffer>]].
+
+<<minibuffer:class>>=
+(define-class-public <minibuffer> (<text-buffer>)
+  (prompt #:accessor minibuffer-prompt #:init-form "")
+  (message #:accessor minibuffer-message-string #:init-form ""))
+@ 
+
+We define a keymap with all the typical self-insert-commands that
+would be expected in an editable buffer.\todo{This should probably be
+  defined in the buffer module since it is general.}
+
+<<minibuffer:state>>=
+(define minibuffer-local-map
+  (let ((keymap (make-keymap)))
+    (char-set-for-each
+     (lambda (c)
+       (let ((event (make <key-event>
+                      #:command-char c)))
+         (define-key keymap (list (event->kbd event))
+           'self-insert-command)))
+     (char-set-delete
+      (char-set-intersection char-set:ascii char-set:printing)
+      #\vtab #\page #\space #\nul))
+    keymap))
+@ 
+
+We want to be able to move around the buffer as well.
+
+<<minibuffer:state>>=
+(define-key minibuffer-local-map (kbd "C-f") 'forward-char)
+(define-key minibuffer-local-map (kbd "C-b") 'backward-char)
+(define-key minibuffer-local-map (kbd "DEL") 'delete-backward-char)
+(define-key minibuffer-local-map (kbd "SPC") 'self-insert-command)
+(define-key minibuffer-local-map (kbd "-")   'self-insert-command)
+(define-key minibuffer-local-map (kbd "C-a") 'move-beginning-of-line)
+(define-key minibuffer-local-map (kbd "C-e") 'move-end-of-line)
+(define-key minibuffer-local-map (kbd "C-k") 'kill-line)
+(define-key minibuffer-local-map (kbd "C-d") 'forward-delete-char)
+(define-key minibuffer-local-map (kbd "RET") 'exit-minibuffer)
+(define-key minibuffer-local-map (kbd "M-n") 'next-history-element)
+(define-key minibuffer-local-map (kbd "M-p") 'previous-history-element)
+(define-key minibuffer-local-map (kbd "C-g") 'keyboard-quit)
+@ 
+
+We instantiate the [[<minibuffer>]] class into the global variable
+[[minibuffer]].
+
+<<minibuffer:state>>=
+(define minibuffer 
+  (make <minibuffer> #:keymap minibuffer-local-map #:name "*minibuffer-1*"))
+@ 
+
+The minibuffer has a prompt, but we want it to behave generally like
+any other text buffer.  So let's implement the procedures:
+[[buffer-string]], [[point]], [[point-min]], [[point-max]], and
+[[goto-char]].
+
+When we show the minibuffer, we'll show the prompt, the contents (user
+editable), and the minibuffer-message if applicable.
+
+<<minibuffer:procedure>>=
+(define-method (buffer-string (buffer <minibuffer>))
+  (string-concatenate (list 
+                       (minibuffer-prompt buffer) 
+                       (minibuffer-contents buffer) 
+                       (minibuffer-message-string buffer))))
+@ 
+
+<<minibuffer:procedure>>=
+(define*-public (minibuffer-contents #:optional (buffer minibuffer))
+  (gb->string (gap-buffer buffer)))
+
+(define*-public (delete-minibuffer-contents #:optional (buffer minibuffer))
+  (gb-erase! (gap-buffer buffer)))
+@ 
+
+For the point methods, we're going to make [[(goto-char 1)]] the
+beginning of the prompt, but [[(point-min)]] where the user editable
+content starts.  Basically, it should be as though it were a regular
+buffer that has been narrowed.
+
+<<minibuffer:procedure>>=
+(define-method (point-min (buffer <minibuffer>))
+  (+ (next-method) (string-length (minibuffer-prompt buffer))))
+
+(define-method (point (buffer <minibuffer>))
+  (+ (next-method) (string-length (minibuffer-prompt buffer))))
+
+(define-method (point-max (buffer <minibuffer>))
+  (+ (next-method) (string-length (minibuffer-prompt buffer))))
+@ 
+
+For [[goto-char]] we just undo that thing.\todo{If the prompt changes,
+  the point should be adjusted manualy.}
+
+<<minibuffer:procedure>>=
+(define-method (goto-char point (buffer <minibuffer>))
+  (gb-goto-char (gap-buffer buffer) 
+                (- point (string-length (minibuffer-prompt buffer)))))
+@ 
+
+<<minibuffer:test>>=
+(check (buffer-string minibuffer) => "")
+(check (point-min minibuffer) => 1)
+(set! (minibuffer-prompt minibuffer) "What? ")
+(check (buffer-string minibuffer) => "What? ")
+(check (point-min minibuffer) => 7)
+(with-buffer minibuffer
+             (insert "Nothing."))
+(check (buffer-string minibuffer) => "What? Nothing.")
+@ 
+
+One can add a message to the minibuffer that can act as an interactive
+help or show possible completions.  The message will only last until
+the next command is executed.
+
+<<minibuffer:procedure>>=
+(define-public (minibuffer-message string . args)
+  (set! (minibuffer-message-string minibuffer) 
+        (apply format #f string args))
+  (command-tick)
+  (set! (minibuffer-message-string minibuffer) ""))
+@ 
+
+<<minibuffer:test>>=
+(set! default-klecl-maps (lambda () (list minibuffer-local-map)))
+(set-buffer! minibuffer)
+(delete-minibuffer-contents minibuffer)
+(check (buffer-string minibuffer) => "What? ")
+(insert "A")
+(with-blockable
+ (minibuffer-message " [Huh?]"))
+
+(check (buffer-string minibuffer) => "What? A [Huh?]")
+(emacsy-key-event #\a)
+(block-tick)
+(check (buffer-string minibuffer) => "What? Aa")
+@ 
+
+\subsection{read-from-minibuffer}
+
+<<minibuffer:procedure>>=
+(define*-public (read-from-minibuffer prompt 
+                                      #:key 
+                                      (read #f)
+                                      (keymap minibuffer-local-map))
+  (define (read-from-minibuffer-internal prompt read)
+    (when minibuffer-reading?
+      (minibuffer-message
+       " [Command attempted to use minibuffer while in minibuffer.]")
+      (throw 'quit-command 'already-in-minibuffer))
+   (history-insert! (fluid-ref minibuffer-history-index) "")
+   (switch-to-buffer minibuffer)
+   (delete-minibuffer-contents minibuffer)
+   (goto-char (point-min))
+   (set! (minibuffer-prompt minibuffer) (or prompt ""))
+   (set! minibuffer-reading? #t)
+   (let ((canceled? #f))
+     (catch
+       'quit-command-loop
+       (lambda ()  
+         (command-loop 
+          (lambda 
+              (result exception)
+            (if (and (pair? exception) 
+                     (and (eq? 'quit-command 
+                               (car exception))
+                          (if (pair? (cdr exception)) 
+                              (not (eq? 'already-in-minibuffer
+                                        (cadr exception)))
+                              #t)))
+                (throw 'quit-command-loop 'quit-read-from-minibuffer))
+            minibuffer-reading?)))
+       (lambda (key . args)
+         (display "MINIBUFFER CANCELED\n")
+         (set! canceled? #t)))
+     (if canceled?
+         (begin
+           (set! minibuffer-reading? #f)
+           (if (eq? (current-buffer) minibuffer)
+               (switch-to-buffer last-buffer))
+           (throw 'quit-command 'quit-read-from-minibuffer))
+         (history-set! (fluid-ref minibuffer-history-index) 
+                       (minibuffer-contents)))))
+  (let ((original-keymap #f))
+    (in-out
+     (begin (set! original-keymap (local-keymap minibuffer))
+            (set! (local-keymap minibuffer) keymap))
+     (read-from-minibuffer-internal prompt read)
+     (set! (local-keymap minibuffer) original-keymap))))
+@ 
+
+<<minibuffer:state>>=
+(define minibuffer-reading? #f)
+@ 
+
+<<minibuffer:command>>=
+(define-interactive (exit-minibuffer)
+  (set! minibuffer-reading? #f)
+  (switch-to-buffer last-buffer))
+@ 
+
+<<minibuffer:test>>=
+(emacsy-discard-input!)
+(emacsy-key-event #\a)
+(emacsy-key-event #\cr)
+(check (read-from-minibuffer "What? ") => "a")
+
+(emacsy-discard-input!)
+(emacsy-key-event #\a)
+(emacsy-key-event #\g '(control))
+(check-throw (read-from-minibuffer "What? ") => 'quit-command)
+@ 
+
+\subsection{Tab Completion}
+
+\subsection{Command History}
+
+<<minibuffer:procedure>>=
+(define-public (history-insert! index value)
+  (fluid-set! minibuffer-history
+              (list-insert! (fluid-ref minibuffer-history)
+                         index
+                         value)))
+
+(define-public (history-ref index)
+  (list-ref (fluid-ref minibuffer-history) index))
+
+(define-public (history-set! index value)
+  (let ((lst (fluid-ref minibuffer-history)))
+    (list-set! lst index value)
+    (fluid-set! minibuffer-history lst))
+  value)
+
+@ 
+
+<<minibuffer:state>>=
+(define-public minibuffer-history (make-fluid '()))
+(define-public minibuffer-history-index (make-fluid 0))
+@ 
+
+<<util:procedure>>=
+(define-public (list-insert! lst k val)
+  "Insert val into list such that (list-ref list k) => val."
+  (receive (pre post) (split-at! lst k)
+    (append! pre (list val) post)))
+@ 
+
+<<minibuffer:test>>=
+(with-fluids ((minibuffer-history '("1" "2" "3")))
+    (check ( history-ref 0) => "1")
+    ( history-set! 0 "a")
+    (check ( history-ref 0) => "a")
+    (check ( history-ref 1) => "2")
+    (check (fluid-ref minibuffer-history) => '("a" "2" "3")))
+@ 
+
+
+\subsection*{File Layout} 
+
+<<emacsy/minibuffer.scm>>=
+(define-module (emacsy minibuffer)
+  #:use-module (ice-9 optargs)
+  #:use-module (ice-9 receive)
+  #:use-module (ice-9 gap-buffer)
+  #:use-module (ice-9 pretty-print)
+  #:use-module (oop goops)
+  #:use-module (string completion)
+  #:use-module (emacsy util)
+  #:use-module (emacsy keymap)
+  #:use-module (emacsy event)
+  #:use-module (emacsy buffer)
+  #:use-module (emacsy command)
+  #:use-module (emacsy block)
+  #:use-module (emacsy klecl)
+  #:use-module (emacsy kbd-macro))
+<<minibuffer:macro>>
+<<minibuffer:class>>
+<<minibuffer:state>>
+<<minibuffer:procedure>>
+<<minibuffer:command>>
+<<minibuffer:process>>
+@ 
+
+Layout for tests.
+<<minibuffer-tests.scm>>=
+(use-modules (emacsy minibuffer)
+             (emacsy event)
+             (emacsy klecl)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy minibuffer))))
+
+<<+ Test Preamble>>
+<<minibuffer:test>>
+<<+ Test Postscript>>
+@ 
+ 

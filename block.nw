@@ -318,7 +318,7 @@ We're going to capture these blocking continuations into a class.
 
 
 
-\subsection{Utilities}
+\subsection*{Utilities} 
 The [[incr!]] macro is just a little bit of syntactic sugar.
 
 <<util:macro>>=
