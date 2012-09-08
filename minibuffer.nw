@@ -57,6 +57,22 @@ We instantiate the [[<minibuffer>]] class into the global variable
   (make <minibuffer> #:keymap minibuffer-local-map #:name "*minibuffer-1*"))
 @ 
 
+Whenever the minibuffer is being used, we want to show it instead of
+the echo area, so we add some hooks.
+
+<<minibuffer:process>>=
+(add-hook! (buffer-enter-hook minibuffer) 
+           (lambda () (set! emacsy-display-minibuffer? #t)))
+
+(add-hook! (buffer-exit-hook  minibuffer) 
+           (lambda () (set! emacsy-display-minibuffer? #f)))
+@ 
+
+<<minibuffer:state>>=
+(define-public emacsy-display-minibuffer? #f) ;; or the echo area
+@
+
+
 The minibuffer has a prompt, but we want it to behave generally like
 any other text buffer.  So let's implement the procedures:
 [[buffer-string]], [[point]], [[point-min]], [[point-max]], and
@@ -164,22 +180,12 @@ the next command is executed.
    (set! minibuffer-reading? #t)
    (let ((canceled? #f))
      (catch
-       'quit-command-loop
-       (lambda ()  
-         (command-loop 
-          (lambda 
-              (result exception)
-            (if (and (pair? exception) 
-                     (and (eq? 'quit-command 
-                               (car exception))
-                          (if (pair? (cdr exception)) 
-                              (not (eq? 'already-in-minibuffer
-                                        (cadr exception)))
-                              #t)))
-                (throw 'quit-command-loop 'quit-read-from-minibuffer))
-            minibuffer-reading?)))
+       'quit-command
+       (lambda ()
+         (while minibuffer-reading?
+           (primitive-command-tick)))
        (lambda (key . args)
-         (display "MINIBUFFER CANCELED\n")
+         (display "MINIBUFFER CANCELED!\n")
          (set! canceled? #t)))
      (if canceled?
          (begin
@@ -207,12 +213,18 @@ the next command is executed.
   (switch-to-buffer last-buffer))
 @ 
 
+Test regular input to minibuffer.
+
 <<minibuffer:test>>=
 (emacsy-discard-input!)
 (emacsy-key-event #\a)
 (emacsy-key-event #\cr)
 (check (read-from-minibuffer "What? ") => "a")
+@ 
 
+Test quitting the minibuffer.  
+
+<<minibuffer:test>>=
 (emacsy-discard-input!)
 (emacsy-key-event #\a)
 (emacsy-key-event #\g '(control))
@@ -221,7 +233,101 @@ the next command is executed.
 
 \subsection{Tab Completion}
 
-\subsection{Command History}
+We want to offer
+\href{http://www.gnu.org/software/emacs/manual/html_node/elisp/Basic-Completion.html#Basic-Completion}{string
+  completion} similar to Emacs.
+
+<<minibuffer:test>>=
+(check (try-completion "f" (list "foo" "foobar" "barfoo")) => "foo")
+(check (try-completion "b" (list "foo" "foobar" "barfoo")) => "barfoo")
+@ 
+
+<<minibuffer:procedure>>=
+(define*-public 
+  (try-completion string collection #:optional (predicate (const #t)))
+  (let ((completer (collection->completer collection)))
+    (receive (completions expansion exact? unique?)
+        (complete completer string)
+      expansion)))
+@ 
+
+<<minibuffer:test>>=
+(check (all-completions "f" (list "foo" "foobar" "barfoo")) => (list "foo" "foobar"))
+(check (all-completions "b" (list "foo" "foobar" "barfoo")) => (list "barfoo"))
+@ 
+
+<<minibuffer:procedure>>=
+(define*-public
+  (all-completions string collection #:optional (predicate (const #t)))
+  (let ((completer (collection->completer collection)))
+    (receive (completions expansion exact? unique?)
+        (complete completer string)
+      completions)))
+@ 
+
+<<minibuffer:procedure>>=
+(define*-public
+  (collection->completer collection #:optional (predicate (const #t)))
+  (if (is-a? collection <string-completer>)
+      collection
+      (let ((completer (make <string-completer>)))
+        (add-strings! completer (filter predicate collection)) 
+        completer)))
+@ 
+
+<<minibuffer:command>>=
+(define-interactive (minibuffer-complete)
+  (let ((expansion (try-completion 
+                    (minibuffer-contents) 
+                    (fluid-ref minibuffer-completion-table)
+                    (fluid-ref minibuffer-completion-predicate)))
+        (completions (all-completions 
+                      (minibuffer-contents) 
+                      (fluid-ref minibuffer-completion-table)
+                      (fluid-ref minibuffer-completion-predicate))))
+    (with-buffer minibuffer
+                 (goto-char (point-min))
+                 (kill-line)
+                 (insert expansion))
+    (cond
+     ((= 0 (length completions))
+      (minibuffer-message " [No match]"))
+     ((> (length completions) 1)
+      (minibuffer-message 
+       (string-concatenate (list "{" (string-join completions " | ") "}")))))))
+@ 
+
+<<minibuffer:command>>=
+(define-interactive (minibuffer-complete-word)
+  ;; This should only complete a word.
+  (minibuffer-complete))
+@ 
+
+<<minibuffer:state>>=
+(define minibuffer-local-completion-map 
+  (let ((kmap (make-keymap minibuffer-local-map)))
+    (define-key kmap (kbd "SPC") 'minibuffer-complete-word)
+    (define-key kmap (kbd "TAB") 'minibuffer-complete)
+    (define-key kmap (kbd "?")   'minibuffer-completion-help)))
+@ 
+
+<<minibuffer:state>>=
+(define minibuffer-completion-table (make-fluid '()))
+(define minibuffer-completion-predicate (make-fluid (const #t)))
+(define minibuffer-completion-confirm #f)
+(define minibuffer-completion-exit-commands '())
+@ 
+
+<<minibuffer:procedure>>=
+(define*-public
+  (completing-read prompt collection #:optional (predicate (const #t)))
+  (with-fluids ((minibuffer-completion-table collection)
+                (minibuffer-completion-predicate predicate))
+   (read-from-minibuffer prompt #:keymap minibuffer-local-completion-map)))
+@ 
+
+
+\subsection{Minibuffer History}
 
 <<minibuffer:procedure>>=
 (define-public (history-insert! index value)
@@ -238,7 +344,6 @@ the next command is executed.
     (list-set! lst index value)
     (fluid-set! minibuffer-history lst))
   value)
-
 @ 
 
 <<minibuffer:state>>=
@@ -262,6 +367,30 @@ the next command is executed.
     (check (fluid-ref minibuffer-history) => '("a" "2" "3")))
 @ 
 
+Some commands for manipulating the minibuffer history.
+
+<<minibuffer:command>>=
+(define-interactive (previous-history-element #:optional (n 1))
+  (let* ((i (fluid-ref minibuffer-history-index))
+         (j (+ i n))
+         (history (fluid-ref minibuffer-history)))
+    (pretty-print history)
+    (pretty-print i)
+    (pretty-print j)
+    (cond ((< j 0)
+           (minibuffer-message " [End of history; no default available]"))
+          ((>= j (length history))
+           (minibuffer-message " [Beginning of history; no preceding item]"))
+          (else
+           (history-set! i (minibuffer-contents))
+           (goto-char (point-min))
+           (delete-minibuffer-contents minibuffer)
+           (insert (list-ref history j))
+           (fluid-set! minibuffer-history-index j)))))
+
+(define-interactive (next-history-element #:optional (n 1))
+  (previous-history-element (- n)))
+@ 
 
 \subsection*{File Layout} 
 

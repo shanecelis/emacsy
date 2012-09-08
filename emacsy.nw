@@ -2,7 +2,7 @@
 
 %\usepackage{microtype}
 \usepackage{noweb} 
-\noweboptions{externalindex}
+\noweboptions{externalindex,hideunuseddefs}
 \usepackage{multicol}
 \usepackage{etoolbox}
 \usepackage{units}
@@ -454,20 +454,10 @@ DO NOT EDIT - automatically generated from emacsy.w.
 |#
 <<+ Copyright>>=
 Copyright (C) 2012 Shane Celis 
-<<Definitions>>=
-(define (f x)
-  (1+ x))
-@ %def f
-<<Tests>>=
-(define-test (test-f)
-  (check (f 1) => 2)
-  (check (f 0) => 1)
-)
-@ %def test-f
 @ 
 
 \input{windows} 
-@
+
 %\backmatter  
 \appendix 
 \part{Appendix}  
@@ -585,7 +575,7 @@ function and the procedure.
      (begin (define* (name args ...)
         expr ...)
      (register-test 'name name)))))
-@ %def define-test
+@ 
 @ We need to run the tests.
 
 <<check/harness.scm>>=
@@ -628,7 +618,7 @@ function and the procedure.
 (define (register-test name func)
   (set! unit-tests (acons name func unit-tests)))
 
-@ %def unit-tests register-test
+@ 
 @ The function register-test does the work, but we don't want to require
 the user to call it, so we'll define a macro that will automatically
 call it.
@@ -640,7 +630,7 @@ call it.
      (begin (define* (name args ...)
         expr ...)
      (register-test 'name name)))))
-@ %def define-test
+@ 
 @ Finally, now we just need a way to run all the unit tests.
 
 <<run tests>>=
@@ -667,7 +657,7 @@ call it.
                (reverse unit-tests)))
     (lambda args
       #f)))
-@ %def run-tests test-errors
+@ 
 @ Finally, let's provide this as our testing preamble.
 
 <<+ Test Preamble>>=

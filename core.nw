@@ -1,0 +1,181 @@
+\section{Core}
+
+\epigraph{...}{...}
+
+Now we're going to put in place some core functionality that makes
+Emacsy an Emacs-like library.  
+
+We need a global keymap.  
+
+<<core:state>>=
+(define global-map (make-keymap))
+@ 
+
+And here are the most essential key bindings.
+
+<<core:keybinding>>=
+(define-key global-map (kbd "M-:")     'eval-expression)
+(define-key global-map (kbd "M-x")     'execute-extended-command)
+(define-key global-map (kbd "C-g")     'keyboard-quit)
+(define-key global-map (kbd "C-x C-c") 'quit-application)
+@ 
+
+There is one command that I consider fundamental for an Emacs-like
+program.  Whenever I'm presented with a program that claims to be
+Emacs-like, I try this out \verb|M-: (+ 1 2)|. If it doesn't work then
+it may have Emacs-like key bindings, but it's not Emacs-like.  That
+command is [[eval-expression]].  Let's write it.
+
+<<core:command>>=
+(define-interactive 
+  (eval-expression
+   #:optional (expression (read-from-string (read-from-minibuffer "Eval: "))))
+  (let ((value (eval expression (interaction-environment))))
+    (message "~a" value)
+    value))
+@ 
+
+<<core:test>>=
+(check (eval-expression '(+ 1 2)) => 3)
+@ 
+[[read-from-string]] parses the string into an expression.
+
+<<util:procedure>>=
+(define-public (read-from-string string)
+  (call-with-input-string string (lambda (port) (read port))))
+@ 
+
+The second fundamental command is [[execute-extended-command]] invoked
+with \verb|M-x|.
+
+<<core:command>>=
+(define-interactive (execute-extended-command #:optional (n 1))
+  (let ((str (completing-read "M-x " (completer global-cmdset))))
+    (call-interactively (string->symbol str))))
+@ 
+
+\todo[inline]{call-interactively requires a lot more thinking as to how to get it to play with called-interactively?}
+<<core:procedure>>=
+(define-public (call-interactively command)
+  ;(with-fluids ((current-interactive-command )))
+  (command-execute command))
+@ 
+
+[[called-interactively?]] will be tricky to implement based on what Emacs require from it. \href{http://www.gnu.org/software/emacs/manual/html_node/elisp/Distinguish-Interactive.html#Distinguish-Interactive}{See here.}
+<<core:procedure>>=
+(define-public (called-interactively? kind)
+  ;; XXX dummy implementation
+  #t)
+@
+
+<<util:procedure>>=
+(define*-public (parent-procedure-name #:optional (index 2))
+  (let ((s (make-stack #t)))
+    (procedure-name (frame-procedure (stack-ref s index)))))
+@ 
+<<core:state>>=
+(define last-called-interactively (make-unbound-fluid))
+@ 
+ 
+<<core:test>>=
+(define (my-test-func)
+  (let ((v (parent-procedure-name 4)))
+    (+ 1 2)
+    v))
+(check (my-test-func) => 'my-test-func)
+(check (procedure-name my-test-func) => 'my-test-func)
+; XXX Can't test this until called-interactively is implemented.
+;(check-throws (execute-extended-command 'keyboard-quit) => 'quit-command)
+@
+
+<<core:command>>=
+(define-interactive (keyboard-quit)
+  (throw 'quit-command))
+@ 
+
+<<core:command>>=
+(define-interactive (quit-application)
+  (set! emacsy-quit-application? #t))
+@ 
+
+<<core:state>>=
+(define-public emacsy-quit-application? #f)
+@ 
+
+\subsection{Messages Buffer}
+
+<<core:state>>=
+(define messages 
+  (make <text-buffer> #:keymap (make-keymap) #:name "*Messages*"))
+@ 
+
+<<core:process>>=
+(add-buffer! messages)
+@ 
+
+<<core:procedure>>=
+(define echo-area "")
+
+(define-public (emacsy-echo-area)
+  echo-area)
+
+(define-public (current-message)
+  echo-area)
+
+(define (emacsy-message . args)
+  (let ((string (apply format #f args)))
+   (with-buffer messages
+                (insert string)
+                (insert "\n"))
+   (set! echo-area string)
+   (format #t "MESSAGE: ~a\n" string)
+   string))
+
+;; There's probably a better way to do this.
+(set! message emacsy-message)
+@ 
+
+\subsection*{File Layout} 
+
+<<emacsy/core.scm>>=
+(define-module (emacsy core)
+  #:use-module (ice-9 optargs)
+  #:use-module (oop goops)
+  #:use-module (rnrs io ports)
+  #:use-module (debugging assert)
+  #:use-module (srfi srfi-1)
+  #:use-module (convenience-lambda)  
+  #:use-module (emacsy util)
+  #:use-module (emacsy keymap)
+  #:use-module (emacsy event)
+  #:use-module (emacsy buffer)
+  #:use-module (emacsy command)
+  #:use-module (emacsy block)
+  #:use-module (emacsy klecl)
+  #:use-module (emacsy kbd-macro)
+  #:use-module (emacsy minibuffer))
+<<core:macro>>
+<<core:class>>
+<<core:state>>
+<<core:procedure>>
+<<core:command>>
+<<core:keybinding>>
+<<core:process>>
+@ 
+
+Layout for tests.
+<<core-tests.scm>>=
+(use-modules (emacsy core)
+             (emacsy event)
+             (emacsy klecl)
+             (oop goops))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy core))))
+
+<<+ Test Preamble>>
+<<core:test>>
+<<+ Test Postscript>>
+@ 
+ 

@@ -102,10 +102,16 @@ We define the global command map.
 <<command:macro>>=
 (define-syntax-public define-cmd
   (syntax-rules ()
-    ((define-cmd cmap (name . args) expr ...)
-     (begin (define* (name . args)
-        expr ...)
+    ((define-cmd (name . args) . body)
+     (begin 
+       (define* (name . args)
+         (with-fluids ((in-what-command 'name))
+           . body))
         (export name)
+        (set-command-properties! name 'name)))
+    ((define-cmd cmap (name . args) . body)
+     (begin 
+       (define-cmd (name . args) . body)
         (command-add! cmap 'name)))
     ((define-cmd cmap name value)
      (begin (define* name value)
@@ -118,7 +124,6 @@ We define the global command map.
   (command-add! global-cmdset name))
 @ 
 
-
 <<command:procedure>>=
 (define-public (command->proc command)
   (cond
@@ -127,13 +132,97 @@ We define the global command map.
    ((symbol? command)
     (eval command (interaction-environment)))
    (else
-    (warn "command->proc not given a command")
+    (warn "command->proc not given a command: ~a" command)
     #f)))
 @ 
 
 <<command:procedure>>=
+(define-public (command-name command)
+  (and (command->proc command)
+       (procedure-property (command->proc command) 'command-name)))
+@ 
+
+<<command:procedure>>=
 (define-public (command? object)
-  (procedure? (command->proc object)))
+  (and (procedure? (command->proc object))
+       (assq 'command-name (procedure-properties (command->proc object)))))
+@ 
+
+\subsection{Determine Interactivity}
+
+We would like to be able to determine within the command procedure's
+body whether the command has been called interactively, by the user's
+key press, or by a keyboard macro or another procedure call.  The best
+way I can think to do this is to have a means of answering the
+following questions: 1) What command am I in? 2) What is the current
+interactive command?
+
+Determining the current command is not that difficult.  That's
+generally set by the [[this-command]] variable.  However, determining
+what command I am in is a little troublesome.  One can examine the
+stack and look for the first procedure that has some property
+associated with commands.  
+
+<<command:procedure>>=
+(define* (set-command-properties! proc #:optional (name #f))
+  (let ((cname (or name (procedure-name proc) #f)))
+    (set-procedure-property! proc 'command-name 
+                             (if (eq? cname 'proc) 
+                                 #f 
+                                 cname))))
+@
+
+<<command:state>>=
+(define in-what-command (make-fluid #f))
+@ 
+
+<<command:macro>>=
+(define-syntax-public lambda-cmd
+  (syntax-rules ()
+    ((lambda-cmd args . body)
+     (let ((proc (lambda* args
+                          (with-fluids ((in-what-command #f))
+                            . body))))
+       (set-command-properties! proc)
+       proc))))
+@
+
+<<command:test>>=
+(define test-cmd (lambda-cmd args 1))
+(define (test-cmd-2) 2)
+(define-cmd (test-cmd-3) 3)
+(check (test-cmd) => 1)
+(check-true (command? test-cmd))
+(check-false (command? test-cmd-2))
+(check-true (command? test-cmd-3))
+(check (assq-ref (procedure-properties test-cmd) 'command-name) => #f)
+(check (assq 'command-name (procedure-properties test-cmd-2)) => #f)
+(check (command-name test-cmd) => #f)
+(check (command-name test-cmd-2) => #f)
+(check (command-name test-cmd-3) => 'test-cmd-3)
+@ 
+
+<<command:procedure>>=
+(define-public (what-command-am-i?)
+  (fluid-ref in-what-command)
+  ;; Tried looking at the stack trace. Didn't work.
+  '(let* ((s (make-stack #t))
+         (len (stack-length s)))
+    (let loop ((i 0))
+      (and (< i len)
+       (let ((name (command-name (frame-procedure (stack-ref s i)))))
+         (if name
+             name
+             (loop (1+ i))))))))
+@ 
+
+<<command:test>>=
+(define-cmd (test-who-am-i?) 
+  (let ((w (what-command-am-i?)))
+    1
+    w))
+(check (command-name test-who-am-i?) => 'test-who-am-i?)
+(check (test-who-am-i?) => 'test-who-am-i?)
 @ 
 
 \subsection*{File Layout}

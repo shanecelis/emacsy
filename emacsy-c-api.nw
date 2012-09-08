@@ -189,7 +189,8 @@ char *emacsy_message_or_echo_area()
     scm_call_0(scm_c_public_ref("emacsy emacsy",
                                 "emacsy-message-or-echo-area")));
 }
-@ \section{emacsy\_mode\_line}
+@ %def emacsy_message_or_echo_area
+\section{emacsy\_mode\_line}
 
 \todo[inline]{Change name from modeline to mode-line.}
 <<Functions>>=

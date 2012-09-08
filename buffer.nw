@@ -168,12 +168,12 @@ around.
 @ 
 
 <<buffer:procedure>>=
-(define (add-buffer! buffer)
+(define-public (add-buffer! buffer)
   (mru-add! buffer-stack buffer))
 @ 
 
 <<buffer:procedure>>=
-(define (remove-buffer! buffer)
+(define-public (remove-buffer! buffer)
   (mru-remove! buffer-stack buffer))
 
 (define-interactive (next-buffer #:optional (incr 1))

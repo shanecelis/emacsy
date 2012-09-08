@@ -60,7 +60,7 @@ Our application's state is captured by one global variable.
 
 <<State>>=
 int counter = 0; /* We display this number. */
-@ %def counter
+@ 
 
 Let's initialize everything in [[main]] and enter our runloop.
 

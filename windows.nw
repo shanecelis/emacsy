@@ -259,14 +259,14 @@ Again but in code this time.
   (vector 1 0 tx)
   (vector 0 1 ty)
   (vector 0 0 1)))
-@ %def translate-2d
+@ 
 <<Procedures>>=
 (define (scale-2d sx sy)
  (vector 
   (vector sx 0  0)
   (vector 0  sy 0)
   (vector 0  0  1)))
-@ %def scale-2d
+@ 
 @ \subsection{Split Window}
 
 Be careful with \verb|deep-clone|. If you deep clone one window that

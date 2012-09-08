@@ -7,21 +7,21 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw block.nw klecl.nw kbd-macro.nw minibuffer.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw block.nw klecl.nw kbd-macro.nw minibuffer.nw core.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex block.tex klecl.tex kbd-macro.tex minibuffer.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex block.tex klecl.tex kbd-macro.tex minibuffer.tex core.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs minibuffer.defs
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs minibuffer.defs core.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm
 
 TESTS = emacsy-tests.scm event-tests.scm  \
         keymap-tests.scm command-tests.scm buffer-tests.scm \
         block-tests.scm klecl-tests.scm kbd-macro-tests.scm \
-        minibuffer-tests.scm
+        minibuffer-tests.scm core-tests.scms
 
 #windows-tests.scm
-TESTS = minibuffer-tests.scm
+TESTS = command-tests.scm core-tests.scm 
 
 HDRS = emacsy.h
 
@@ -34,6 +34,8 @@ STYS =
 DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 
 GRAPHICS_PATH = examples/hello-emacsy
+
+NOTANGLE_LISP_FLAGS = -filter 'docs2comments -one -scm'
 
 .PHONY : all
 
@@ -58,13 +60,16 @@ GRAPHICS_PATH = examples/hello-emacsy
 	noindex $<
 	TEXINPUTS=.:$(GRAPHICS_PATH): pdflatex -shell-escape -halt-on-error $<
 
+# Where should all the global defs go?
 %.defs: %.nw
 	nodefs $< > $@
 
-#$(HDRS) $(SRCS) 
 all: 
 	$(MAKE) $(TARGET).pdf
 	$(MAKE) lib$(TARGET).a
+	$(MAKE) source
+
+source: $(HDRS) $(SRCS)
 
 all.defs: $(DEFS)
 	sort -u $^ | cpif $@
@@ -73,40 +78,43 @@ emacsy.h emacsy.c: emacsy-c-api.nw
 	notangle -R$@ $^ | cpif $@
 
 emacsy-tests.scm: emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
-emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw block.nw klecl.nw minibuffer.nw
-	notangle -R$@ $^ | cpif $@
+emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw block.nw klecl.nw minibuffer.nw core.nw
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/event.scm event-tests.scm: event.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/keymap.scm keymap-tests.scm: keymap.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/command.scm command-tests.scm: command.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/buffer.scm buffer-tests.scm: buffer.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/block.scm block-tests.scm: block.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/klecl.scm klecl-tests.scm: klecl.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/kbd-macro.scm kbd-macro-tests.scm: kbd-macro.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/minibuffer.scm minibuffer-tests.scm: minibuffer.nw emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
+
+emacsy/core.scm core-tests.scm: core.nw emacsy.nw
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 line-pragma.scm: emacsy.nw
-	notangle -R$@ $^ | cpif $@
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 tar: $(TARGET)doc.tex
 	mkdir $(TARGET)-$(VERSION)
