@@ -179,6 +179,7 @@ We also check all the maps for a quit key, typically defined as \verb|C-g|.
 
 <<klecl:command>>=
 (define-interactive (keyboard-quit)
+  (message "Quit!")
   (throw 'quit-command))
 @ 
 
@@ -264,7 +265,7 @@ redefined later.
 <<klecl:procedure>>=
 ;; XXX Why is this complicated?  It seems like this should be a much 
 ;; simpler procedure.
-(define-public (command-execute command)
+(define-public (command-execute-orig command)
   (let ((cmd-proc (command->proc command)))
     (if cmd-proc
         (let* ((exception #f)
@@ -278,7 +279,7 @@ redefined later.
               (set! exception (cons key args))
               (case key
                 ((quit-command)
-                 (message "Quit!")
+                 ;(message "Quit!")
                  ;(values #f 'quit-command)
                  (apply throw key args))
                 ((quit-command-loop)
@@ -325,10 +326,7 @@ which signifies that it does not do any error handling.  The command
 loop sets up a fair amount of state.
 
 <<klecl:state>>=
-(define-public this-command #f)
 (define-public this-command-event #f)
-
-(define-public last-command #f)
 (define-public last-command-event #f)
 
 (define-public pre-command-hook (make-hook))
@@ -344,13 +342,12 @@ loop sets up a fair amount of state.
          (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
     (if keymap
         (begin
-          (set! last-command this-command)
           (set! last-command-event this-command-event)
-          (set! this-command (lookup-key keymap key-sequence))
           (set! this-command-event (rcar events))
+          ;; The command hooks might need to go into the command module.
           (in-out 
            (run-hook pre-command-hook)
-           (command-execute this-command)
+           (command-execute (lookup-key keymap key-sequence))
            (run-hook post-command-hook)))
         ;; Maybe this should be done by an undefined-command command?
         (begin (message "~a is undefined."
@@ -447,11 +444,11 @@ Finally, here's our command loop with error handling.
 
 We have finished the KLECL.  Note that although we have used
 Emacs-like function names, we have not implemented the Emacs-like UI
-yet: We have not defined any default key bindings.  I want to
+yet. We have not defined any default key bindings.  I want to
 encourage people to explore different user interfaces based on the
 KLECL, and one can start from this part of the code.  If one wanted to
 create a modal UI, one could use the [[(emacsy klecl)]] module and not
-have to worry about any ``pollution'' of Emacs-isms.  
+have to worry about any ``pollution'' of Emacs-isms.
 
 \subsection*{File Layout} 
 

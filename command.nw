@@ -99,6 +99,7 @@ We define the global command map.
             (command-add! global-cmdset 'name)))))
 @ 
 
+\todo[inline]{Need to fix: define-cmd doesn't respect documentation strings.}
 <<command:macro>>=
 (define-syntax-public define-cmd
   (syntax-rules ()
@@ -145,7 +146,7 @@ We define the global command map.
 <<command:procedure>>=
 (define-public (command? object)
   (and (procedure? (command->proc object))
-       (assq 'command-name (procedure-properties (command->proc object)))))
+       (and (assq 'command-name (procedure-properties (command->proc object))) #t)))
 @ 
 
 \subsection{Determine Interactivity}
@@ -204,16 +205,7 @@ associated with commands.
 
 <<command:procedure>>=
 (define-public (what-command-am-i?)
-  (fluid-ref in-what-command)
-  ;; Tried looking at the stack trace. Didn't work.
-  '(let* ((s (make-stack #t))
-         (len (stack-length s)))
-    (let loop ((i 0))
-      (and (< i len)
-       (let ((name (command-name (frame-procedure (stack-ref s i)))))
-         (if name
-             name
-             (loop (1+ i))))))))
+  (fluid-ref in-what-command))
 @ 
 
 <<command:test>>=
@@ -224,6 +216,50 @@ associated with commands.
 (check (command-name test-who-am-i?) => 'test-who-am-i?)
 (check (test-who-am-i?) => 'test-who-am-i?)
 @ 
+
+<<command:procedure>>=
+(define-public (command-execute command)
+  (if (command? command)
+      (let ((cmd-proc (command->proc command)))
+        (set! last-command this-command)
+        (set! this-command (command-name command))
+        (apply cmd-proc '()))
+      (error (format #f "command-execute not given a command: ~a" command))))
+@
+
+<<command:state>>=
+(define-public this-command #f)
+(define-public last-command #f)
+@ 
+
+<<command:procedure>>=
+(define-public (call-interactively command)
+  (with-fluids ((this-interactive-command (command-name command)))
+    (command-execute command)))
+@ 
+
+<<command:state>>=
+(define this-interactive-command (make-fluid #f))
+@ 
+
+<<command:procedure>>=
+(define*-public (called-interactively? #:optional (kind 'any))
+  (eq? this-command (fluid-ref this-interactive-command)))
+@ 
+
+<<command:test>>=
+(define-cmd (foo)
+  (if (called-interactively?)
+      'interactive
+      'non-interactive))
+(check (command? 'foo) => #t)
+(check (command-name 'foo) => 'foo)
+(check-true (command->proc 'foo))
+
+(check (command-execute 'foo) => 'non-interactive)
+(check (call-interactively 'foo) => 'interactive)
+@ 
+
 
 \subsection*{File Layout}
 

@@ -54,16 +54,18 @@ with \verb|M-x|.
     (call-interactively (string->symbol str))))
 @ 
 
-\todo[inline]{call-interactively requires a lot more thinking as to how to get it to play with called-interactively?}
+\todo[inline]{call-interactively requires a lot more thinking as to
+  how to get it to play with called-interactively?}
+\todo{Maybe call-interactively should go into the command module.}
 <<core:procedure>>=
-(define-public (call-interactively command)
+(define-public (call-interactively-other command)
   ;(with-fluids ((current-interactive-command )))
   (command-execute command))
 @ 
 
 [[called-interactively?]] will be tricky to implement based on what Emacs require from it. \href{http://www.gnu.org/software/emacs/manual/html_node/elisp/Distinguish-Interactive.html#Distinguish-Interactive}{See here.}
 <<core:procedure>>=
-(define-public (called-interactively? kind)
+(define-public (called-interactively-other? kind)
   ;; XXX dummy implementation
   #t)
 @
