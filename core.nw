@@ -62,6 +62,7 @@ with \verb|M-x|.
 
 <<core:command>>=
 (define-interactive (execute-extended-command #:optional (n 1))
+  (display "HERE!\n")
   (let ((str (completing-read "M-x " (completer global-cmdset))))
     (call-interactively (string->symbol str))))
 @ 

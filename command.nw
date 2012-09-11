@@ -229,9 +229,11 @@ associated with commands.
 <<command:procedure>>=
 (define-public (command-execute command)
   (if (command? command)
-      (let ((cmd-proc (command->proc command)))
+      (let ((cmd-proc (command->proc command))
+            (cmd-name (command-name command)))
+        (format #t "Running command: ~a~%" cmd-name)
         (set! last-command this-command)
-        (set! this-command (command-name command))
+        (set! this-command cmd-name)
         (apply cmd-proc '()))
       (error (format #f "command-execute not given a command: ~a" command))))
 @

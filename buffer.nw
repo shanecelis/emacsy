@@ -93,7 +93,7 @@ following operators: add!, remove!, contains?, recall!, and list.
   (set! (index s) 0)
   (mru-list s))
 (define-method (mru-set! (s <mru-stack>) x)
-  ;; Should this add the buffer if it's not already there?
+  ;; Should this add the buffer if it's not already there? No.
   (if (mru-empty? s)
       #f
       (let ((i (member-ref x (mru-list s))))
@@ -109,6 +109,8 @@ following operators: add!, remove!, contains?, recall!, and list.
   (car (q s)))
 (define-method (mru-empty? (s <mru-stack>))
   (q-empty? (q s)))
+(define-method (mru-contains? (s <mru-stack>) x)
+  (memq x (mru-list s)))
 @ 
 
 The order of the elements may not change yet the index may be moved
@@ -225,7 +227,10 @@ is one.
 (define-interactive (switch-to-buffer buffer)
   (run-hook (buffer-exit-hook (current-buffer)))
   (set! last-buffer (current-buffer))
-  (mru-recall! buffer-stack buffer)
+  (if (mru-contains? buffer-stack buffer)
+      (mru-recall! buffer-stack buffer)
+      (set-buffer! buffer))
+  ;(assert (eq? (current-buffer) buffer))
   (run-hook (buffer-enter-hook (current-buffer))))
 @ 
 
@@ -419,7 +424,9 @@ This macro requires a procedure [[in-out-guard]] defined in the
   #:use-module (emacsy util)
   #:use-module (emacsy event)
   #:use-module (emacsy command)
-  #:use-module (emacsy klecl))
+  #:use-module (emacsy klecl)
+  #:use-module (rnrs base)
+  )
 <<buffer:macro>>
 <<buffer:class>>
 <<buffer:state>>
@@ -432,7 +439,9 @@ Layout for tests.
 (use-modules (emacsy buffer)
              (emacsy command)                  
              (emacsy event)
-             (oop goops))
+             (oop goops)
+             (rnrs base)
+             )
 
 (eval-when (compile load eval)
            ;; Some trickery so we can test private procedures.

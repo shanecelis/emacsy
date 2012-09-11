@@ -584,8 +584,8 @@ another reader extension that will strip out any \#l lines within it.
                   (set! accum (cons entry accum))
                   (loop (read-char port)))))))))
 <<line-pragma.scm>>=
-;(define-module (line-pragma)
-;  #:use-module (ice-9 rdelim))
+(define-module (line-pragma)
+  #:use-module (ice-9 rdelim))
 
 (eval-when (compile load eval)
  (define eor (call-with-input-string "#;done" (lambda (port) (read port))))

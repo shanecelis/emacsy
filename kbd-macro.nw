@@ -130,7 +130,7 @@ recorded.
 @ 
 
 <<kbd-macro:state>>=
-(define executing-temporal-kbd-macro-hook (make-hook 1))
+(define-public executing-temporal-kbd-macro-hook (make-hook 1))
 @ 
 
 <<kbd-macro:test>>=
