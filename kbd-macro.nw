@@ -52,12 +52,14 @@ hook into the [[read-event]] procedure using a hook.
 
 <<kbd-macro:procedure>>=
 (define-interactive 
-  (execute-kbd-macro kbd-macro
-                     #:optional (count 1) (loopfunc #f))
+  (execute-kbd-macro #:optional 
+                     (kbd-macro last-kbd-macro)
+                     (count 1) (loopfunc #f))
   (let ((orig-event-queue event-queue)
         (new-event-queue  (make-q)))
-    (map (lambda (x) 
-           (enq! new-event-queue x)) (reverse last-kbd-macro))
+    (for-each (lambda (x) 
+               (enq! new-event-queue x)) 
+             (reverse kbd-macro))
     (in-out-guard
      (lambda ()
        (set! event-queue new-event-queue)
@@ -108,7 +110,7 @@ recorded.
 
 <<kbd-macro:procedure>>=
 (define-interactive 
-  (execute-temporal-kbd-macro #:optional (kbd-macro last-kbd-macro))
+  (execute-temporal-kbd-macro #:optional (kbd-macro last-kbd-macro)) 
   (in-out
    (set! executing-kbd-macro? #t)
    (let* ((start-time (emacsy-time))
@@ -162,6 +164,7 @@ Layout for tests.
 <<kbd-macro-tests.scm>>=
 (use-modules (emacsy kbd-macro)
              (emacsy event)
+             (emacsy command)     
              (emacsy klecl)
              (oop goops))
 

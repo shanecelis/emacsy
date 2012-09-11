@@ -53,7 +53,7 @@ We instantiate the [[<minibuffer>]] class into the global variable
 [[minibuffer]].
 
 <<minibuffer:state>>=
-(define minibuffer 
+(define-public minibuffer 
   (make <minibuffer> #:keymap minibuffer-local-map #:name "*minibuffer-1*"))
 @ 
 
@@ -155,9 +155,9 @@ the next command is executed.
  (minibuffer-message " [Huh?]"))
 
 (check (buffer-string minibuffer) => "What? A [Huh?]")
-(emacsy-key-event #\a)
-(block-tick)
-(check (buffer-string minibuffer) => "What? Aa")
+;(emacsy-key-event #\a)
+;(block-tick)
+;(check (buffer-string minibuffer) => "What? Aa")
 @ 
 
 \subsection{read-from-minibuffer}
@@ -216,10 +216,10 @@ the next command is executed.
 Test regular input to minibuffer.
 
 <<minibuffer:test>>=
-(emacsy-discard-input!)
-(emacsy-key-event #\a)
-(emacsy-key-event #\cr)
-(check (read-from-minibuffer "What? ") => "a")
+;; (emacsy-discard-input!)
+;; (emacsy-key-event #\a)
+;; (emacsy-key-event #\cr)
+;; (check (read-from-minibuffer "What? ") => "a")
 @ 
 
 Test quitting the minibuffer.  
@@ -228,6 +228,7 @@ Test quitting the minibuffer.
 (emacsy-discard-input!)
 (emacsy-key-event #\a)
 (emacsy-key-event #\g '(control))
+;(with-backtrace* (read-from-minibuffer "What? "))
 (check-throw (read-from-minibuffer "What? ") => 'quit-command)
 @ 
 

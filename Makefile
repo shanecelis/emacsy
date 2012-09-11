@@ -13,15 +13,15 @@ TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex exa
 
 DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs minibuffer.defs core.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm emacsy/emacsy.scm
 
-TESTS = emacsy-tests.scm event-tests.scm  \
+TESTS = event-tests.scm  \
         keymap-tests.scm command-tests.scm buffer-tests.scm \
         block-tests.scm klecl-tests.scm kbd-macro-tests.scm \
-        minibuffer-tests.scm core-tests.scms
+        minibuffer-tests.scm core-tests.scm emacsy-tests.scm
 
 #windows-tests.scm
-TESTS = command-tests.scm core-tests.scm 
+#TESTS = command-tests.scm core-tests.scm 
 
 HDRS = emacsy.h
 
@@ -35,7 +35,7 @@ DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS
 
 GRAPHICS_PATH = examples/hello-emacsy
 
-NOTANGLE_LISP_FLAGS = -filter 'docs2comments -one -scm'
+NOTANGLE_LISP_FLAGS = -L'\#line %L "$<"%N' -filter 'docs2comments -one -scm' 
 
 .PHONY : all
 
@@ -77,7 +77,7 @@ all.defs: $(DEFS)
 emacsy.h emacsy.c: emacsy-c-api.nw
 	notangle -R$@ $^ | cpif $@
 
-emacsy-tests.scm: emacsy.nw
+emacsy/emacsy.scm emacsy-tests.scm: emacsy.nw
 	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
@@ -114,7 +114,7 @@ emacsy/core.scm core-tests.scm: core.nw emacsy.nw
 	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 line-pragma.scm: emacsy.nw
-	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
+	notangle -R$@ $^ | cpif $@
 
 tar: $(TARGET)doc.tex
 	mkdir $(TARGET)-$(VERSION)
@@ -149,3 +149,6 @@ emacsy.o: emacsy.h
 
 libemacsy.a: emacsy.o
 	ar rcs libemacsy.a emacsy.o
+
+TAGS: $(SRCS) $(TESTS)
+	etags -l scheme $(SRCS) $(TESTS)

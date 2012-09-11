@@ -51,6 +51,16 @@ number of arguments as shown below.
 (check (current-buffer) => #f)
 @
 
+\subsection{Emacs Compatibility}
+
+<<buffer:procedure>>=
+(define-public (current-local-map)
+  (local-keymap (current-buffer)))
+
+(define-public (use-local-map keymap)
+  (set! (local-keymap (current-buffer)) keymap))
+@
+
 \subsection{Buffer List}
 The buffer module also keeps track of the live buffers and the current
 one.
@@ -226,6 +236,28 @@ is one.
 (check (current-buffer) => #f)
 @ 
 
+\subsubsection{Local Variables}
+
+<<buffer:procedure>>=
+(define (local-var-ref symbol)
+  (let ((result (assq symbol (local-variables (current-buffer)))))
+    (if (pair? result)
+     (cdr result)
+     ;(variable-ref (make-undefined-variable))
+     'no-such-variable))) ;; how can I throw an undefined value?
+
+;; If buffers were in their own modules I could dynamically add variables
+;; to their namespace.  Interesting idea.
+
+(define (local-var-set! symbol value)
+  (slot-set! (current-buffer) 
+             'locals 
+             (assq-set! (local-variables (current-buffer)) symbol value)))
+
+(define-public local-var 
+               (make-procedure-with-setter local-var-ref local-var-set!))
+@ 
+
 \subsection{Text Buffer}
 
 Our minibuffer and messages buffer require a text buffer.
@@ -310,15 +342,16 @@ Finally, we can insert text.
 
 <<buffer:procedure>>=
 (define*-public (insert #:rest args)
-  (if (null? args)
-      0 
-      (let ((arg (car args)))
-        (cond
-         ((string? arg)
-          (gb-insert-string! (gap-buffer (current-buffer)) arg))
-         ((char? arg)
-          (gb-insert-char! (gap-buffer (current-buffer)) arg))
-         (else #f)))))
+  (and (current-buffer)
+   (if (null? args)
+       0 
+       (let ((arg (car args)))
+         (cond
+          ((string? arg)
+           (gb-insert-string! (gap-buffer (current-buffer)) arg))
+          ((char? arg)
+           (gb-insert-char! (gap-buffer (current-buffer)) arg))
+          (else #f))))))
 @
 
 <<buffer:procedure>>=
@@ -397,7 +430,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
 Layout for tests.
 <<buffer-tests.scm>>=
 (use-modules (emacsy buffer)
-             
+             (emacsy command)                  
              (emacsy event)
              (oop goops))
 

@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
   int err;
   <<Initialize GLUT.>>
   scm_init_guile();    /* Initialize Guile. */
+  scm_c_primitive_load("../../line-pragma.scm");
   /* Initialize Emacsy. */
   err = emacsy_initialize(); 
   if (err)

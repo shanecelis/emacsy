@@ -431,6 +431,56 @@ it.  This will include buffers, keyboard macros, and a minibuffer.
 
 \input{minibuffer} 
 
+\input{core} 
+
+\section{Emacsy Facade}
+
+So that users of our library don't have to import all of our nicely
+partitioned modules individually, we'll expose a facade module that
+re-exports all of the public interfaces for each module.
+
+<<emacsy/emacsy.scm>>=
+(define-module (emacsy emacsy)
+  #:use-module (convenience-lambda)  
+  #:use-module (emacsy util)
+  #:use-module (emacsy event)
+  #:use-module (emacsy keymap)
+  #:use-module (emacsy command)
+  #:use-module (emacsy buffer)
+  #:use-module (emacsy block)
+  #:use-module (emacsy klecl)
+  #:use-module (emacsy kbd-macro)
+  #:use-module (emacsy minibuffer)
+  #:use-module (emacsy core))
+<<emacsy:procedure>>
+<<emacsy:process>>
+@ 
+
+<<emacsy:procedure>>=
+(define (re-export-modules . modules)
+  (define (re-export-module module)
+    (module-for-each 
+     (lambda (sym var) 
+       ;;(format #t "re-exporting ~a~%" sym)
+       (module-re-export! (current-module) (list sym)))
+     (resolve-interface module)))
+  (for-each re-export-module modules))
+@ 
+
+<<emacsy:process>>=
+(re-export-modules 
+ '(emacsy util)
+ '(emacsy keymap)
+ '(emacsy event)
+ '(emacsy buffer)
+ '(emacsy command)
+ '(emacsy block)
+ '(emacsy klecl)
+ '(emacsy kbd-macro)
+ '(emacsy minibuffer)
+ '(emacsy core))
+@ 
+
  
 
 <<emacsy-tests.scm>>=
@@ -495,7 +545,7 @@ that.
     (set-port-line! port lineno)
     (set-port-column! port 0)
     ;; Return unspecified on purpose.
-    (if #f #t) 
+    (if #f #f)
     ))
 @ One problem that popped up was I sometimes wanted to include pieces of
 documentation in embedded strings.  Something that might end up
@@ -534,12 +584,15 @@ another reader extension that will strip out any \#l lines within it.
                   (set! accum (cons entry accum))
                   (loop (read-char port)))))))))
 <<line-pragma.scm>>=
-(define-module (line-pragma)
-  #:use-module (ice-9 rdelim))
+;(define-module (line-pragma)
+;  #:use-module (ice-9 rdelim))
 
 (eval-when (compile load eval)
+ (define eor (call-with-input-string "#;done" (lambda (port) (read port))))
  (read-hash-extend #\l #f)
- (read-hash-extend #\l <<Line Pragma Handler>>)
+ (define line-pragma-handler <<Line Pragma Handler>>)
+ (set-procedure-property! line-pragma-handler 'read-comment #t)
+ (read-hash-extend #\l line-pragma-handler)
  (read-hash-extend #\" <<Liberal String Quote Reader>>))
 
 @ \section{Unit Testing Support}

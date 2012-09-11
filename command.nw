@@ -89,13 +89,12 @@ We define the global command map.
 <<command:macro>>=
 (define-syntax-public define-interactive
   (syntax-rules ()
-    ((define-interactive (name args ...) expr ...)
-     (begin (define* (name args ...)
-        expr ...)
-            (export name)
+    ((define-interactive (name . args) . body)
+     (begin (define-cmd (name . args)
+              . body)
             (command-add! global-cmdset 'name)))
     ((define-interactive name value)
-     (begin (define* name value)
+     (begin (define-cmd name value)
             (command-add! global-cmdset 'name)))))
 @ 
 
@@ -110,6 +109,13 @@ We define the global command map.
            . body))
         (export name)
         (set-command-properties! name 'name)))
+    ((define-cmd name value)
+     (begin 
+       (define name (lambda args
+                      (with-fluids ((in-what-command 'name))
+                        (apply value args))))
+        (export name)
+        (set-command-properties! name 'name)))
     ((define-cmd cmap (name . args) . body)
      (begin 
        (define-cmd (name . args) . body)
@@ -117,6 +123,7 @@ We define the global command map.
     ((define-cmd cmap name value)
      (begin (define* name value)
         (export name)
+        (set-command-properties! name 'name)
         (command-add! cmap 'name)))))
 @ 
 
@@ -146,7 +153,9 @@ We define the global command map.
 <<command:procedure>>=
 (define-public (command? object)
   (and (procedure? (command->proc object))
-       (and (assq 'command-name (procedure-properties (command->proc object))) #t)))
+       (and (assq 'command-name 
+                  (procedure-properties (command->proc object))) 
+            #t)))
 @ 
 
 \subsection{Determine Interactivity}

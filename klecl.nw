@@ -29,6 +29,16 @@ This is a convenience procedure to enqueue a key event.
                   #:command-char char)))
 @ 
 
+<<klecl:procedure>>=
+(define*-public (emacsy-mouse-event position button state 
+                                    #:optional (modifier-keys '()))
+  (emacsy-event 
+   (make <mouse-event> 
+     #:position position #:button button 
+     #:state state #:modifier-keys modifier-keys)))
+@ 
+
+
 And mainly for testing purposes we also want to discard all input.  Or
 there are cases where we want to unread an event and push it to the
 front of the queue rather than the rear.
@@ -347,7 +357,7 @@ loop sets up a fair amount of state.
           ;; The command hooks might need to go into the command module.
           (in-out 
            (run-hook pre-command-hook)
-           (command-execute (lookup-key keymap key-sequence))
+           (call-interactively (lookup-key keymap key-sequence))
            (run-hook post-command-hook)))
         ;; Maybe this should be done by an undefined-command command?
         (begin (message "~a is undefined."
