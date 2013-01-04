@@ -117,7 +117,7 @@ with \verb|M-x|.
                 (insert string)
                 (insert "\n"))
    (set! echo-area string)
-   (format #t "MESSAGE: ~a\n" string)
+   ;(format #t "MESSAGE: ~a\n" string)
    string))
 
 ;; There's probably a better way to do this.
@@ -150,6 +150,8 @@ These are most of the C API calls.
       (buffer-string minibuffer)
       echo-area))
 
+;; XXX This is wrong. It should identify the buffer associated with the window
+;; not the current buffer; current buffer should be shown in the frame title.
 (define-public (emacsy-mode-line)
   (format #f "-:**- ~a" (buffer-name)))
 
@@ -157,6 +159,18 @@ These are most of the C API calls.
   (if emacsy-display-minibuffer?
       (point minibuffer)
       -1))
+
+(define-public (emacsy-run-hook hook . args)
+  (catch #t
+    (lambda () 
+      (with-backtrace* (lambda ()  
+                         (apply run-hook hook args)
+                         #t)))
+    (lambda (key . args)
+      (format (current-error-port) "Hook ~a threw error '~a with args ~a " hook key args)
+      (format (current-error-port) "Resetting hook ~a" hook)
+      (reset-hook! hook)
+      #f)))
 
 (define-public emacsy-terminate-hook (make-hook))
 
@@ -166,6 +180,27 @@ These are most of the C API calls.
 (define-public (emacsy-tick)
   (block-tick))
 @ 
+
+We need to be able to deal with exceptions gracefully where ever they
+may pop up.  
+
+<<core:test>>=
+(define (good-hook)
+  #t)
+(define (bad-hook)
+  (throw 'some-error))
+(define my-hook (make-hook 0))
+
+(check-throw (run-hook my-hook) => 'no-throw)
+(check-throw (emacsy-run-hook my-hook) => 'no-throw)
+(check (emacsy-run-hook my-hook) => #t)
+(add-hook! my-hook good-hook)
+(check-throw (emacsy-run-hook my-hook) => 'no-throw)
+(add-hook! my-hook bad-hook)
+(check-throw (run-hook my-hook) => 'some-error)
+(check-throw (emacsy-run-hook my-hook) => 'no-throw)
+(check (emacsy-run-hook my-hook) => #f)
+@
 
 We want to be able to define variables that are not redefined if a
 source file or module is reloaded.
@@ -245,9 +280,16 @@ If we ever run out of command loops due to errors, we start a new one.
 <<core:procedure>>=
 (define (restart-command-loop)
   ;; Start another command-loop
-  (display "NO COMMAND LOOPS; STARTING ANOTHER.")
+  (emacsy-log-warning "NO COMMAND LOOPS; STARTING ANOTHER.")
   (call-blockable (lambda () (command-loop))))
 @ 
+
+And if we have warning, we emit then through [[emacsy-log-warning]].
+
+<<util:procedure>>=
+(define-public (emacsy-log-warning format-msg . args)
+  (apply format (current-error-port) format-msg args))
+@
 
 <<core:process>>=
 (add-hook! no-blocking-continuations-hook restart-command-loop)
@@ -261,6 +303,7 @@ If we ever run out of command loops due to errors, we start a new one.
   #:use-module (oop goops)
   #:use-module (rnrs io ports)
   #:use-module (debugging assert)
+  #:use-module (system repl error-handling)
   #:use-module (srfi srfi-1)
   #:use-module (convenience-lambda)  
   #:use-module (emacsy util)

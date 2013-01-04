@@ -178,7 +178,9 @@ resumed.
      (set! blocking-continuations 
            (filter! (lambda (bc) (not (ran? bc))) 
                     blocking-continuations))
-     (when (null? blocking-continuations)
+     ;(format #t "blocking-continuations #~a of ~a~%" (length blocking-continuations) (map number blocking-continuations))
+     (when (or (null? blocking-continuations)
+               (null? (filter serial? blocking-continuations)))
        (run-hook no-blocking-continuations-hook))
     #t)
 @ 

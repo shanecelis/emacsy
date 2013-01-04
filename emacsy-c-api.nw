@@ -36,6 +36,9 @@ int  emacsy_minibuffer_point();
 
 /* Terminate Emacsy, runs termination hook. */
 int  emacsy_terminate();
+
+/* Attempt to load a module. */
+int emacsy_load_module(const char *module_name);
 <<emacsy.h>>=
 /* emacsy.h
 
@@ -93,22 +96,14 @@ int emacsy_initialize()
 {
   /* Load the (emacsy emacsy) module. */
   const char *module = "emacsy emacsy"; 
-  SCM result = scm_internal_catch(SCM_BOOL_T, 
-                                  load_module,       (void *)module,
-                                  load_module_error, (void *) module);
-  if (scm_is_false(result)) {
-    fprintf(stderr, "error: Unable to load module (%s). Try setting the "
-                    "GUILE_LOAD_PATH environment variable.\n", module);
-    return 1; //EY_ERR_NO_MODULE;
-  }
-  return 0;
+  return emacsy_load_module(module);
 }
 @ The function [[scm_c_use_module]] throws an exception if it cannot
 find the module, so we have to split that functionality into a body
-function [[load_module]] and an error handler [[load_module_error]].
+function [[load_module_try]] and an error handler [[load_module_error]].
 
 <<Utility Functions>>=
-SCM load_module(void *data) 
+SCM load_module_try(void *data) 
 {
   scm_c_use_module((const char *)data);
   return SCM_BOOL_T;
@@ -121,6 +116,24 @@ SCM load_module_error(void *data, SCM key, SCM args)
   //fprintf(stderr, "error: Unable to load module (%s).\n", (const char*) data);
   return SCM_BOOL_F;
 }
+@ 
+
+Attempt to load a module.  Returns 0 if no errors, and non-zero otherwise.
+
+<<Utility Functions>>=
+int emacsy_load_module(const char *module) 
+{
+  SCM result = scm_internal_catch(SCM_BOOL_T, 
+                                  load_module_try,   (void *) module,
+                                  load_module_error, (void *) module);
+  if (scm_is_false(result)) {
+    fprintf(stderr, "error: Unable to load module (%s). Try setting the "
+                    "GUILE_LOAD_PATH environment variable.\n", module);
+    return 1; //EY_ERR_NO_MODULE;
+  }
+  return 0;
+}
+
 @ \section{emacsy\_key\_event}
 
 <<Functions>>=
@@ -222,8 +235,11 @@ int  emacsy_run_hook_0(const char *hook_name)
 {
   /* This should be protected from all sorts of errors that the hooks
      could throw. */
-  scm_run_hook(scm_c_private_ref("guile-user", hook_name),
-               SCM_EOL);
+  SCM result;
+  result = scm_call_1(scm_c_public_ref("emacsy emacsy",
+                                       "emacsy-run-hook"),
+                      scm_c_private_ref("guile-user", 
+                                        hook_name));
   return 0;
 }
 <<emacsy.c>>=

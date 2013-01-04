@@ -13,7 +13,7 @@ TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex exa
 
 DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs minibuffer.defs core.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm emacsy/emacsy.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm emacsy/emacsy.scm check/harness.scm
 
 TESTS = event-tests.scm  \
         keymap-tests.scm command-tests.scm buffer-tests.scm \
@@ -21,7 +21,7 @@ TESTS = event-tests.scm  \
         minibuffer-tests.scm core-tests.scm emacsy-tests.scm
 
 #windows-tests.scm
-TESTS = minibuffer-tests.scm
+TESTS = core-tests.scm
 
 HDRS = emacsy.h
 
@@ -35,7 +35,7 @@ DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS
 
 GRAPHICS_PATH = examples/hello-emacsy
 
-NOTANGLE_LISP_FLAGS = -L'\#line %L "$<"%N' -filter 'docs2comments -one -scm' 
+NOTANGLE_LISP_FLAGS = -L'\#line %L "%F"%N' -filter 'docs2comments -one -scm' 
 
 .PHONY : all
 
@@ -65,9 +65,12 @@ NOTANGLE_LISP_FLAGS = -L'\#line %L "$<"%N' -filter 'docs2comments -one -scm'
 	nodefs $< > $@
 
 all: 
-	$(MAKE) $(TARGET).pdf
 	$(MAKE) lib$(TARGET).a
 	$(MAKE) source
+
+doc: 
+	$(MAKE) $(TARGET).pdf
+
 
 source: $(HDRS) $(SRCS)
 
@@ -77,13 +80,13 @@ all.defs: $(DEFS)
 emacsy.h emacsy.c: emacsy-c-api.nw
 	notangle -R$@ $^ | cpif $@
 
-emacsy/emacsy.scm emacsy-tests.scm: emacsy.nw
+emacsy/emacsy.scm emacsy-tests.scm check/harness.scm: emacsy.nw
 	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/windows.scm windows-tests.scm: windows.nw emacsy.nw
 	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
-emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw block.nw klecl.nw minibuffer.nw core.nw
+emacsy/util.scm: util.nw event.nw keymap.nw buffer.nw block.nw klecl.nw minibuffer.nw core.nw command.nw
 	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
 
 emacsy/event.scm event-tests.scm: event.nw emacsy.nw
@@ -142,7 +145,7 @@ $(TARGET).pdf: $(TEXS)
 
 test: $(SRCS) $(TESTS)
 	for test in $(TESTS); do \
-		guile -l line-pragma.scm -L . -L .. $$test || exit 1; \
+		guile -l line-pragma.scm -L . $$test || exit 1; \
 	done
 
 emacsy.o: emacsy.h

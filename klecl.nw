@@ -261,9 +261,9 @@ Let's test keyboard quitting.
 
 I find it convenient to begin emitting messages in case of error.
 However, I would like for there to be a clean separation between
-Emacsy and its KLECL such that someone may write a clean Vimy using
-it.  So this message will merely go to the stdout; however, it will be
-redefined later.
+Emacsy and its KLECL such that someone may write a clean vim-y using
+it if they so chose.  So this message will merely go to the stdout;
+however, it will be redefined later.
 
 <<klecl:procedure>>=
 (define-public (message . args) 
@@ -312,11 +312,19 @@ redefined later.
    thunk
    (lambda (key . args)
      (when (not (memq key no-backtrace-for-keys))
-       (format 
-        (current-error-port)
+       (emacsy-log-error 
         "ERROR: Throw to key `~a' with args `~a'." key args)
        (backtrace)))))
 @
+
+We don't want to tie the embedders hands, so for any error output it
+ought to go through [[emacsy-log-error]].
+
+<<util:procedure>>=
+(define-public (emacsy-log-error format-msg . args)
+  (apply format (current-error-port) format-msg args))
+@
+
 
 \subsection{Command Loop}
 
@@ -376,16 +384,14 @@ loop sets up a fair amount of state.
     (lambda (key . args)
       (case key
         ((silent-quit)
-         (display "GOT SILENT QUIT in command-tick\n"))
+         (emacsy-log-warning "GOT SILENT QUIT in command-tick\n"))
         ((quit-command-loop)
-         (display "GOT QUIT-COMMAND-LOOP in command-tick\n")
+         (emacsy-log-warning "GOT QUIT-COMMAND-LOOP in command-tick\n")
          (apply throw key args))
         ((encoding-error)
-         (display "ENCODING-ERROR '")
-         (pp event-queue)
-         (display "'"))
+         (emacsy-log-warning "ENCODING-ERROR '~a'" (pp event-queue)))
         (else
-         (format (current-error-port)
+         (emacsy-log-error
                  "command-tick: Uncaught throw to '~a: ~a\n" key args))))))
 @ 
 
@@ -437,18 +443,14 @@ Finally, here's our command loop with error handling.
     (lambda (key . args)
       (case key
         ((silent-quit)
-         (display "GOT SILENT QUIT in command-loop\n"))
+         (emacsy-log-warning "GOT SILENT QUIT in command-loop"))
         ((quit-command-loop)
-         (display "GOT QUIT-COMMAND-LOOP in command-loop\n")
+         (emacsy-log-warning "GOT QUIT-COMMAND-LOOP in command-loop")
          (apply throw key args))
         ((encoding-error)
-         (display "ENCODING-ERROR '")
-         (pp event-queue)
-         (display "'")
-         ;(throw 'done)
-         )
+         (emacsy-log-error "ENCODING-ERROR '~a'" (pp event-queue)))
         (else
-         (format (current-error-port)
+         (emacsy-log-error
                  "command-loop: Uncaught throw to '~a: ~a\n" key args))))))
 @ 
 

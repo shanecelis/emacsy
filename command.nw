@@ -231,12 +231,17 @@ associated with commands.
   (if (command? command)
       (let ((cmd-proc (command->proc command))
             (cmd-name (command-name command)))
-        (format #t "Running command: ~a~%" cmd-name)
+        (emacsy-log-info "Running command: ~a" cmd-name)
         (set! last-command this-command)
         (set! this-command cmd-name)
         (apply cmd-proc '()))
-      (error (format #f "command-execute not given a command: ~a" command))))
+      (error (emacsy-log-warning "command-execute not given a command: ~a" command))))
 @
+
+<<util:procedure>>=
+(define-public (emacsy-log-info format-msg . args)
+  (apply format (current-error-port) format-msg args))
+@ 
 
 <<command:state>>=
 (define-public this-command #f)
