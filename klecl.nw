@@ -1,5 +1,5 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{KLECL Module}
-
 
 \epigraph{A box without hinges, key, or lid, yet golden treasure inside is hid.}{The Hobbit \\ J. R. R. Tolkien}
 
@@ -389,10 +389,17 @@ loop sets up a fair amount of state.
          (emacsy-log-warning "GOT QUIT-COMMAND-LOOP in command-tick\n")
          (apply throw key args))
         ((encoding-error)
-         (emacsy-log-warning "ENCODING-ERROR '~a'" (pp event-queue)))
+         (emacsy-log-warning "ENCODING-ERROR '~a'" (pp-string event-queue)))
         (else
          (emacsy-log-error
                  "command-tick: Uncaught throw to '~a: ~a\n" key args))))))
+@ 
+
+Let's define a convenience procedure to [[pretty-print]] to a string.
+
+<<util:procedure>>=
+(define-public (pp-string obj)
+  (call-with-output-string (lambda (port) (pp obj port))))
 @ 
 
 <<klecl:test>>=
@@ -448,7 +455,7 @@ Finally, here's our command loop with error handling.
          (emacsy-log-warning "GOT QUIT-COMMAND-LOOP in command-loop")
          (apply throw key args))
         ((encoding-error)
-         (emacsy-log-error "ENCODING-ERROR '~a'" (pp event-queue)))
+         (emacsy-log-error "ENCODING-ERROR '~a'" (pp-string event-queue)))
         (else
          (emacsy-log-error
                  "command-loop: Uncaught throw to '~a: ~a\n" key args))))))

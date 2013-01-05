@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Minibuffer}
 
 \epigraph{...}{...}
@@ -63,14 +64,20 @@ the echo area, so we add some hooks.
 <<minibuffer:process>>=
 (add-hook! (buffer-enter-hook minibuffer) 
            (lambda () 
-             (display "Enter minibuffer!\n")
+             (emacsy-log-debug "Enter minibuffer!\n")
              (set! emacsy-display-minibuffer? #t)))
 
 (add-hook! (buffer-exit-hook  minibuffer) 
            (lambda () 
-             (display "Exit minibuffer!\n")
+             (emacsy-log-debug "Exit minibuffer!\n")
              (set! emacsy-display-minibuffer? #f)))
 @ 
+
+<<util:procedure>>=
+(define-public (emacsy-log-debug format-msg . args)
+  (apply format (current-error-port) format-msg args))
+@
+
 
 <<minibuffer:state>>=
 (define-public emacsy-display-minibuffer? #f) ;; or the echo area
@@ -177,7 +184,7 @@ the next command is executed.
        " [Command attempted to use minibuffer while in minibuffer.]")
       (throw 'quit-command 'already-in-minibuffer))
    (history-insert! (fluid-ref minibuffer-history-index) "")
-   (display "SWITCHING!")
+   (emacsy-log-debug "Switching to minibuffer now.")
    (switch-to-buffer minibuffer)
    (delete-minibuffer-contents minibuffer)
    (with-buffer minibuffer
@@ -192,16 +199,18 @@ the next command is executed.
           (while minibuffer-reading?
             (primitive-command-tick)))
         (lambda (key . args)
-          (display "MINIBUFFER CANCELED!\n")
+          (emacsy-log-debug "MINIBUFFER CANCELED!\n")
           (set! canceled? #t)))
       (if canceled?
           (begin
             (if (eq? (current-buffer) minibuffer)
                 (switch-to-buffer last-buffer))
             (throw 'quit-command 'quit-read-from-minibuffer))
+          
           (history-set! (fluid-ref minibuffer-history-index) 
                         (minibuffer-contents))))
     (set! minibuffer-reading? #f)))
+  
   (let ((original-keymap #f))
     (in-out
      (begin (set! original-keymap (local-keymap minibuffer))
@@ -253,7 +262,7 @@ We want to offer
 <<minibuffer:procedure>>=
 (define*-public 
   (try-completion string collection #:optional (predicate (const #t)))
-  (let ((completer (collection->completer collection)))
+  (let ((completer (collection->completer collection predicate)))
     (receive (completions expansion exact? unique?)
         (complete completer string)
       expansion)))
@@ -267,7 +276,7 @@ We want to offer
 <<minibuffer:procedure>>=
 (define*-public
   (all-completions string collection #:optional (predicate (const #t)))
-  (let ((completer (collection->completer collection)))
+  (let ((completer (collection->completer collection predicate)))
     (receive (completions expansion exact? unique?)
         (complete completer string)
       completions)))
@@ -328,7 +337,9 @@ We want to offer
 
 <<minibuffer:procedure>>=
 (define*-public
-  (completing-read prompt collection #:optional (predicate (const #t)))
+  (completing-read prompt collection 
+                   #:optional 
+                   (predicate (const #t)))
   (with-fluids ((minibuffer-completion-table collection)
                 (minibuffer-completion-predicate predicate))
    (read-from-minibuffer prompt #:keymap minibuffer-local-completion-map)))

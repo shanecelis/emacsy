@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Utility Module}
 
 The [[util]] module is a grab bag of all sorts of miscellaneous

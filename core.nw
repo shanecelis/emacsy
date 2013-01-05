@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Core}
 
 \epigraph{...}{...}
@@ -62,7 +63,7 @@ with \verb|M-x|.
 
 <<core:command>>=
 (define-interactive (execute-extended-command #:optional (n 1))
-  (display "HERE!\n")
+  ;(display "HERE!\n")
   (let ((str (completing-read "M-x " (completer global-cmdset))))
     (call-interactively (string->symbol str))))
 @ 
@@ -90,6 +91,50 @@ with \verb|M-x|.
 (define-key global-map (kbd "C-o")   'other-buffer)
 (define-key global-map (kbd "C-x k") 'kill-buffer)
 @ 
+
+One problem with this is I'd like to give completing-read a list of
+objects that will be converted to strings, but I'd like to get the
+object out rather than the string.  I want something like this:
+
+<<core:test>>=
+(check (let* ((symbols '(aa ab c d)))
+   (let-values
+       (((to-string from-string) (object-tracker symbol->string)))
+     (map from-string (all-completions "a" (map to-string symbols))))) => '(aa ab))
+@ 
+
+So let's write it.
+
+<<util:procedure>>=
+;; object-tracker :: (a -> b) -> ((a -> b), (b -> a))
+(define-public (object-tracker a->b)
+  (define (swap-cons c)
+    (cons (cdr c) (car c)))
+  (let ((cache (make-hash-table)))
+    (values
+     (lambda (x)
+       (let ((y (a->b x)))
+         (if (hash-ref cache y)
+             (emacsy-log-warning "object-tracker has a duplicate for pairs ~a ~a" (cons x y) (swap-cons (hash-get-handle cache y))))
+         (hash-set! cache y x)
+         y))
+     (lambda (y)
+       (hash-ref cache y)))))
+@ 
+
+<<core:procedure>>=
+(define-interactive (switch-to-buffer 
+         #:optional 
+         (buffer
+          (let-values ((to-string from-string) (object-tracker buffer-name))
+           (from-string (completing-read "Buffer: " 
+                                         (map to-string (mru-list buffer-stack)))))))
+  ((@@ (emacsy buffer) switch-to-buffer-prim) buffer)
+)
+@ 
+
+
+
 
 \subsection{Messages Buffer}
 
@@ -167,9 +212,9 @@ These are most of the C API calls.
                          (apply run-hook hook args)
                          #t)))
     (lambda (key . args)
-      (format (current-error-port) "Hook ~a threw error '~a with args ~a " hook key args)
-      (format (current-error-port) "Resetting hook ~a" hook)
-      (reset-hook! hook)
+      (emacsy-log-error "Hook ~a threw error '~a with args ~a " hook key args)
+      (emacsy-log-error "Resetting hook ~a" hook)
+;      (reset-hook! hook)
       #f)))
 
 (define-public emacsy-terminate-hook (make-hook))
@@ -254,7 +299,7 @@ We don't do this all the time because it seems unnecessarily taxing.
             'quit-command
             (lambda () (primitive-command-tick))
             (lambda (key . args)
-              (display "READ-FROM-MOUSE CANCELED\n")
+              (emacsy-log-debug "READ-FROM-MOUSE CANCELED\n")
               (set! canceled? #t)))
           (if canceled?
               (throw 'quit-command 'quit-read-from-mouse)
@@ -329,7 +374,8 @@ Layout for tests.
 (use-modules (emacsy core)
              (emacsy event)
              (emacsy klecl)
-             (oop goops))
+             (oop goops)
+             (srfi srfi-11))
 
 (eval-when (compile load eval)
            ;; Some trickery so we can test private procedures.

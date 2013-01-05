@@ -80,6 +80,14 @@ following operators: add!, remove!, contains?, recall!, and list.
 @ 
 
 <<buffer:procedure>>=
+(define-method (write (obj <mru-stack>) port)
+;  (write (string-concatenate (list "#<mru-stack '" (buffer-name obj) "'>")) port)
+  (format port "<mru-stack ~a>" (mru-list obj))
+)
+@ 
+
+
+<<buffer:procedure>>=
 (define-method (mru-add! (s <mru-stack>) x)
   (q-push! (q s) x))
 (define-method (mru-remove! (s <mru-stack>) x)
@@ -224,14 +232,15 @@ is one.
 
 \todo{This interactive is not a thunk.  It should fail, ideally.}
 <<buffer:procedure>>=
-(define-interactive (switch-to-buffer buffer)
+(define (switch-to-buffer-prim buffer)
   (run-hook (buffer-exit-hook (current-buffer)))
   (set! last-buffer (current-buffer))
   (if (mru-contains? buffer-stack buffer)
       (mru-recall! buffer-stack buffer)
       (set-buffer! buffer))
-  ;(assert (eq? (current-buffer) buffer))
   (run-hook (buffer-enter-hook (current-buffer))))
+
+(define-public switch-to-buffer switch-to-buffer-prim) 
 @ 
 
 <<buffer:test>>=

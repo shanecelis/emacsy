@@ -21,7 +21,7 @@ TESTS = event-tests.scm  \
         minibuffer-tests.scm core-tests.scm emacsy-tests.scm
 
 #windows-tests.scm
-TESTS = core-tests.scm
+#TESTS = core-tests.scm
 
 HDRS = emacsy.h
 
