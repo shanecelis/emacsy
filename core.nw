@@ -90,6 +90,7 @@ with \verb|M-x|.
 <<core:keybinding>>=
 (define-key global-map (kbd "C-o")   'other-buffer)
 (define-key global-map (kbd "C-x k") 'kill-buffer)
+(define-key global-map (kbd "C-x b") 'switch-to-buffer)
 @ 
 
 One problem with this is I'd like to give completing-read a list of
@@ -119,21 +120,47 @@ So let's write it.
          (hash-set! cache y x)
          y))
      (lambda (y)
-       (hash-ref cache y)))))
+       (or (hash-ref cache y) y)))))
 @ 
 
 <<core:procedure>>=
-(define-interactive (switch-to-buffer 
-         #:optional 
-         (buffer
-          (let-values ((to-string from-string) (object-tracker buffer-name))
-           (from-string (completing-read "Buffer: " 
-                                         (map to-string (mru-list buffer-stack)))))))
-  ((@@ (emacsy buffer) switch-to-buffer-prim) buffer)
-)
+(define-interactive 
+  (switch-to-buffer 
+   #:optional 
+   (buffer
+    (let-values (((to-string from-string) (object-tracker buffer-name)))
+      (from-string (completing-read "Buffer: " 
+                                    (map to-string (buffer-list)))))))
+  (if (is-a? buffer <buffer>)
+   ((@@ (emacsy buffer) primitive-switch-to-buffer) buffer)
+   (add-buffer! 
+    (begin <<Create a new buffer of a certain class.>>))))
 @ 
 
+We will need to register classes that will be available to the user to
+instantiate.
 
+<<Create a new buffer of a certain class.>>=
+(if (= (length buffer-classes) 1)
+    ;; If we only have one buffer class, use that.
+    (make (car buffer-classes) #:name buffer)
+    ;; Otherwise, let the user choose one.
+    (let*-values 
+        (((to-string from-string) (object-tracker 
+                                   (compose symbol->string class-name))))
+      (let ((buffer-class 
+             (from-string (completing-read "Buffer Class: " 
+                                           (map to-string buffer-classes)))))
+        (if (is-a? buffer-class <class>)
+            (make buffer-class #:name buffer)
+            (begin 
+              (message "No such class ~a." buffer-class)
+              (throw 'invalid-class))))))
+@ 
+
+<<core:state>>=
+(define-public buffer-classes (list <text-buffer>))
+@ 
 
 
 \subsection{Messages Buffer}
@@ -350,6 +377,7 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
   #:use-module (debugging assert)
   #:use-module (system repl error-handling)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-11)
   #:use-module (convenience-lambda)  
   #:use-module (emacsy util)
   #:use-module (emacsy keymap)

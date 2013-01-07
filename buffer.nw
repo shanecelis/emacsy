@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Buffer Module}
 
 \epigraph{And when you gaze long into an abyss the abyss also gazes into you.}{Beyond Good and Evil \\Friedrich Nietzsche}
@@ -12,7 +13,7 @@ the model, view, and controller or MVC pattern.
 <<buffer:class>>=
 (define-class-public <buffer> ()
   (name #:init-keyword #:name)
-  (keymap #:accessor local-keymap #:init-keyword #:keymap)
+  (keymap #:accessor local-keymap #:init-keyword #:keymap #:init-form (make-keymap))
   (locals #:accessor local-variables #:init-form '())
   (buffer-enter-hook #:accessor buffer-enter-hook #:init-form (make-hook 0))
   (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0)))
@@ -180,6 +181,11 @@ around.
 @ 
 
 <<buffer:procedure>>=
+(define-public (buffer-list)
+  (mru-list buffer-stack))
+@ 
+
+<<buffer:procedure>>=
 (define-public (current-buffer)
   ;; Perhaps instead of returning #f for no buffer there should be an
   ;; immutable void-buffer class.
@@ -230,17 +236,26 @@ is one.
         #f)))
 @ 
 
-\todo{This interactive is not a thunk.  It should fail, ideally.}
+This is our primitive procedure for switching buffers.  It does not
+handle any user interaction.
+
 <<buffer:procedure>>=
-(define (switch-to-buffer-prim buffer)
+(define (primitive-switch-to-buffer buffer)
+  (emacsy-log-debug "Running exit hook for ~a" (current-buffer))
   (run-hook (buffer-exit-hook (current-buffer)))
   (set! last-buffer (current-buffer))
   (if (mru-contains? buffer-stack buffer)
-      (mru-recall! buffer-stack buffer)
-      (set-buffer! buffer))
+      (begin
+        (emacsy-log-debug "Recall buffer ~a" buffer)
+        (mru-recall! buffer-stack buffer)
+        (set! aux-buffer #f))
+      (begin 
+        (emacsy-log-debug "Set buffer to ~a" buffer)
+        (set-buffer! buffer)))
+  (emacsy-log-debug "Running enter hook for ~a" (current-buffer))
   (run-hook (buffer-enter-hook (current-buffer))))
 
-(define-public switch-to-buffer switch-to-buffer-prim) 
+(define-public switch-to-buffer primitive-switch-to-buffer) 
 @ 
 
 <<buffer:test>>=
@@ -432,6 +447,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
   #:use-module (oop goops)
   #:use-module (emacsy util)
   #:use-module (emacsy event)
+  #:use-module (emacsy keymap)
   #:use-module (emacsy command)
   #:use-module (emacsy klecl)
   #:use-module (rnrs base)
@@ -448,6 +464,7 @@ Layout for tests.
 (use-modules (emacsy buffer)
              (emacsy command)                  
              (emacsy event)
+             (emacsy keymap)
              (oop goops)
              (rnrs base)
              )
