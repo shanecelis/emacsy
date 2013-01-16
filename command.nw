@@ -255,12 +255,12 @@ associated with commands.
 @ 
 
 <<command:state>>=
-(define this-interactive-command (make-fluid #f))
+(define this-interactive-command (make-fluid))
 @ 
 
 <<command:procedure>>=
 (define*-public (called-interactively? #:optional (kind 'any))
-  (eq? this-command (fluid-ref this-interactive-command)))
+  (eq? (fluid-ref in-what-command) (fluid-ref this-interactive-command)))
 @ 
 
 <<command:test>>=

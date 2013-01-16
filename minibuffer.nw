@@ -174,10 +174,14 @@ the next command is executed.
 \subsection{read-from-minibuffer}
 
 <<minibuffer:procedure>>=
-(define*-public (read-from-minibuffer prompt 
+(define*-public (read-from-minibuffer prompt #:optional
+                                      (initial-contents #f)
                                       #:key 
                                       (read #f)
-                                      (keymap minibuffer-local-map))
+                                      (keymap minibuffer-local-map)
+                                      ; XXX I want to get history in here somehow
+                                      ;(history #f)
+                                      )
   (define (read-from-minibuffer-internal prompt read)
     (when minibuffer-reading?
       (minibuffer-message
@@ -188,6 +192,8 @@ the next command is executed.
    (switch-to-buffer minibuffer)
    (delete-minibuffer-contents minibuffer)
    (with-buffer minibuffer
+    (if initial-contents
+      (insert initial-contents))
     (goto-char (point-min)))
    (set! (minibuffer-prompt minibuffer) (or prompt ""))
    (in-out
@@ -211,12 +217,29 @@ the next command is executed.
                         (minibuffer-contents))))
     (set! minibuffer-reading? #f)))
   
-  (let ((original-keymap #f))
+  (let ((original-keymap #f)
+        (history-list #f)
+        (history-index #f))
+    
     (in-out
      (begin (set! original-keymap (local-keymap minibuffer))
-            (set! (local-keymap minibuffer) keymap))
+            (set! (local-keymap minibuffer) keymap)
+            ; XXX implement history correctly.
+            #;(set! history-list (fluid-ref minibuffer-history))
+            #;(set! history-index (fluid-ref minibuffer-history-index))
+            #;
+            (when history
+              (match history
+                ((list . index)
+                 (fluid-set! minibuffer-history list)
+                 (fluid-set! minibuffer-history-index index))
+                (list
+                 (fluid-set! minibuffer-history list)
+                 (fluid-set! minibuffer-history-index 0)))))
      (read-from-minibuffer-internal prompt read)
-     (set! (local-keymap minibuffer) original-keymap))))
+     (begin 
+       (set! (local-keymap minibuffer) original-keymap)
+       ))))
 @ 
 
 <<minibuffer:state>>=
@@ -338,11 +361,14 @@ We want to offer
 <<minibuffer:procedure>>=
 (define*-public
   (completing-read prompt collection 
-                   #:optional 
-                   (predicate (const #t)))
+                   #:key 
+                   (predicate (const #t))
+                   (require-match? #f)
+                   (initial-input #f))
+;; XXX implement require-match?
   (with-fluids ((minibuffer-completion-table collection)
                 (minibuffer-completion-predicate predicate))
-   (read-from-minibuffer prompt #:keymap minibuffer-local-completion-map)))
+   (read-from-minibuffer prompt initial-input #:keymap minibuffer-local-completion-map)))
 @ 
 
 

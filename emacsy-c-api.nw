@@ -28,6 +28,9 @@ char *emacsy_message_or_echo_area();
 /* Return the mode line. */
 char *emacsy_mode_line();
 
+/* Return the name of the current buffer. */
+char *emacsy_current_buffer();
+
 /* Run a hook. */
 int  emacsy_run_hook_0(const char *hook_name);
 
@@ -39,6 +42,9 @@ int  emacsy_terminate();
 
 /* Attempt to load a module. */
 int emacsy_load_module(const char *module_name);
+
+/* Load a file in the emacsy environment. */
+//int emacsy_load(const char *file_name);
 <<emacsy.h>>=
 /* emacsy.h
 
@@ -195,7 +201,6 @@ int emacsy_tick()
 @ \section{emacsy\_message\_or\_echo\_area}
 
 <<Functions>>=
-
 char *emacsy_message_or_echo_area()
 {
   return scm_to_locale_string(
@@ -203,6 +208,20 @@ char *emacsy_message_or_echo_area()
                                 "emacsy-message-or-echo-area")));
 }
 @ %def emacsy_message_or_echo_area
+
+\section{emacsy\_current\_buffer}
+
+<<Functions>>=
+char *emacsy_current_buffer()
+{
+  return scm_to_locale_string(
+    scm_call_1(scm_c_public_ref("emacsy emacsy", "buffer-name"),
+      scm_call_0(scm_c_public_ref("emacsy emacsy",
+                                  "current-buffer"))));
+}
+@ %def emacsy_message_or_echo_area
+
+
 \section{emacsy\_mode\_line}
 
 \todo[inline]{Change name from modeline to mode-line.}

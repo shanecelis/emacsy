@@ -80,7 +80,7 @@ Let's start with the tests, so the usage is somewhat obvious.
 @ 
 
 <<block:procedure>>=
-(define (block-yield)
+(define-public (block-yield)
   ;; I forgot why I'm running this thunk.
   (run-thunk (abort-to-prompt 'block 'block-until 
                               (const #t) #t)))

@@ -6,7 +6,6 @@ functionality.  Rather than defining it here in one place.  I thought
 it'd be best to define each piece where it is actually introduced and
 used.  
 
-
 <<util:macro>>=
 (define-syntax define-syntax-public
   (syntax-rules ()
@@ -79,3 +78,17 @@ used.
 <<util:procedure>>
 @ 
 
+<<util:procedure>>=
+(define-public (repeat-func count func)
+  (if (<= count 0)
+      #f
+      (begin
+        (func)
+        (repeat-func (1- count) func))))
+@
+<<util:macro>>=
+(define-syntax-public repeat
+  (syntax-rules ()
+    ((repeat c e ...)
+     (repeat-func c (lambda () e ...)))))
+@

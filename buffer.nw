@@ -1,4 +1,5 @@
 % -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Buffer Module}
 
 \epigraph{And when you gaze long into an abyss the abyss also gazes into you.}{Beyond Good and Evil \\Friedrich Nietzsche}
@@ -210,6 +211,7 @@ around.
   (next-buffer (- incr)))
 
 (define-public (set-buffer! buffer)
+  ;;(emacsy-log-debug "set-buffer! to ~a" buffer)
   (if (mru-set! buffer-stack buffer)
       (set! aux-buffer #f)
       (set! aux-buffer buffer)))
@@ -253,7 +255,8 @@ handle any user interaction.
         (emacsy-log-debug "Set buffer to ~a" buffer)
         (set-buffer! buffer)))
   (emacsy-log-debug "Running enter hook for ~a" (current-buffer))
-  (run-hook (buffer-enter-hook (current-buffer))))
+  (run-hook (buffer-enter-hook (current-buffer)))
+  (current-buffer))
 
 (define-public switch-to-buffer primitive-switch-to-buffer) 
 @ 
