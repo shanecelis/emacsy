@@ -227,14 +227,14 @@ associated with commands.
 @ 
 
 <<command:procedure>>=
-(define-public (command-execute command)
+(define-public (command-execute command . args)
   (if (command? command)
       (let ((cmd-proc (command->proc command))
             (cmd-name (command-name command)))
         (emacsy-log-info "Running command: ~a" cmd-name)
         (set! last-command this-command)
         (set! this-command cmd-name)
-        (apply cmd-proc '()))
+        (apply cmd-proc args))
       (error (emacsy-log-warning "command-execute not given a command: ~a" command))))
 @
 
@@ -249,9 +249,9 @@ associated with commands.
 @ 
 
 <<command:procedure>>=
-(define-public (call-interactively command)
+(define-public (call-interactively command . args)
   (with-fluids ((this-interactive-command (command-name command)))
-    (command-execute command)))
+    (apply command-execute command args)))
 @ 
 
 <<command:state>>=
