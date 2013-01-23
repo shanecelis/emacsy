@@ -282,13 +282,23 @@ We want to offer
 (check (try-completion "b" (list "foo" "foobar" "barfoo")) => "barfoo")
 @ 
 
+It can also work with a procedure.
+
+<<minibuffer:test>>=
+(check (try-completion "f" (lambda (string predicate all?) (if (string=? string "f") "blah" "huh"))) => "blah")
+(check (try-completion "w" (lambda (string predicate all?) (if (string=? string "f") "blah" "huh"))) => "huh")
+@ 
+
+
 <<minibuffer:procedure>>=
 (define*-public 
   (try-completion string collection #:optional (predicate (const #t)))
-  (let ((completer (collection->completer collection predicate)))
-    (receive (completions expansion exact? unique?)
-        (complete completer string)
-      expansion)))
+  (if (procedure? collection)
+      (collection string predicate #f)
+      (let ((completer (collection->completer collection predicate)))
+        (receive (completions expansion exact? unique?)
+            (complete completer string)
+          expansion))))
 @ 
 
 <<minibuffer:test>>=
@@ -299,10 +309,12 @@ We want to offer
 <<minibuffer:procedure>>=
 (define*-public
   (all-completions string collection #:optional (predicate (const #t)))
-  (let ((completer (collection->completer collection predicate)))
-    (receive (completions expansion exact? unique?)
-        (complete completer string)
-      completions)))
+  (if (procedure? collection)
+      (collection string predicate #t)
+   (let ((completer (collection->completer collection predicate)))
+     (receive (completions expansion exact? unique?)
+         (complete completer string)
+       completions))))
 @ 
 
 <<minibuffer:procedure>>=
@@ -310,6 +322,7 @@ We want to offer
   (collection->completer collection #:optional (predicate (const #t)))
   (if (is-a? collection <string-completer>)
       collection
+      
       (let ((completer (make <string-completer>)))
         (add-strings! completer (filter predicate collection)) 
         completer)))
@@ -334,7 +347,27 @@ We want to offer
       (minibuffer-message " [No match]"))
      ((> (length completions) 1)
       (minibuffer-message 
-       (string-concatenate (list "{" (string-join completions " | ") "}")))))))
+       (string-concatenate (list "{" (string-join (rotate-list completions *nth-match*) " | ") "}")))))))
+@ 
+
+<<minibuffer:state>>=
+(define *nth-match* 0)
+
+<<minibuffer:command>>=
+(define-interactive (next-match)
+  (incr! *nth-match*)
+  (minibuffer-complete))
+
+(define-interactive (previous-match)
+  (decr! *nth-match*)
+  (minibuffer-complete))
+
+<<minibuffer:procedure>>=
+(define (rotate-list lst nth)
+  (let* ((nth (modulo nth (length lst)))
+         (tail (list-tail lst nth))
+         (head (list-head lst nth)))
+    (append tail head)))
 @ 
 
 <<minibuffer:command>>=
@@ -348,7 +381,9 @@ We want to offer
   (let ((kmap (make-keymap minibuffer-local-map)))
     (define-key kmap (kbd "SPC") 'minibuffer-complete-word)
     (define-key kmap (kbd "TAB") 'minibuffer-complete)
-    (define-key kmap (kbd "?")   'minibuffer-completion-help)))
+    (define-key kmap (kbd "?")   'minibuffer-completion-help)
+    (define-key kmap (kbd "C-s") 'next-match)
+    (define-key kmap (kbd "C-r") 'previous-match)))
 @ 
 
 <<minibuffer:state>>=
@@ -369,6 +404,115 @@ We want to offer
   (with-fluids ((minibuffer-completion-table collection)
                 (minibuffer-completion-predicate predicate))
    (read-from-minibuffer prompt initial-input #:keymap minibuffer-local-completion-map)))
+@ 
+
+We want to be able to look up filenames.
+
+<<minibuffer:procedure>>=
+(define (files-in-dir dirname)
+  (let ((dir (opendir dirname))
+        (filenames '()))
+    (let loop ((filename (readdir dir)))
+      (when (not (eof-object? filename))
+        (cons! filename filenames)
+        (loop (readdir dir))))
+    (closedir dir)
+    filenames))
+
+(define (make-filename dir name)
+  (format #f "~a~a" (if (slash-suffix? dir)
+                        dir
+                        (format #f "~a/" dir)) name))
+
+(define (files-in-parent-dir filename)
+  (let* ((dir (my-dirname filename))
+         (base (basename filename))
+         (filenames (files-in-dir dir)))
+    (if (or (string-prefix? dir filename)
+            (string-prefix? filename dir)) ;; the directory is a prefix of
+                                      ;; the string--good!
+        (map (compose canonize-filename (cut make-filename dir <>)) filenames)
+        (map canonize-filename filenames))))
+
+(define (directory? filename)
+  (and (access? filename F_OK) 
+       (eq? 'directory (stat:type (stat filename)))))
+
+(define (slash-suffix? name)
+  (eq? #\/ (string-ref name (1- (string-length name)))))
+
+(define (canonize-filename name)
+  (if (directory? name)
+      (if (slash-suffix? name)
+          name
+          (format #f "~a/" name))
+      name))
+
+(define (my-dirname name)
+  (if (directory? name)
+      (canonize-filename name)
+      (dirname name)))
+
+(define (file-name-completer string predicate all?)
+    (if all?
+        (all-completions string (files-in-parent-dir string) predicate)
+        (try-completion string (files-in-parent-dir string) predicate)))
+
+(define (dot-directory? name)
+  (or ;(string=? "." name) 
+      ;(string=? ".." name)
+      (string-suffix? "./" name) 
+      (string-suffix? "../" name)))
+
+(define no-dot-files (negate dot-directory?))
+
+(define*-public
+  (read-file-name prompt #:key
+                  (dir #f)
+                  (default-file-name #f)
+                  (initial #f)
+                  (predicate no-dot-files))
+  
+  
+  (completing-read prompt file-name-completer #:predicate predicate))
+@
+
+<<minibuffer:test>>=
+(check (dirname "") => ".")
+(check (my-dirname "") => ".")
+(check (my-dirname "../now") => "..")
+(check (my-dirname "bin") => "bin/")
+(check (my-dirname "bin/") => "bin/")
+(check (my-dirname "mini") => ".")
+(check (directory? ".") => #t)
+(check (directory? "..") => #t)
+(check (canonize-filename ".") => "./")
+;(check (files-in-dir ".") => '())
+(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-tests.scm" "minibuffer.defs" "minibuffer.nw" "minibuffer.tex"))
+(check (file-name-completer "mini" (const #t) #f) => "minibuffer")
+(check (file-name-completer "bi" (const #t) #f) => "bin/")
+(check (file-name-completer "bin" (const #t) #f) => "bin/")
+(check (file-name-completer "bin/" (const #t) #f) => "bin/")
+;; Get rid of the dot files.
+(check (file-name-completer "bin" no-dot-files #f) => "bin/run-test")
+(check (file-name-completer "bin/" no-dot-files #f) => "bin/run-test")
+(check (file-name-completer "ex" (const #t) #f) => "examples/")
+(check (file-name-completer "em" (const #t) #f) => "emacsy")
+(check (dirname "bin/") => ".")
+(check (basename "bin/") => "bin")
+(check (basename "bin/f") => "f")
+(check (dirname "bin/f") => "bin")
+(check (my-dirname "bin/") => "bin/")
+(check (files-in-parent-dir "bin/") => '("bin/run-test" "bin/../" "bin/./"))
+(check (files-in-parent-dir "bin") => '("bin/run-test" "bin/../" "bin/./"))
+
+(check (files-in-dir "bin/") => '("run-test" ".." "."))
+(check (files-in-dir "bin") => '("run-test" ".." "."))
+(check (file-name-completer "bin/" no-dot-files #t) => '("bin/run-test"))
+
+;(check (files-in-dir "..") => '())
+
+(check (file-name-completer "../now" (const #t) #f) => "../noweb-emacsy/")
 @ 
 
 
@@ -446,6 +590,7 @@ Some commands for manipulating the minibuffer history.
   #:use-module (ice-9 receive)
   #:use-module (ice-9 gap-buffer)
   #:use-module (ice-9 pretty-print)
+  #:use-module (srfi srfi-26)
   #:use-module (oop goops)
   #:use-module (string completion)
   #:use-module (emacsy util)

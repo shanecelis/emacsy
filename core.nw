@@ -232,7 +232,7 @@ We want to be able to load a scheme file.\todo{We should have a
 
 <<core:command>>=
 (define-interactive 
-  (load-file #:optional (filename (read-from-minibuffer "Filename: ")))
+  (load-file #:optional (filename (read-file-name "Filename: ")))
   (catch #t
     #.\ (begin (load filename)
                (message "Loaded ~a." filename)

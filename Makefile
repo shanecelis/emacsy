@@ -72,7 +72,7 @@ doc:
 	$(MAKE) $(TARGET).pdf
 
 
-source: $(HDRS) $(SRCS)
+source: $(HDRS) $(SRCS) $(TESTS)
 
 all.defs: $(DEFS)
 	sort -u $^ | cpif $@
