@@ -4,7 +4,7 @@ Emacsy\footnote{Kickstarter page \url{http://kck.st/IY0Bau}} actually do?  What
 restrictions does it impose on the GUI toolkit?  How is it possible to
 not use any Emacs code? I thought it might be best if I were to
 provide a minimal example program, so that people can see code that
-illustrates Emacsy API usage.
+illustrates Emacsy API usage.  
 
 \section{Embedders' API}
 
