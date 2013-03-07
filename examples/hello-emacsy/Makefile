@@ -1,8 +1,9 @@
 CC = cc
 
-EMACSY_LIB := /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo/noweb-emacsy/libemacsy.a
+EMACSY_HOME := /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/
+EMACSY_LIB := $(EMACSY_HOME)/libemacsy.a
 GUILE_CFLAGS := $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --cflags)
-CFLAGS = -g $(GUILE_CFLAGS) -I/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/bullet-2.79/Demos/GuileDemo/noweb-emacsy
+CFLAGS = -g $(GUILE_CFLAGS) -I$(EMACSY_HOME)
 
 LDFLAGS =  -framework OpenGL -framework GLUT $(shell PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config guile-2.0 --libs) 
 
