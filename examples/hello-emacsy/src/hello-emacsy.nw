@@ -171,9 +171,11 @@ SCM_DEFINE (scm_set_counter_x, "set-counter!",
 them with the Scheme runtime.  
 
 <<Register primitives.>>=
-void primitives_init() 
+void primitives_init()
 {
-  #include "hello-emacsy.x"
+#ifndef SCM_MAGIC_SNARFER
+  #include "hello-emacsy.c.x"
+#endif
 }
 @ We generate the file \verb|hello-emacsy.x| by running the command:
 \verb|guile-snarf hello-emacsy.c|. Emacsy can now access and alter the
