@@ -1,0 +1,17 @@
+#!/bin/bash
+# works-without-noweb
+set -e; # abort if anything fails
+cd @top_builddir@
+make dist
+filename=`echo hello-emacsy*.tar.gz`
+dirname=$(basename $filename .tar.gz)
+tar xfz $filename
+cd $dirname
+./configure --enable-noweb=no --enable-latexmk=no
+
+# Make sure it can be built without noweb and cleaned without removing
+# anything important.
+make
+make pdf
+make clean
+make 

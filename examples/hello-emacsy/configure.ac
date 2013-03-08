@@ -17,16 +17,27 @@ AC_CHECK_PROG(NOWEB_CHECK,noweb,yes)
 if test x"$NOWEB_CHECK" != x"yes" ; then
     AC_MSG_WARN([Must have noweb installed to alter literate source code.])
 fi
-AM_CONDITIONAL([NOWEB], [test x"$NOWEB_CHECK" = xyes])
+AC_ARG_ENABLE([noweb],
+              [AC_HELP_STRING([--enable-noweb=@<:@yes/no@:>@],
+                              [Enable noweb @<:@default=yes@:>@])],
+              [enable_noweb=no],
+              [enable_noweb=yes])
+AM_CONDITIONAL([NOWEB], [test x"$NOWEB_CHECK" = xyes && test x"$enable_noweb" = xyes])
 
+AC_ARG_ENABLE([latexmk],
+              [AC_HELP_STRING([--enable-latexmk=@<:@yes/no@:>@],
+                              [Enable latexmk @<:@default=yes@:>@])],
+              [enable_latexmk=no],
+              [enable_latexmk=yes])
 AC_CHECK_PROG(LATEXMK_CHECK,latexmk,yes)
 if test x"$LATEXMK_CHECK" != x"yes" ; then
     AC_MSG_WARN([Must have latexmk installed to produce PDFs.])
 fi
-AM_CONDITIONAL([LATEXMK], [test x"$LATEXMK_CHECK" = xyes])
+AM_CONDITIONAL([LATEXMK], [test x"$LATEXMK_CHECK" = xyes && test x"$enable_latexmk" = xyes])
 
 # Checks for libraries.
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
+PKG_CHECK_MODULES([EMACSY], [libemacsy])
 #AX_CHECK_GLUT
 # The autoconf macro does not prefer these frameworks over the
 # standard X11 locations.
@@ -46,8 +57,8 @@ AC_CHECK_HEADERS([stdio.h])
 AC_CHECK_FUNCS([puts])
 
 # 
-AC_SUBST(EMACSY_CFLAGS, ['-I${top_srcdir}/../..'])
-AC_SUBST(EMACSY_LIBS, ['${top_srcdir}/../../libemacsy.a'])
+dnl AC_SUBST(EMACSY_CFLAGS, ['-I${top_srcdir}/../..'])
+dnl AC_SUBST(EMACSY_LIBS, ['${top_srcdir}/../../libemacsy.a'])
 AC_SUBST(imagesdir, ['${top_srcdir}/support/images'])
 AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
 
@@ -55,5 +66,7 @@ AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([ Makefile
                   src/Makefile 
+                  tests/Makefile 
+                  tests/works-without-noweb.sh
                   ])
 AC_OUTPUT
