@@ -1,18 +1,18 @@
 # noweb.am
 #SUFFIXES += .nw .tex .pdf
 
+if NOWEB
 %.tex : %.nw
 	noweave -x -delay $< | cpif $@
 
-%.c : %.nw
+%.h %.c %.cpp : %.nw
 	notangle -R$@ $< | cpif $@
+else
+%.h %.c %.cpp %.tex : %.nw
+	$(warning Warning: unable to update $@ from changed $< without noweb.)
+endif
 
-%.h : %.nw
-	notangle -R$@ $< | cpif $@
-
-%.cpp: %.nw
-	notangle -R$@ $< | cpif $@
-
+if LATEXMK
 %.pdf: %.tex
 	TEXINPUTS=$(srcdir):$(imagesdir): latexmk -f -halt-on-error -c-style-errors -pdf -p $<; true
 
@@ -21,3 +21,9 @@ clean-local:
 
 distclean-local:
 	latexmk -C
+else
+%.pdf : %.tex
+	$(warning Warning: unable to update $@ from changed $< without latexmk.)
+
+endif
+
