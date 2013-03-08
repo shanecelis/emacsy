@@ -26,8 +26,6 @@ EXTRA_DIST = hello-emacsy-paper.pdf
 
 bin_PROGRAMS = hello-emacsy
 
-
-
 AM_CFLAGS  = $(EMACSY_CFLAGS) $(GUILE_CFLAGS)
 hello_emacsy_LDADD   = $(EMACSY_LIBS) $(GUILE_LIBS)
 hello_emacsy_LDFLAGS = $(GUILE_LDFLAGS) $(GLUT_LDFLAGS) $(GL_LDFLAGS) $(GLU_LDFLAGS)
