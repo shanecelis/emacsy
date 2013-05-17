@@ -7,21 +7,22 @@ VERSION = 0.1
 
 #PDFS = $(TARGET).pdf
 
-LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/hello-emacsy.nw command.nw buffer.nw block.nw klecl.nw kbd-macro.nw minibuffer.nw core.nw
+LITSRCS = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw keymap.nw examples/hello-emacsy/src/hello-emacsy.nw command.nw buffer.nw block.nw klecl.nw kbd-macro.nw minibuffer.nw core.nw advice.nw
 
-TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/hello-emacsy.tex command.tex buffer.tex block.tex klecl.tex kbd-macro.tex minibuffer.tex core.tex
+TEXS = emacsy.tex emacsy-c-api.tex windows.tex event.tex util.tex keymap.tex examples/hello-emacsy/src/hello-emacsy.tex command.tex buffer.tex block.tex klecl.tex kbd-macro.tex minibuffer.tex core.tex advice.tex
 
-DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs minibuffer.defs core.defs
+DEFS = emacsy.defs emacsy-c-api.defs windows.defs event.defs util.defs keymap.defs examples/hello-emacsy/src/hello-emacsy.defs command.defs buffer.defs block.defs klecl.defs kbd-macro.defs minibuffer.defs core.defs
 
-SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm emacsy/emacsy.scm check/harness.scm
+SRCS = emacsy/windows.scm emacsy.c line-pragma.scm emacsy/event.scm emacsy/util.scm emacsy/keymap.scm emacsy/command.scm emacsy/buffer.scm emacsy/block.scm emacsy/klecl.scm emacsy/kbd-macro.scm emacsy/minibuffer.scm emacsy/core.scm emacsy/emacsy.scm check/harness.scm emacsy/advice.scm
 
 TESTS = event-tests.scm  \
         keymap-tests.scm command-tests.scm buffer-tests.scm \
         block-tests.scm klecl-tests.scm kbd-macro-tests.scm \
-        minibuffer-tests.scm core-tests.scm emacsy-tests.scm
+        minibuffer-tests.scm core-tests.scm emacsy-tests.scm \
+        advice-tests.scm
 
 #windows-tests.scm
-#TESTS = core-tests.scm
+TESTS = advice-tests.scm
 
 HDRS = emacsy.h
 
@@ -33,7 +34,7 @@ STYS =
 
 DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS)
 
-GRAPHICS_PATH = examples/hello-emacsy
+GRAPHICS_PATH = examples/hello-emacsy/support/images
 
 NOTANGLE_LISP_FLAGS = -L'\#line %L "%F"%N' -filter 'docs2comments -one -scm' 
 
@@ -115,6 +116,10 @@ emacsy/minibuffer.scm minibuffer-tests.scm: minibuffer.nw emacsy.nw
 
 emacsy/core.scm core-tests.scm: core.nw emacsy.nw
 	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
+
+emacsy/advice.scm advice-tests.scm: advice.nw emacsy.nw
+	notangle $(NOTANGLE_LISP_FLAGS) -R$@ $^ | cpif $@
+
 
 line-pragma.scm: emacsy.nw
 	notangle -R$@ $^ | cpif $@

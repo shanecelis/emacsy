@@ -1,4 +1,4 @@
-#line 617 "(null)"
+#line 620 "(null)"
 ;;; <check/harness.scm>=
 (define-module (check harness)
   #:use-module (check)
@@ -8,14 +8,14 @@
 ;;; Set up the variables.
 ;;; 
 
-#line 627 "(null)"
+#line 630 "(null)"
 ;;; <check/harness.scm>=
 (define unit-tests '())
 (define test-errors '())
 ;;; We can register any procedure to a test name.  
 ;;; 
 
-#line 634 "(null)"
+#line 637 "(null)"
 ;;; <check/harness.scm>=
 (define (register-test name func)
   "Register a procedure to a test name."
@@ -23,7 +23,7 @@
 ;;; Typically, users will define and register their tests with this macro.
 ;;; 
 
-#line 642 "(null)"
+#line 645 "(null)"
 ;;; <check/harness.scm>=
 (define-syntax define-test
   (syntax-rules ()
@@ -31,7 +31,7 @@
      (begin (define* (name args ...)
         expr ...)
      (register-test 'name name)))))
-#line 650 "(null)"
+#line 653 "(null)"
 ;;; We need to run the tests.
 ;;; 
 ;;; <check/harness.scm>=
@@ -39,7 +39,7 @@
   (catch 'first-error
     (lambda () 
       
-#line 660 "(null)"
+#line 663 "(null)"
 ;;; <handle each test>=
 (for-each 
  (lambda (elt)
@@ -59,11 +59,11 @@
        (throw 'first-error)
        #f)))
  (reverse unit-tests))
-#line 656 "(null)"
+#line 659 "(null)"
                           )
     (lambda args
       #f)))
-#line 680 "(null)"
+#line 683 "(null)"
 ;;; <check/harness.scm>=
 (define (run-tests-and-exit)
   (run-tests)

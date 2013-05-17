@@ -1,0 +1,246 @@
+\section{Advice}
+
+%\epigraph{Wise men don't need advice. Fools won't take it.}{Benjamin Franklin}
+
+%\epigraph{Nobody can give you wiser advice than yourself.}{Marcus Tullius Cicero}
+
+\epigraph{No enemy is worse than bad advice.}{Sophocles}
+
+
+Emacs has a facility to define ``advice'' these are pieces of code
+that run before, after, or around an already defined function.  This
+\href{http://electricimage.net/cupboard/2013/05/04/on-defadvice/}{article}
+provides a good example.
+
+<<emacsy/advice.scm>>=
+(define-module (emacsy advice)
+  #:use-module (srfi srfi-9)  
+  )
+
+<<Record>>
+
+<<State>>
+
+<<Procedure>>
+@ 
+
+How will this work?  Before we try to make the macro, let's focus on
+building up the functions.  We want to have a function that we can
+substitute for the original function which will have a number of
+before, after, and around pieces of advice that can be attached to it.
+
+<<Record>>=
+(define-record-type <record-of-advice>
+  (make-record-of-advice original before around after)
+  record-of-advice?
+  (original   advice-original)
+  (before     advice-before    set-advice-before!)
+  (around     advice-around    set-advice-around!)
+  (after      advice-after     set-advice-after!))
+@ 
+
+<<Record>>=
+(define-record-type <piece-of-advice>
+  (make-piece-of-advice procedure name class priority flag)
+  piece-of-advice?
+  (procedure poa-procedure)
+  (name      poa-name) ;; symbol not string
+  (class     poa-class    set-poa-class!)
+  (priority  poa-priority set-poa-priority!)
+  (flag      poa-flag     set-poa-flag!))
+@ 
+
+<<Procedure>>=
+(define (make-advising-function advice)
+  (lambda args
+    (let ((around-advices (append (advice-around advice) 
+                                  (list (make-piece-of-advice 
+                                         (advice-original 
+                                          advice)
+                                         'original
+                                         'bottom
+                                         0
+                                         'activate))))
+          (result #f))
+     (define (my-next-advice)
+       (if (null? around-advices)
+           (throw 'next-advices-drained)
+           (let ((next-one-around (car around-advices)))
+             (set! around-advices (cdr around-advices))
+             (apply (poa-procedure next-one-around) args))))
+     ;; This could be done more cleanly.  For instance,
+     ;; If one calls (next-advice) more than once,
+     ;; they drain all the advice rather than calling
+     ;; the same advice again, which is probably
+     ;; the more correct behavior.
+     
+     (for-each (lambda (before)
+                 (apply (poa-procedure before) args)) 
+               (advice-before advice))
+     
+     (set! result (with-fluid* next-advice-func my-next-advice
+                               (lambda ()
+                                 (next-advice))))
+     (for-each (lambda (after)
+                 (apply (poa-procedure after) result args)) 
+               (advice-after advice))
+     result)))
+@ 
+
+<<Procedure>>=
+(define (next-advice)
+  (if (fluid-bound? next-advice-func)
+      ((fluid-ref next-advice-func))
+      (throw 'no-next-advice-bound)))
+@ 
+
+<<State>>=
+(define next-advice-func (make-fluid))
+@ 
+
+To test this functionality, we're going to make some counter
+procedures.
+
+<<advice:test>>=
+(define (my-orig-func x)
+  (+ x 1))
+
+(define (make-counter)
+  (let ((x 0))
+    (lambda args
+      (if (and (= (length args) 1) (eq? (car args) 'count))
+          x
+          (begin (set! x (+ x 1))
+                 (car args))))))
+
+(define a-before (make-counter))
+@ 
+
+Let's make an identity advice procedure.  It does nothing, but it does
+wrap around the function.
+<<advice:test>>=
+(define advice (make-record-of-advice my-orig-func '() '() '()))
+
+(define advised-func (make-advising-function advice))
+(check (a-before 'count) => 0)
+(check (my-orig-func 1) => 2)
+(check (advised-func 1) => 2)
+(check (a-before 'count) => 0)
+@ 
+
+Let's test this with the simple functionality of having a piece of
+before advice.
+
+<<advice:test>>=
+(define advice (make-record-of-advice my-orig-func (list (make-piece-of-advice a-before 'a-before 'before 0 'activate)) '() '()))
+
+(define advised-func (make-advising-function advice))
+(check (a-before 'count) => 0)
+(check (my-orig-func 1) => 2)
+(check (advised-func 1) => 2)
+(check (a-before 'count) => 1)
+@ 
+
+Let's check the after advice.
+<<advice:test>>=
+(define a-after (make-counter))
+(define advice (make-record-of-advice my-orig-func '() '() 
+                                      (list (make-piece-of-advice a-after 'a-after 'after 0 'activate))))
+
+(define advised-func (make-advising-function advice))
+(check (a-after 'count) => 0)
+(check (my-orig-func 1) => 2)
+(check (advised-func 1) => 2)
+(check (a-after 'count) => 1)
+@ 
+
+Let's check the after advice.
+<<advice:test>>=
+(define a-around (lambda args
+                  (next-advice)
+                  1))
+(define advice (make-record-of-advice my-orig-func '() (list (make-piece-of-advice a-around 'a-around 'around 0 'activate)) '()))
+
+(define advised-func (make-advising-function advice))
+(check (my-orig-func 1) => 2)
+(check (advised-func 1) => 1)
+@ 
+
+So the rudimentary elements of our advice facility works.  Now, we
+want to make it so that we can alter the advice of an existing
+function.  We'll add a property to the procedure, such that we can
+tell if it is an ``advised'' procedure.
+
+<<advice:procedure>>=
+(define (advised? proc)
+  (and (procedure? proc)
+       (assq 'record-of-advice
+             (procedure-properties proc))
+       #t))
+@ 
+
+<<advice:procedure>>=
+(define (make-advising-function* proc record-of-advice)
+  (let ((advised-proc (make-advising-function proc record-of-advice)))
+    (set-procedure-property! proc 'record-of-advice record-of-advice)))
+@ 
+
+<<advice:procedure>>=
+(define (remove-advice procedure name)
+  (let ((roa (procedure-property procedure 'record-of-advice)))
+    (for-each (lambda (class)
+               (match (getter-and-setter-for-poa class)
+                 ((getter setter!)
+                  
+                  (setter! (delete! name (getter roa) (lambda (name elem)
+                                                        (eq? (poa-name elem))))))))
+              '(before around after))))
+@ 
+
+<<advice:procedure>>=
+(define (getter-and-setter-for-poa poa-class)
+  (cond ((eq? poa-class 'before)
+         (cons advice-before set-advice-before!)
+         (eq? poa-class 'around)
+         (cons advice-around set-advice-around!)
+         (eq? poa-class 'after)
+         (cons advice-after set-advice-after!)
+         (else 
+          (throw 'invalid-advice-class)))))
+@ 
+
+<<advice:procedure>>=
+(define (add-advice procedure piece-of-advice)
+  (define (sort-by! lst f)
+    (sort! lst (lambda (a b)
+                 (< (f a) (f b)))))
+  (if (not (advised? procedure))
+      ;; Procedure has never been advised.
+      (add-advice (make-advising-function* procedure (make-record-of-advice procedure '() '() '())) piece-of-advice)
+      ;; Add a new piece of advice.
+      (begin 
+        (remove-advice procedure (poa-name piece-of-advice))
+        (let ((roa (procedure-property procedure 'record-of-advice)))
+          (match (getter-setter-for-poa (poa-class piece-of-advice))
+            ((getter setter!)
+             (setter!
+              roa 
+              (sort-by! (cons piece-of-advice (getter roa)) 
+                        poa-priority))))))))
+@ 
+
+<<advice-tests.scm>>=
+(use-modules (emacsy advice)
+             (emacsy event)
+             (emacsy klecl)
+             (oop goops)
+             (srfi srfi-11))
+
+(eval-when (compile load eval)
+           ;; Some trickery so we can test private procedures.
+           (module-use! (current-module) (resolve-module '(emacsy advice))))
+
+<<+ Test Preamble>>
+<<advice:test>>
+<<+ Test Postscript>>
+@ 

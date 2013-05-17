@@ -88,6 +88,7 @@
 \\ {\sl shane.celis@gmail.com}}
 
 \input{commands}
+\pagestyle{noweb}
 \begin{document}
 \frontmatter
 \maketitle
@@ -399,7 +400,7 @@ These are the core features from Emacs that will be implemented in Emacsy.
 %% %\item Make code available on github
 %% \end{enumerate}
 
-\input{examples/hello-emacsy/hello-emacsy}
+\input{examples/hello-emacsy/src/hello-emacsy}
 
 \part{Implementation} 
 \input{emacsy-c-api}
@@ -421,6 +422,8 @@ keymaps, and commands.  Let's begin with events.
 \input{block}  
  
 \input{klecl}
+
+\input{advice}
 
 \chapter{Emacs-like Personality}
 
@@ -784,7 +787,7 @@ for the code.
 \begin{multicols}{2}
 \nowebindex 
 \end{multicols}
- 
+@
 \end{document}
 
 %%  LocalWords:  elt args Emacsism lispism Eval rep pel MATLAB Lua
