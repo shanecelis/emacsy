@@ -186,15 +186,16 @@ tell if it is an ``advised'' procedure.
 @ 
 
 <<advice:procedure>>=
-(define (remove-advice procedure name)
-  (let ((roa (procedure-property procedure 'record-of-advice)))
-    (for-each (lambda (class)
-               (match (getter-and-setter-for-poa class)
-                 ((getter setter!)
+(define (remove-advice! procedure name)
+  (if (advised? procedure)
+   (let ((roa (procedure-property procedure 'record-of-advice)))
+     (for-each (lambda (class)
+                 (match (getter-and-setter-for-poa class)
+                   ((getter setter!)
                   
-                  (setter! (delete! name (getter roa) (lambda (name elem)
-                                                        (eq? (poa-name elem))))))))
-              '(before around after))))
+                    (setter! (delete! name (getter roa) (lambda (name elem)
+                                                          (eq? (poa-name elem))))))))
+               '(before around after)))))
 @ 
 
 <<advice:procedure>>=
@@ -210,7 +211,9 @@ tell if it is an ``advised'' procedure.
 @ 
 
 <<advice:procedure>>=
-(define (add-advice procedure piece-of-advice)
+(define (add-advice! procedure piece-of-advice)
+  "Add a piece-of-advice to the procedure.  Returns the advised
+procedure."
   (define (sort-by! lst f)
     (sort! lst (lambda (a b)
                  (< (f a) (f b)))))
@@ -219,14 +222,15 @@ tell if it is an ``advised'' procedure.
       (add-advice (make-advising-function* procedure (make-record-of-advice procedure '() '() '())) piece-of-advice)
       ;; Add a new piece of advice.
       (begin 
-        (remove-advice procedure (poa-name piece-of-advice))
+        (remove-advice! procedure (poa-name piece-of-advice))
         (let ((roa (procedure-property procedure 'record-of-advice)))
           (match (getter-setter-for-poa (poa-class piece-of-advice))
             ((getter setter!)
              (setter!
               roa 
               (sort-by! (cons piece-of-advice (getter roa)) 
-                        poa-priority))))))))
+                        poa-priority)))))
+        procedure)))
 @ 
 
 <<advice-tests.scm>>=
