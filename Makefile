@@ -22,7 +22,7 @@ TESTS = event-tests.scm  \
         advice-tests.scm
 
 #windows-tests.scm
-TESTS = advice-tests.scm
+#TESTS = advice-tests.scm
 
 HDRS = emacsy.h
 
