@@ -1,46 +1,29 @@
-#line 620 "(null)"
-;;; <check/harness.scm>=
+#line 609 "emacsy.nw"
 (define-module (check harness)
   #:use-module (check)
   #:export (run-tests
             run-tests-and-exit)
   #:export-syntax (define-test))
-;;; Set up the variables.
-;;; 
-
-#line 630 "(null)"
-;;; <check/harness.scm>=
+#line 617 "emacsy.nw"
 (define unit-tests '())
 (define test-errors '())
-;;; We can register any procedure to a test name.  
-;;; 
-
-#line 637 "(null)"
-;;; <check/harness.scm>=
+#line 622 "emacsy.nw"
 (define (register-test name func)
   "Register a procedure to a test name."
   (set! unit-tests (acons name func unit-tests)))
-;;; Typically, users will define and register their tests with this macro.
-;;; 
-
-#line 645 "(null)"
-;;; <check/harness.scm>=
+#line 628 "emacsy.nw"
 (define-syntax define-test
   (syntax-rules ()
     ((define-test (name args ...) expr ...)
      (begin (define* (name args ...)
         expr ...)
      (register-test 'name name)))))
-#line 653 "(null)"
-;;; We need to run the tests.
-;;; 
-;;; <check/harness.scm>=
+#line 638 "emacsy.nw"
 (define (run-tests)
   (catch 'first-error
     (lambda () 
       
-#line 663 "(null)"
-;;; <handle each test>=
+#line 645 "emacsy.nw"
 (for-each 
  (lambda (elt)
    (format #t "TEST: ~a\n" (car elt))
@@ -59,12 +42,11 @@
        (throw 'first-error)
        #f)))
  (reverse unit-tests))
-#line 659 "(null)"
+#line 641 "emacsy.nw"
                           )
     (lambda args
       #f)))
-#line 683 "(null)"
-;;; <check/harness.scm>=
+#line 664 "emacsy.nw"
 (define (run-tests-and-exit)
   (run-tests)
   (check-report)

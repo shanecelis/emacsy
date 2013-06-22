@@ -36,7 +36,8 @@ DIST = Makefile README emacsy.nw $(TARGET)doc.tex $(SRCS) $(HDRS) $(BIBS) $(STYS
 
 GRAPHICS_PATH = examples/hello-emacsy/support/images
 
-NOTANGLE_LISP_FLAGS = -L'\#line %L "%F"%N' -filter 'docs2comments -one -scm' 
+NOTANGLE_LISP_FLAGS = -L'\#line %L "%F"%N' 
+#-filter 'docs2comments -one -scm' 
 
 .PHONY : all
 
