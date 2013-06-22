@@ -134,7 +134,7 @@ tar: $(TARGET)doc.tex
 distribution: all tar $(TARGET).pdf 
 
 clean:
-	$(RM) $(OBJS) $(SRCS) $(TESTS) $(HDRS) $(TEXS) $(DEFS) all.defs *.log *.dvi *~ *.blg *.lint $(TARGET).pdf
+	$(RM) $(OBJS) $(SRCS) $(TESTS) $(HDRS) $(TEXS) $(DEFS) all.defs *.log *.dvi *~ *.blg *.lint $(TARGET).pdf $(TARGET).aux $(TARGET).nwi $(TARGET).out $(TARGET).tdo $(TARGET).toc
 
 veryclean: clean
 	$(RM) *.aux *.bbl *.out
