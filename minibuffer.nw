@@ -488,7 +488,7 @@ We want to be able to look up filenames.
 (check (directory? "..") => #t)
 (check (canonize-filename ".") => "./")
 ;(check (files-in-dir ".") => '())
-(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-tests.scm" "minibuffer.defs" "minibuffer.nw" "minibuffer.tex"))
+(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-tests.scm" "minibuffer.nw"))
 (check (file-name-completer "mini" (const #t) #f) => "minibuffer")
 (check (file-name-completer "bi" (const #t) #f) => "bin/")
 (check (file-name-completer "bin" (const #t) #f) => "bin/")
@@ -512,7 +512,7 @@ We want to be able to look up filenames.
 
 ;(check (files-in-dir "..") => '())
 
-(check (file-name-completer "../now" (const #t) #f) => "../noweb-emacsy/")
+(check (file-name-completer "../now" (const #t) #f) => "../noweb-emacsy")
 @ 
 
 
