@@ -1,0 +1,70 @@
+# noweb.am
+#SUFFIXES += .nw .tex .pdf
+
+if NOWEB
+BOILERPLATE=$(top_srcdir)/support/noweb/boiler-plate.nw
+%.tex : %.nw 
+	$(AM_V_at) $(MAKE) all.defs
+	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -indexfrom all.defs $^ | cpif $@
+
+#	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -index $^ | cpif $@
+
+#	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -x $^ | cpif $@
+
+WARN_NOTANGLE = $(top_srcdir)/bin/warn-notangle
+
+
+%.h : %.nw $(BOILERPLATE)
+	$(AM_V_GEN) $(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_H_FLAGS) -R"file:$@" $^ 
+
+%-test.c %.c %.cpp : %.nw $(BOILERPLATE)
+	$(AM_V_GEN) $(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_C_FLAGS)  -R"file:$@" $^
+
+%-test.scm %.scm : %.nw $(BOILERPLATE)
+	$(AM_V_GEN)	$(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
+
+all.defs: $(NOWEB_DEFS)
+	$(AM_V_GEN)	sort -u $^ | cpif $@
+
+%.defs: %.nw
+	$(AM_V_GEN) nodefs $< > $@
+
+%.nw.files : %.nw
+	$(AM_V_GEN) noroots $^ | grep file: | perl -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
+
+%-paper.nw : %.nw $(top_srcdir)/support/noweb/paper-wrapper.nw
+	$(AM_V_GEN) (cat $(top_srcdir)/support/noweb/paper-wrapper.nw |	perl -pe "s/\\@FILE\\@/$$(basename -s .nw $<)/;") | cpif $@
+
+NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
+NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
+EXTRA_DIST += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+BUILT_SOURCES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+CLEANFILES += $(NOWEB_PRODUCTS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+
+else
+%.scm %.h %.c %.cpp %.tex : %.nw
+	$(warning Warning: unable to update $@ from changed $< without noweb.)
+endif
+
+if LATEXMK
+%.pdf: %.tex
+	$(AM_V_GEN)	TEXINPUTS=$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+	noindex $<
+	$(AM_V_GEN) TEXINPUTS=$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+
+# $(AM_V_GEN)  latexmk -quiet -f -g -pdf $< &> $<.log || cat $<.log
+# noindex $<
+# $(AM_V_GEN) TEXINPUTS=$(srcdir):$(imagesdir): latexmk -quiet -f -g -pdf $< &> $<.log || cat $<.log
+
+clean-latexmk: 
+	for file in $(NOWEB_FILES:.nw=.tex); do \
+		test -f $$file && latexmk -C $$file && rm -f $$file; \
+	done; true
+
+else
+%.pdf : %.tex
+	$(warning Warning: unable to update $@ from changed $< without latexmk.)
+
+clean-latexmk:
+endif
+

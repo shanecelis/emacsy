@@ -1,0 +1,62 @@
+\section{Boiler Plate}
+\subsection{C Code}
+<<+ Preamble>>=
+/* 
+   DO NOT EDIT - This file was automatically generated from a noweb source file.
+*/
+<<+ Copyright>>
+<<+ License>>
+@ 
+<<+ Begin C Header Guard.>>=
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+<<+ End C Header Guard.>>=
+
+#ifdef __cplusplus
+ }
+#endif
+@ \subsection{Legal Stuff}
+<<+ Copyright>>=
+Copyright (C) 2012 Shane Celis 
+@
+<<+ License>>=
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@
+\subsection{Lisp Code}
+
+<<+ Lisp Preamble>>=
+#| FILENAME
+DO NOT EDIT - automatically generated from FILENAME.
+
+<<+ Copyright>>
+<<+ License>>
+|#
+@ 
+
+<<+ Test Preamble>>=
+(use-modules (check))
+(use-modules (ice-9 pretty-print))
+(define test-errors '())
+@ 
+
+<<+ Test Postscript>>=
+;(run-tests)
+(check-report)
+'(if (> (length test-errors) 0)
+    (format #t "~a ERROR in tests: ~a." (length test-errors) (reverse test-errors))
+    (format #t "NO ERRORs in tests."))
+(exit (if (and (= (length test-errors) 0) (= 0 (length check:failed))) 0 1))
+@ 
