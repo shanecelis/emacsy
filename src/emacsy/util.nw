@@ -63,7 +63,7 @@ used.
 (define-public pp pretty-print)
 @ 
 
-<<emacsy/util.scm>>=
+<<file:util.scm>>=
 (define-module (emacsy util)
   #:use-module (ice-9 optargs)
   #:use-module (oop goops)

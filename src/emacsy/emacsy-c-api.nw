@@ -45,7 +45,7 @@ int emacsy_load_module(const char *module_name);
 
 /* Load a file in the emacsy environment. */
 //int emacsy_load(const char *file_name);
-<<emacsy.h>>=
+<<file:emacsy.h>>=
 /* emacsy.h
 
 <<+ Copyright>>
@@ -242,14 +242,15 @@ int emacsy_terminate()
                                        "emacsy-terminate"));
   return 0;
 }  
-<<emacsy.c>>=
+<<file:emacsy.c>>=
 #include "emacsy.h"
 #include <libguile.h>
 
 <<Utility Functions>>
 
 <<Functions>>
-<<emacsy.c>>=
+@ 
+<<Functions>>=
 int  emacsy_run_hook_0(const char *hook_name)
 {
   /* This should be protected from all sorts of errors that the hooks
@@ -261,7 +262,7 @@ int  emacsy_run_hook_0(const char *hook_name)
                                         hook_name));
   return 0;
 }
-<<emacsy.c>>=
+<<Functions>>=
 int  emacsy_minibuffer_point()
 {
   return scm_to_int(

@@ -1,10 +1,10 @@
 #!/bin/bash
 # print-install.sh.in
 set -e; # abort if anything fails
-builddir="/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/ctrnn"
+builddir="/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy"
 cd $builddir
 make dist
-dirname=minimal-cognition-0.01
+dirname=emacsy-0.01
 filename=$dirname.tar.gz
 tar xfz $filename
 cd $dirname

@@ -1,5 +1,0 @@
-#!/bin/bash
-# run-test
-for test in "$@"; do 
-    guile -l line-pragma.scm -L . $test || exit 1; 
-done

@@ -3,7 +3,7 @@
 set -e; # abort if anything fails
 cd ..
 make dist
-dirname=minimal-cognition-0.01
+dirname=emacsy-0.01
 filename=$dirname.tar.gz
 tar xfz $filename
 cd $dirname

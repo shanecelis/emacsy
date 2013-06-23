@@ -447,7 +447,7 @@ temporal macros.
 
 \subsection*{File Layout}
 
-<<emacsy/event.scm>>=
+<<file:event.scm>>=
 (define-module (emacsy event)
   #:use-module (ice-9 q)
   #:use-module (ice-9 regex)

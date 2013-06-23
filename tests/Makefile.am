@@ -1,5 +1,8 @@
-TESTS_ENVIRONMENT = /bin/bash -x
+#TESTS_ENVIRONMENT = /bin/bash -x
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER = /bin/bash -x
 
-#TESTS=works-without-noweb.sh print-install.sh
 
-MAINTAINERCLEANFILES = Makefile.in works-without-noweb.sh
+TESTS=works-without-noweb.sh print-install.sh
+
+MAINTAINERCLEANFILES = Makefile.in works-without-noweb.sh print-install.sh

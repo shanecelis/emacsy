@@ -5,7 +5,7 @@ gains in program functionality.  Windows is an optional module for
 Emacsy.  If you want to offer windows that behave like Emacs windows,
 you can, but you aren't required to.  
 
-<<emacsy/windows.scm>>=
+<<file:windows.scm>>=
 <<+ Lisp File Header>>
 <<Module>>
 <<Classes>>
@@ -498,7 +498,7 @@ behavior of Emacs.
 
 <<Key bindings>>=
 (define-key global-map (kbd "C-x 2") 'split-window-below)
-<<windows-tests.scm>>=
+<<file:windows-tests.scm>>=
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 

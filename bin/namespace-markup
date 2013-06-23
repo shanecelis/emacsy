@@ -1,0 +1,24 @@
+#!/bin/bash
+# namespace-markup
+
+function usage ()
+{
+    echo "usage: namespace-markup [-k filename -v namespace] [-k ... -v ...] file ..." >&2;
+    exit 2;
+}
+
+namespaces='%namespaces = ('
+while getopts hk:v: opt; do
+	case $opt in
+      h) usage;;
+	    k) namespaces="$namespaces '$OPTARG',";;
+	    v) namespaces="$namespaces '$OPTARG',";;
+	    *) echo "error: invalid option given." >&2; usage;;
+	esac
+done
+shift $[ OPTIND - 1 ]
+
+namespaces="$namespaces ); ";
+
+# Let's add a prefix based on the filename.
+/opt/local/libexec/noweb/markup "$@" | perl -pe "$namespaces"'if (/^\@file ([^\.:]+)[^:]*$/) { $file = $1; if (!(defined $namespaces{$file})) { $namespaces{$file} = $file; print STDERR "setting it to $file $namespaces{$file} ";} print STDERR %namespaces; } s/^\@(defn|use) ([^+][^:]*)$/\@\1 $namespaces{$file}:\2/;'

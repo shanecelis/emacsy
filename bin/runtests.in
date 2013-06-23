@@ -1,0 +1,9 @@
+#!/bin/bash 
+# runtests
+
+if [ $# -eq 0 ]; then
+   echo "usage: runtests <X.test.scm ...>" >&2;
+   exit 2;
+fi
+
+DYLD_LIBRARY_PATH=@abs_top_srcdir@/src @GUILE@ -L @abs_top_builddir@/src -L @abs_top_srcdir@/support/scheme -L @abs_top_srcdir@/.. -L @abs_top_srcdir@/../noweb-emacsy "$@"

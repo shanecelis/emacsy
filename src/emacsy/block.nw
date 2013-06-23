@@ -353,7 +353,7 @@ The [[incr!]] macro is just a little bit of syntactic sugar.
 @
 \subsection*{File Layout} 
 
-<<emacsy/block.scm>>=
+<<file:block.scm>>=
 (define-module (emacsy block)
   #:use-module (ice-9 optargs)
   #:use-module (oop goops)

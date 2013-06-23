@@ -12,7 +12,7 @@ that run before, after, or around an already defined function.  This
 \href{http://electricimage.net/cupboard/2013/05/04/on-defadvice/}{article}
 provides a good example.
 
-<<emacsy/advice.scm>>=
+<<file:advice.scm>>=
 (define-module (emacsy advice)
   #:use-module (srfi srfi-9)  
   )

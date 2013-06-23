@@ -440,7 +440,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
 
 \subsection*{File Layout}
 
-<<emacsy/buffer.scm>>=
+<<file:buffer.scm>>=
 (define-module (emacsy buffer)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 q)

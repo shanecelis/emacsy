@@ -241,7 +241,7 @@ for predicates which seems more natural.
 
 \subsection*{File Layout}
 
-<<emacsy/keymap.scm>>=
+<<file:keymap.scm>>=
 (define-module (emacsy keymap)
   #:use-module (ice-9 regex)
   #:use-module (ice-9 optargs)

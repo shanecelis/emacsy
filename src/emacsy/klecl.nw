@@ -471,7 +471,7 @@ have to worry about any ``pollution'' of Emacs-isms.
 
 \subsection*{File Layout} 
 
-<<emacsy/klecl.scm>>=
+<<file:klecl.scm>>=
 (define-module (emacsy klecl)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 q)

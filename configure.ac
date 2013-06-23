@@ -71,6 +71,7 @@ AC_CHECK_FUNCS([puts])
 # 
 dnl AC_SUBST(EMACSY_CFLAGS, ['-I${top_srcdir}/../..'])
 dnl AC_SUBST(EMACSY_LIBS, ['${top_srcdir}/../../libemacsy.a'])
+AC_SUBST(latexdir, ['${top_srcdir}/support/latex'])
 AC_SUBST(imagesdir, ['${top_srcdir}/support/images'])
 AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
 
@@ -81,5 +82,7 @@ AC_CONFIG_FILES([ Makefile
                   src/Makefile 
                   src/emacsy/Makefile 
                   tests/Makefile 
+                  tests/works-without-noweb.sh
+                  tests/print-install.sh
                   ], [chmod +x bin/runtests])
 AC_OUTPUT

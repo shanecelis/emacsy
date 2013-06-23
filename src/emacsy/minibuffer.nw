@@ -584,7 +584,7 @@ Some commands for manipulating the minibuffer history.
 
 \subsection*{File Layout} 
 
-<<emacsy/minibuffer.scm>>=
+<<file:minibuffer.scm>>=
 (define-module (emacsy minibuffer)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 receive)
@@ -610,7 +610,7 @@ Some commands for manipulating the minibuffer history.
 @ 
 
 Layout for tests.
-<<minibuffer-tests.scm>>=
+<<file:minibuffer-tests.scm>>=
 (use-modules (emacsy minibuffer)
              (emacsy event)
              (emacsy klecl)

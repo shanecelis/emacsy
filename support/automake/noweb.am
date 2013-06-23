@@ -48,9 +48,9 @@ endif
 
 if LATEXMK
 %.pdf: %.tex
-	$(AM_V_GEN)	TEXINPUTS=$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+	$(AM_V_GEN)	TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
 	noindex $<
-	$(AM_V_GEN) TEXINPUTS=$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+	$(AM_V_GEN) TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
 
 # $(AM_V_GEN)  latexmk -quiet -f -g -pdf $< &> $<.log || cat $<.log
 # noindex $<

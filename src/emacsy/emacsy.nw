@@ -400,7 +400,7 @@ These are the core features from Emacs that will be implemented in Emacsy.
 %% %\item Make code available on github
 %% \end{enumerate}
 
-\input{examples/hello-emacsy/src/hello-emacsy}
+%\input{examples/hello-emacsy/src/hello-emacsy}
 
 \part{Implementation} 
 \input{emacsy-c-api}
@@ -442,7 +442,7 @@ So that users of our library don't have to import all of our nicely
 partitioned modules individually, we'll expose a facade module that
 re-exports all of the public interfaces for each module.
 
-<<emacsy/emacsy.scm>>=
+<<file:emacsy.scm>>=
 (define-module (emacsy emacsy)
   #:use-module (convenience-lambda)  
   #:use-module (emacsy util)
@@ -486,7 +486,7 @@ re-exports all of the public interfaces for each module.
 
  
 
-<<emacsy-tests.scm>>=
+<<file:emacsy-tests.scm>>=
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 (eval-when (compile load eval)
@@ -586,7 +586,7 @@ another reader extension that will strip out any \#l lines within it.
                   ;; Keep and loop
                   (set! accum (cons entry accum))
                   (loop (read-char port)))))))))
-<<line-pragma.scm>>=
+<<file:line-pragma.scm>>=
 (define-module (line-pragma)
   #:use-module (ice-9 rdelim))
 

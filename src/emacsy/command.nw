@@ -279,7 +279,7 @@ associated with commands.
 
 \subsection*{File Layout}
 
-<<emacsy/command.scm>>=
+<<file:command.scm>>=
 (define-module (emacsy command)
   #:use-module (string completion)
   #:use-module (oop goops)
