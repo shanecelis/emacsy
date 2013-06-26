@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS         = -I support/m4
 
 SUBDIRS = src tests
 
-EXTRA_DIST = README.md
+EXTRA_DIST = README.md support
 
 dist-hook:
 	mv $(distdir)/README.md $(distdir)/README

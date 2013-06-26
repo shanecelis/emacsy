@@ -45,6 +45,7 @@ int emacsy_load_module(const char *module_name);
 
 /* Load a file in the emacsy environment. */
 //int emacsy_load(const char *file_name);
+@ 
 <<file:emacsy.h>>=
 /* emacsy.h
 
@@ -64,6 +65,7 @@ int emacsy_load_module(const char *module_name);
 @ Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
 
 <<Defines>>=
+
 #define EY_MODKEY_COUNT   6
 
 #define EY_MODKEY_ALT     1 // A

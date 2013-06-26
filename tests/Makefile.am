@@ -3,6 +3,6 @@ TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = /bin/bash -x
 
 
-TESTS=works-without-noweb.sh print-install.sh
+TESTS=works-without-noweb.sh print-install.sh dummy.sh
 
 MAINTAINERCLEANFILES = Makefile.in works-without-noweb.sh print-install.sh

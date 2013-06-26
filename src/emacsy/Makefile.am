@@ -86,7 +86,11 @@ include $(top_srcdir)/support/automake/guile.am
 # vision.c.x : vision.c
 # fode.c.x : fode.c
 
-line-pragma.scm emacsy.h emacsy.c : emacsy-c-api.nw
+emacsy.h emacsy.c : emacsy-c-api.nw
+
+line-pragma.scm : emacsy.nw
+	$(AM_V_GEN)	$(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
+
 
 # ctrnn.c : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
 # ctrnn-test.scm : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)

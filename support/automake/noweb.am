@@ -37,7 +37,7 @@ all.defs: $(NOWEB_DEFS)
 
 NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
 NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
-EXTRA_DIST += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+EXTRA_DIST += $(NOWEB_FILES) $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 BUILT_SOURCES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 CLEANFILES += $(NOWEB_PRODUCTS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 
@@ -48,9 +48,9 @@ endif
 
 if LATEXMK
 %.pdf: %.tex
-	$(AM_V_GEN)	TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+	$(AM_V_GEN)	TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
 	noindex $<
-	$(AM_V_GEN) TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+	$(AM_V_GEN) TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
 
 # $(AM_V_GEN)  latexmk -quiet -f -g -pdf $< &> $<.log || cat $<.log
 # noindex $<
