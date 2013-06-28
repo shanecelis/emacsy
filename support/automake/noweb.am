@@ -39,10 +39,10 @@ NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
 NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
 EXTRA_DIST += $(NOWEB_FILES) $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 BUILT_SOURCES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
-CLEANFILES += $(NOWEB_PRODUCTS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+CLEANFILES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 
 else
-%.scm %.h %.c %.cpp %.tex : %.nw
+%-test.scm %.scm %.h %-test.c %.c %.cpp %.tex : %.nw
 	$(warning Warning: unable to update $@ from changed $< without noweb.)
 endif
 

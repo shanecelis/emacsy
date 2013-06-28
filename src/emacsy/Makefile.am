@@ -15,14 +15,14 @@ SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
 							 kbd-macro-test.scm minibuffer-test.scm core-test.scm	\
 							 emacsy-test.scm advice-test.scm
 
-SCHEME_FILES = windows.scm emacsy.c line-pragma.scm event.scm				\
-							 util.scm keymap.scm command.scm buffer.scm block.scm	\
-							 klecl.scm kbd-macro.scm minibuffer.scm core.scm			\
-							 emacsy.scm advice.scm emacsy.h
+SCHEME_FILES = windows.scm emacsy.c event.scm util.scm keymap.scm	\
+							 command.scm buffer.scm block.scm klecl.scm					\
+							 kbd-macro.scm minibuffer.scm core.scm emacsy.scm		\
+							 advice.scm emacsy.h
 
 NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS)				
 
-BUILT_SOURCES = $(SCHEME_TESTS)
+BUILT_SOURCES = 
 #emacsy.c.x
 
 CLEANFILES = $(BUILT_SOURCES)

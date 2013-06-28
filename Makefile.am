@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS         = -I support/m4
 
-SUBDIRS = src test
+SUBDIRS = src test bin
 
 EXTRA_DIST = README.md support
 

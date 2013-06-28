@@ -79,6 +79,7 @@ AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([ Makefile
                   bin/runtests
+                  bin/Makefile
                   src/Makefile 
                   src/emacsy/Makefile 
                   test/Makefile 

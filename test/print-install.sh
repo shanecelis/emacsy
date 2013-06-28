@@ -12,6 +12,7 @@ cd $dirname
 
 # Make sure it can be built without noweb and cleaned without removing
 # anything important.
+make clean
 make
 make install
 cd $builddir
