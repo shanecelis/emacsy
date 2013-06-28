@@ -2,8 +2,9 @@
 # runtests
 
 if [ $# -eq 0 ]; then
-   echo "usage: runtests <X.test.scm ...>" >&2;
+   echo "usage: runtests <file-test.scm ...>" >&2;
    exit 2;
 fi
 
-DYLD_LIBRARY_PATH=/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/src /usr/local/bin/guile -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/src -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/support/scheme -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/.. -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/../noweb-emacsy "$@"
+export ABS_TOP_SRCDIR="/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy";
+DYLD_LIBRARY_PATH=/Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/src /usr/local/bin/guile -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/src -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/support/scheme -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/.. -L /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/../noweb-emacsy -l /Users/shane/School/uvm/CSYS-395-evolutionary-robotics/noweb-eracs/noweb-emacsy/src/line-pragma.scm "$@";

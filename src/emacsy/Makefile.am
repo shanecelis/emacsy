@@ -8,7 +8,7 @@ EXTRA_DIST = $(NOWEB_DOCS)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\
 							keymap.nw command.nw buffer.nw block.nw klecl.nw			\
-							kbd-macro.nw minibuffer.nw core.nw advice.nw line-pragma.nw
+							kbd-macro.nw minibuffer.nw core.nw advice.nw 
 
 SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
 							 buffer-test.scm block-test.scm klecl-test.scm				\
@@ -22,7 +22,7 @@ SCHEME_FILES = windows.scm emacsy.c line-pragma.scm event.scm				\
 
 NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS)				
 
-BUILT_SOURCES = 
+BUILT_SOURCES = $(SCHEME_TESTS)
 #emacsy.c.x
 
 CLEANFILES = $(BUILT_SOURCES)

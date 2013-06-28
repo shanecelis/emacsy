@@ -81,8 +81,8 @@ AC_CONFIG_FILES([ Makefile
                   bin/runtests
                   src/Makefile 
                   src/emacsy/Makefile 
-                  tests/Makefile 
-                  tests/works-without-noweb.sh
-                  tests/print-install.sh
+                  test/Makefile 
+                  test/works-without-noweb.sh
+                  test/print-install.sh
                   ], [chmod +x bin/runtests])
 AC_OUTPUT

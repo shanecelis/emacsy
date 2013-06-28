@@ -478,6 +478,7 @@ We want to be able to look up filenames.
 @
 
 <<minibuffer:test>>=
+(chdir (format #f "~a/~a" (getenv "ABS_TOP_SRCDIR") "test/minibuffer-test-dir"))
 (check (dirname "") => ".")
 (check (my-dirname "") => ".")
 (check (my-dirname "../now") => "..")
@@ -488,16 +489,16 @@ We want to be able to look up filenames.
 (check (directory? "..") => #t)
 (check (canonize-filename ".") => "./")
 ;(check (files-in-dir ".") => '())
-(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-test.scm" "minibuffer.nw"))
-(check (file-name-completer "mini" (const #t) #f) => "minibuffer")
+(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-a" "minibuffer-b"))
+(check (file-name-completer "mini" (const #t) #f) => "minibuffer-")
 (check (file-name-completer "bi" (const #t) #f) => "bin/")
 (check (file-name-completer "bin" (const #t) #f) => "bin/")
 (check (file-name-completer "bin/" (const #t) #f) => "bin/")
 ;; Get rid of the dot files.
 (check (file-name-completer "bin" no-dot-files #f) => "bin/run-test")
 (check (file-name-completer "bin/" no-dot-files #f) => "bin/run-test")
-(check (file-name-completer "ex" (const #t) #f) => "examples/")
-(check (file-name-completer "em" (const #t) #f) => "emacsy")
+(check (file-name-completer "ex" (const #t) #f) => "exam/")
+(check (file-name-completer "em" (const #t) #f) => "empty-dir/")
 (check (dirname "bin/") => ".")
 (check (basename "bin/") => "bin")
 (check (basename "bin/f") => "f")
@@ -512,7 +513,8 @@ We want to be able to look up filenames.
 
 ;(check (files-in-dir "..") => '())
 
-(check (file-name-completer "../now" (const #t) #f) => "../noweb-emacsy")
+(chdir (format #f "~a/~a" (getenv "ABS_TOP_SRCDIR") "test/minibuffer-test-dir/empty-dir"))
+(check (file-name-completer "../ex" (const #t) #f) => "../exam/")
 @ 
 
 
