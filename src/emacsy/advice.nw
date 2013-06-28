@@ -233,7 +233,7 @@ procedure."
         procedure)))
 @ 
 
-<<advice-tests.scm>>=
+<<file:advice-test.scm>>=
 (use-modules (emacsy advice)
              (emacsy event)
              (emacsy klecl)

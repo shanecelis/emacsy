@@ -463,7 +463,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
 @ 
 
 Layout for tests.
-<<buffer-tests.scm>>=
+<<file:buffer-test.scm>>=
 (use-modules (emacsy buffer)
              (emacsy command)                  
              (emacsy event)

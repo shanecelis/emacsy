@@ -430,7 +430,7 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
 @ 
 
 Layout for tests.
-<<file:core-tests.scm>>=
+<<file:core-test.scm>>=
 (use-modules (emacsy core)
              (emacsy event)
              (emacsy klecl)

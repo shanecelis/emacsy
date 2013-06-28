@@ -498,7 +498,7 @@ behavior of Emacs.
 
 <<Key bindings>>=
 (define-key global-map (kbd "C-x 2") 'split-window-below)
-<<file:windows-tests.scm>>=
+<<file:windows-test.scm>>=
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 

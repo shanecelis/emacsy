@@ -488,7 +488,7 @@ We want to be able to look up filenames.
 (check (directory? "..") => #t)
 (check (canonize-filename ".") => "./")
 ;(check (files-in-dir ".") => '())
-(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-tests.scm" "minibuffer.nw"))
+(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-test.scm" "minibuffer.nw"))
 (check (file-name-completer "mini" (const #t) #f) => "minibuffer")
 (check (file-name-completer "bi" (const #t) #f) => "bin/")
 (check (file-name-completer "bin" (const #t) #f) => "bin/")
@@ -610,7 +610,7 @@ Some commands for manipulating the minibuffer history.
 @ 
 
 Layout for tests.
-<<file:minibuffer-tests.scm>>=
+<<file:minibuffer-test.scm>>=
 (use-modules (emacsy minibuffer)
              (emacsy event)
              (emacsy klecl)

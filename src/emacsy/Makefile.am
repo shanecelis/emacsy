@@ -8,15 +8,23 @@ EXTRA_DIST = $(NOWEB_DOCS)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\
 							keymap.nw command.nw buffer.nw block.nw klecl.nw			\
-							kbd-macro.nw minibuffer.nw core.nw advice.nw
+							kbd-macro.nw minibuffer.nw core.nw advice.nw line-pragma.nw
 
-NOWEB_PRODUCTS = windows.scm emacsy.c line-pragma.scm event.scm		\
-							   util.scm keymap.scm command.scm buffer.scm 			\
-							   block.scm klecl.scm kbd-macro.scm minibuffer.scm	\
-							   core.scm emacsy.scm advice.scm emacsy.h
+SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
+							 buffer-test.scm block-test.scm klecl-test.scm				\
+							 kbd-macro-test.scm minibuffer-test.scm core-test.scm	\
+							 emacsy-test.scm advice-test.scm
+
+SCHEME_FILES = windows.scm emacsy.c line-pragma.scm event.scm				\
+							 util.scm keymap.scm command.scm buffer.scm block.scm	\
+							 klecl.scm kbd-macro.scm minibuffer.scm core.scm			\
+							 emacsy.scm advice.scm emacsy.h
+
+NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS)				
 
 BUILT_SOURCES = 
 #emacsy.c.x
+
 CLEANFILES = $(BUILT_SOURCES)
 
 doc: $(NOWEB_DOCS)
@@ -31,6 +39,9 @@ ctrnn.tex: ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
 ctrnn-paper.pdf: ctrnn-paper.tex ctrnn.tex
 vision-paper.pdf: vision-paper.tex vision.tex
 
+util.scm : util.nw $(NOWEB_FILES)
+
+
 # ctrnn-cat.nw: ctrnn.nw ctrnn-appendix.nw
 # 	cat $^ | cpif $@
 
@@ -43,6 +54,7 @@ MARKUP_FLAGS = -markup "$(top_srcdir)/bin/namespace-markup.pl -n ctrnn-appendix=
 WARN_NOTANGLE_FLAGS = 
 NOWEAVE_FLAGS = $(MARKUP_FLAGS)
 NOTANGLE_C_FLAGS = -c -L $(MARKUP_FLAGS)
+NOTANGLE_LISP_FLAGS = -L $(MARKUP_FLAGS)
 NOTANGLE_H_FLAGS = -L $(MARKUP_FLAGS)
 lib_LTLIBRARIES = libemacsy.la
 
@@ -54,10 +66,7 @@ include_HEADERS = emacsy.h
 MAINTAINERCLEANFILES = Makefile.in config.h.in 
 
 guilemoduledir = $(GUILE_SITE_LIB)/$(PACKAGE_TARNAME)
-dist_guilemodule_DATA = advice.scm block.scm buffer.scm command.scm		\
-												core.scm emacsy.scm event.scm kbd-macro.scm	\
-												keymap.scm klecl.scm minibuffer.scm util.scm	\
-												windows.scm
+dist_guilemodule_DATA = $(SCHEME_FILES)
 
 
 # check_PROGRAMS = ctrnn-ctest vision-ctest
@@ -67,7 +76,7 @@ dist_guilemodule_DATA = advice.scm block.scm buffer.scm command.scm		\
 
 #TESTS_ENVIRONMENT = $(GUILE) -L $(top_builddir)/src -L $(top_srcdir)/support/scheme -x $(libdir)
 #TESTS_ENVIRONMENT = LOG_COMPILER
-TESTS = 
+TESTS = $(SCHEME_TESTS)
 TEST_EXTENSIONS = .scm 
 SCM_LOG_COMPILER = $(top_builddir)/bin/runtests
 
@@ -87,10 +96,6 @@ include $(top_srcdir)/support/automake/guile.am
 # fode.c.x : fode.c
 
 emacsy.h emacsy.c : emacsy-c-api.nw
-
-line-pragma.scm : emacsy.nw
-	$(AM_V_GEN)	$(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
-
 
 # ctrnn.c : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
 # ctrnn-test.scm : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)

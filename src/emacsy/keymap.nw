@@ -255,7 +255,7 @@ for predicates which seems more natural.
 @ 
 
 Layout for tests.
-<<keymap-tests.scm>>=
+<<file:keymap-test.scm>>=
 (use-modules (emacsy keymap)
              (emacsy event)
              (oop goops))

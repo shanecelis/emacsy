@@ -486,7 +486,7 @@ re-exports all of the public interfaces for each module.
 
  
 
-<<file:emacsy-tests.scm>>=
+<<file:emacsy-test.scm>>=
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
 (eval-when (compile load eval)
@@ -516,93 +516,12 @@ Copyright (C) 2012 Shane Celis
 \part{Appendix}  
 \chapter{Support Code} 
 \input{util}
-\section{Literate Programming Support}
-
-All the code for this project is generated from \verb|emacsy.w|.  To
-ease debugging, it is helpful to have the debug information point to
-the place it came from in \verb|emacsy.w| and not whatever source file
-it came from.  The program \verb|nuweb| has a means of providing this
-information that works for C/C++ via the line pragma.  Scheme does not
-support the line pragma, but the reader can fortunately be extended to
-support it.
-
-An example use of it might look like this:
-
-<<Line Pragma Example>>=
-(define (f x)
-#line 314 "increment-literately.w"
-  (+ x 1)) 
-@ BUG: The line pragma ends up littering the source with zero length
-strings, which often doesn't matter, but it can't be used everywhere
-especially within a particular form.  I'm not entirely sure how to fix
-that.
-
-<<Line Pragma Handler>>=
-(lambda (char port)
-  (let* ((ine (read port))
-         (lineno (read port))
-         (filename (read port)))
-    (if (not (eq? ine 'ine))
-        (error (format #f "Expected '#line <line-number> <filename>'; got '#~a~a ~a \"~a\"'." char ine lineno filename)))
-    (set-port-filename! port filename)
-    (set-port-line! port lineno)
-    (set-port-column! port 0)
-    ;; Return unspecified on purpose.
-    (if #f #f)
-    ))
-@ One problem that popped up was I sometimes wanted to include pieces of
-documentation in embedded strings.  Something that might end up
-looking like this in the source code:
-
-<<Line Pragma Embedded String Example>>=
-(define (f x)
-  "#line 352 "emacsy.w"
-   The function f and its associated function h...
-   #line 362 "emacsy.w"
-  "
-  ...
-@ The above code will see a string "\#line 352 " followed by a bare
-symbol emacsy.w, which will not do.  To get around this, I implemented
-another reader extension that will strip out any \#l lines within it.
-
-<<Liberal String Quote Reader>>=
-(lambda (char port)
-  (let ((accum '()))
-    (let loop ((entry (read-char port)))
-      (if (or (eof-object? entry)
-              (and (char=? #\" entry)
-                   (char=? #\# (peek-char port))
-                   (begin (read-char port)
-                          #t)))
-          ;; We're done
-          (apply string (reverse accum))
-          (begin
-            (if (and (char=? #\# entry)
-                     (char=? #\l (peek-char port)))
-                ;; Drop this line
-                (begin (read-line port)
-                       (loop (read-char port)))
-                (begin
-                  ;; Keep and loop
-                  (set! accum (cons entry accum))
-                  (loop (read-char port)))))))))
-<<file:line-pragma.scm>>=
-(define-module (line-pragma)
-  #:use-module (ice-9 rdelim))
-
-(eval-when (compile load eval)
- (define eor (call-with-input-string "#;done" (lambda (port) (read port))))
- (read-hash-extend #\l #f)
- (define line-pragma-handler <<Line Pragma Handler>>)
- (set-procedure-property! line-pragma-handler 'read-comment #t)
- (read-hash-extend #\l line-pragma-handler)
- (read-hash-extend #\" <<Liberal String Quote Reader>>))
-
+\input{line-pragma}
 @ \section{Unit Testing Support}
 
 We want to be able to easily write and aggregate unit tests.  It's not
 important to our project per se.  We just need the utility.  Our
-association list (alist) \verb|unit-tests| will hold the symbol of the
+association list (alist) \verb|unit-test| will hold the symbol of the
 function and the procedure.
 
 <<check/harness.scm>>=

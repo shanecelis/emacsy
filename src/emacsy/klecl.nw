@@ -491,7 +491,7 @@ have to worry about any ``pollution'' of Emacs-isms.
 @ 
 
 Layout for tests.
-<<klecl-tests.scm>>=
+<<file:klecl-test.scm>>=
 (use-modules (emacsy klecl)
              (emacsy event)
              (oop goops))

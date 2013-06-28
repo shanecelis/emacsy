@@ -293,7 +293,7 @@ associated with commands.
 @ 
 
 Layout for tests.
-<<command-tests.scm>>=
+<<file:command-test.scm>>=
 (use-modules (emacsy command)
              (emacsy event)
              (oop goops))

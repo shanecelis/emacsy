@@ -366,7 +366,7 @@ The [[incr!]] macro is just a little bit of syntactic sugar.
 @ 
 
 Layout for tests.
-<<block-tests.scm>>=
+<<file:block-test.scm>>=
 (use-modules (emacsy block)
              (oop goops))
 

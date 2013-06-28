@@ -161,7 +161,7 @@ recorded.
 @ 
 
 Layout for tests.
-<<kbd-macro-tests.scm>>=
+<<file:kbd-macro-test.scm>>=
 (use-modules (emacsy kbd-macro)
              (emacsy event)
              (emacsy command)     

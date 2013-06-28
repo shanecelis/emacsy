@@ -464,7 +464,7 @@ temporal macros.
 @ 
 
 Layout for tests.
-<<event-tests.scm>>=
+<<file:event-test.scm>>=
 (use-modules (emacsy event)
              (oop goops)
              )
