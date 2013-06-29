@@ -9,6 +9,7 @@ AC_CONFIG_AUX_DIR([support/build-aux])
 
 # We're going to use GNUMake and we're going to like it.
 AM_INIT_AUTOMAKE([-Wall foreign -Wno-portability parallel-tests])
+AM_EXTRA_RECURSIVE_TARGETS([preview])
 AM_SILENT_RULES([yes])
 AC_CONFIG_MACRO_DIR([support/m4])
 # Checks for programs.

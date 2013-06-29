@@ -23,7 +23,6 @@ SCHEME_FILES = windows.scm emacsy.c event.scm util.scm keymap.scm	\
 NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS)				
 
 BUILT_SOURCES = 
-#emacsy.c.x
 
 CLEANFILES = $(BUILT_SOURCES)
 
@@ -35,9 +34,6 @@ CLEANFILES += $(NOWEB_DOCS)
 
 # The util file may have its chunks specified anywhere.
 util.scm : util.nw $(NOWEB_FILES)
-
-# ctrnn-cat.nw: ctrnn.nw ctrnn-appendix.nw
-# 	cat $^ | cpif $@
 
 endif
 clean-local : clean-latexmk
@@ -66,45 +62,19 @@ AM_ETAGSFLAGS = -l scheme
 ETAGS_ARGS = $(SCHEME_FILES) $(SCHEME_TESTS)
 TAGS_DEPENDENCIES = $(SCHEME_FILES) $(SCHEME_TESTS)
 
-# check_PROGRAMS = ctrnn-ctest vision-ctest
-# ctrnn_ctest_LDADD   = libguile-ctrnn.la
-# ctrnn_ctest_SOURCES = ctrnn-test.c
-
-
-#TESTS_ENVIRONMENT = $(GUILE) -L $(top_builddir)/src -L $(top_srcdir)/support/scheme -x $(libdir)
 #TESTS_ENVIRONMENT = LOG_COMPILER
 TESTS = $(SCHEME_TESTS)
 TEST_EXTENSIONS = .scm 
 SCM_LOG_COMPILER = $(top_builddir)/bin/runtests
 
-# TESTS_ENVIRONMENT = 
-# TESTS =  ctrnn-test vision-test 
-
-# src_NOWEB = ctrnn.c 
-# #ctrnn.scm ctrnn.h
-# ctrnn_c_SOURCES = ctrnn.nw ctrnn-appendix.nw
-
 include $(top_srcdir)/support/automake/noweb.am
 include $(top_srcdir)/support/automake/guile.am
-#include $(top_srcdir)/support/automake/noweb2.am
 
-# ctrnn.c.x : ctrnn.c
-# vision.c.x : vision.c
-# fode.c.x : fode.c
 
 emacsy.h emacsy.c : emacsy-c-api.nw
 
-# ctrnn.c : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
-# ctrnn-test.scm : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
-# ctrnn-test.c : ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
-
-# vision.c : vision.nw ctrnn-appendix.nw $(BOILERPLATE)
-# vision.h : vision.nw ctrnn-appendix.nw $(BOILERPLATE)
-# vision-test.c : vision.nw ctrnn-appendix.nw $(BOILERPLATE)
-# vision-test.scm : vision.nw ctrnn-appendix.nw $(BOILERPLATE)
-
-# fode-test.scm : fode.nw  $(BOILERPLATE)
-
+preview: $(NOWEB_DOCS)
+	open -a Skim.app $^
 
 dist-hook:
 	mv $(distdir)/*.pdf $(top_distdir)
