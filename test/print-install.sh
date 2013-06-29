@@ -17,4 +17,4 @@ make
 make install
 cd $builddir
 find "print-install"
-#rm -rf "$builddir/test-install"
+rm -rf "$builddir/print-install"

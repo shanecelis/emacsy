@@ -39,7 +39,10 @@ NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
 NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
 EXTRA_DIST += $(NOWEB_FILES) $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 BUILT_SOURCES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
-CLEANFILES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+CLEANFILES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS) all.defs \
+	$(NOWEB_DOCS:.pdf=.aux) $(NOWEB_DOCS:.pdf=.log) $(NOWEB_DOCS:.pdf=.nwi) \
+	$(NOWEB_DOCS:.pdf=.out) $(NOWEB_DOCS:.pdf=.tdo) $(NOWEB_DOCS:.pdf=.toc) \
+	$(NOWEB_DOCS:.pdf=.tex.log)
 
 else
 %-test.scm %.scm %.h %-test.c %.c %.cpp %.tex : %.nw

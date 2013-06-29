@@ -33,14 +33,8 @@ if LATEXMK
 all-local : $(NOWEB_DOCS)
 CLEANFILES += $(NOWEB_DOCS)
 
-ctrnn.tex: ctrnn.nw ctrnn-appendix.nw $(BOILERPLATE)
-#ctrnn-appendix.tex: ctrnn-appendix.nw ctrnn.nw $(BOILERPLATE)
-
-ctrnn-paper.pdf: ctrnn-paper.tex ctrnn.tex
-vision-paper.pdf: vision-paper.tex vision.tex
-
+# The util file may have its chunks specified anywhere.
 util.scm : util.nw $(NOWEB_FILES)
-
 
 # ctrnn-cat.nw: ctrnn.nw ctrnn-appendix.nw
 # 	cat $^ | cpif $@
@@ -68,6 +62,9 @@ MAINTAINERCLEANFILES = Makefile.in config.h.in
 guilemoduledir = $(GUILE_SITE_LIB)/$(PACKAGE_TARNAME)
 dist_guilemodule_DATA = $(SCHEME_FILES)
 
+AM_ETAGSFLAGS = -l scheme
+ETAGS_ARGS = $(SCHEME_FILES) $(SCHEME_TESTS)
+TAGS_DEPENDENCIES = $(SCHEME_FILES) $(SCHEME_TESTS)
 
 # check_PROGRAMS = ctrnn-ctest vision-ctest
 # ctrnn_ctest_LDADD   = libguile-ctrnn.la
