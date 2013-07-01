@@ -2,14 +2,14 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([emacsy], [0.01], [bug-report@address])
+AC_INIT([emacsy], [0.1], [shane.celis@gmail.com])
 AC_CONFIG_AUX_DIR([support/build-aux])
 # Lies.
 #AM_INIT_GUILE_MODULE
 
 # We're going to use GNUMake and we're going to like it.
 AM_INIT_AUTOMAKE([-Wall foreign -Wno-portability parallel-tests])
-AM_EXTRA_RECURSIVE_TARGETS([preview])
+AM_EXTRA_RECURSIVE_TARGETS([run preview])
 AM_SILENT_RULES([yes])
 AC_CONFIG_MACRO_DIR([support/m4])
 # Checks for programs.
@@ -51,6 +51,8 @@ else
 fi
 AC_SUBST(GUILE_SITE_LIB)
 
+AM_CONDITIONAL([HELLO_EMACSY], [test -f example/hello-emacsy/README.md])
+
 AC_SUBST(DISTDIR, ["${PACKAGE_TARNAME}-${PACKAGE_VERSION}"])
 
 #PKG_CHECK_MODULES([EMACSY], [libemacsy])
@@ -88,5 +90,15 @@ AC_CONFIG_FILES([ Makefile
                   test/print-install.sh
                   support/pkg-config/emacsy.pc
                   support/pkg-config/not-installed/emacsy.pc
+                  example/Makefile
                   ], [chmod +x bin/runtests])
+dnl We can point the example to the build directory.
+dnl export EMACSY_CFLAGS="-I${ac_abs_top_builddir}/src/emacsy"
+dnl export EMACSY_LIBS="-L${ac_abs_top_builddir}/src/emacsy/.libs"
+
+dnl Autotools are impossible to love.
+export EMACSY_CFLAGS="-I`pwd`/src/emacsy"
+export EMACSY_LIBS="-L`pwd`/src/emacsy/.libs -lemacsy"
+export EMACSY_MODULE="`pwd`/src"
+AC_CONFIG_SUBDIRS([example/hello-emacsy])
 AC_OUTPUT
