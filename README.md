@@ -11,11 +11,18 @@ Project](http://www.gnu.org/gnu/thegnuproject.html).  Keep abreast of
 its development by watching this repository or following me on twitter
 [@shanecelis](https://twitter.com/shanecelis).
 
+WARNING
+-------
+
+This project is currently in development.  It is as alpha as can be.
+Not meant for general consumption yet.  Contributors, welcome.
+
 Dependencies
 ------------
 
-* GNU Guile Scheme 2.0
-* noweb
+* [GNU Guile Scheme 2.0](http://www.gnu.org/software/guile/)
+
+* [Noweb](http://www.cs.tufts.edu/~nr/noweb/)
 
 Building
 --------
