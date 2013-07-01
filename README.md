@@ -37,9 +37,18 @@ Building
 Running 
 -------
 
+Run the minimal example program. 
+
     $ make run
+
+![screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot.png)
 
 Reading 
 -------
 
     $ make preview
+
+TODO
+----
+
+
