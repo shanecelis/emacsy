@@ -10,3 +10,29 @@ I will be working with Ludovic Courtès from the [GNU
 Project](http://www.gnu.org/gnu/thegnuproject.html).  Keep abreast of
 its development by watching this repository or following me on twitter
 [@shanecelis](https://twitter.com/shanecelis).
+
+Dependencies
+------------
+
+* GNU Guile Scheme 2.0
+* noweb
+
+Building
+--------
+
+    $ git clone blahblah
+    $ cd emacsy
+    $ git submodule update
+    $ ./autogen.sh
+    $ ./configure
+    $ make
+
+Running 
+-------
+
+    $ make run
+
+Reading 
+-------
+
+    $ make preview

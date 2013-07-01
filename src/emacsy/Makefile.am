@@ -3,7 +3,14 @@
 # http://darrendev.blogspot.com/2008/06/stopping-make-delete-intermediate-files.html
 .SECONDARY:
 
-NOWEB_DOCS = emacsy.pdf command-paper.pdf
+NOWEB_DOCS = emacsy.pdf
+# Any noweb document can be built by itself as a stand-alone document by
+# appending a -paper suffix to its name.  So if you're working on just
+# the command.nw, you may want to change NOWEB_DOCS to only make its
+# PDF.
+#
+#NOWEB_DOCS = command-paper.pdf
+
 EXTRA_DIST = $(NOWEB_DOCS)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\
