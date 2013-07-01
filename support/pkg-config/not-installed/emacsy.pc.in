@@ -1,0 +1,13 @@
+prefix=@abs_top_builddir@
+exec_prefix=@exec_prefix@
+libdir=@abs_top_builddir@/src/emacsy/.libs
+includedir=@abs_top_builddir@/src/emacsy
+moduledir=@abs_top_builddir@/src/
+
+Name: Emacsy
+Description: Run this directly from the source directory (not-installed).
+URL: https://github.com/shanecelis/emacsy
+Version: @VERSION@
+Requires: guile-2.0
+Libs: -L${libdir} -lemacsy
+Cflags: -I${includedir}

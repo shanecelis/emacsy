@@ -86,5 +86,7 @@ AC_CONFIG_FILES([ Makefile
                   test/Makefile 
                   test/works-without-noweb.sh
                   test/print-install.sh
+                  support/pkg-config/emacsy.pc
+                  support/pkg-config/not-installed/emacsy.pc
                   ], [chmod +x bin/runtests])
 AC_OUTPUT

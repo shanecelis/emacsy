@@ -1,0 +1,3 @@
+[submodule "example/hello-emacsy"]
+	path = example/hello-emacsy
+	url = ../noweb-emacsy-old/examples/hello-emacsy/

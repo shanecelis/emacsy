@@ -3,7 +3,7 @@
 # http://darrendev.blogspot.com/2008/06/stopping-make-delete-intermediate-files.html
 .SECONDARY:
 
-NOWEB_DOCS = emacsy.pdf 
+NOWEB_DOCS = emacsy.pdf command-paper.pdf
 EXTRA_DIST = $(NOWEB_DOCS)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\
@@ -70,11 +70,10 @@ SCM_LOG_COMPILER = $(top_builddir)/bin/runtests
 include $(top_srcdir)/support/automake/noweb.am
 include $(top_srcdir)/support/automake/guile.am
 
-
 emacsy.h emacsy.c : emacsy-c-api.nw
 
-preview: $(NOWEB_DOCS)
-	open -a Skim.app $^
+preview-local: $(NOWEB_DOCS)
+	open -a Skim.app $^ || open -a Preview.app $^
 
 dist-hook:
 	mv $(distdir)/*.pdf $(top_distdir)
