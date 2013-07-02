@@ -7,6 +7,12 @@ EXTRA_DIST = README.md support
 dist-hook:
 	mv $(distdir)/README.md $(distdir)/README
 
+sign-dist: dist
+	gpg -a --output $(distdir).tar.gz.sig --detach-sig $(distdir).tar.gz
+
+verify-sig: $(distdir).tar.gz.sig $(distdir).tar.gz
+	gpg --verify $(distdir).tar.gz.sig
+
 # I am using the following guidelines for the clean targets.
 # http://ftp.gnu.org/old-gnu/Manuals/automake-1.7.2/html_chapter/automake_14.html
 MAINTAINERCLEANFILES = Makefile.in \
