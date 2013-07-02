@@ -27,7 +27,7 @@ Dependencies
 Building
 --------
 
-    $ git clone blahblah
+    $ git clone https://github.com/shanecelis/emacsy.git
     $ cd emacsy
     $ git submodule update
     $ ./autogen.sh
@@ -37,18 +37,24 @@ Building
 Running 
 -------
 
-Run the minimal example program. 
+Run the [minimal example program](http://gnufoo.org/emacsy/minimal-emacsy-example.pdf). 
 
     $ make run
 
-![screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot.png)
+![screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot-small.png)
 
 Reading 
 -------
+
+This is a literate program, so you can read it.
 
     $ make preview
 
 TODO
 ----
+
+Lots to do.  
+
+- [ ] First TODO, collect up all the TODOs.
 
 
