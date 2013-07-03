@@ -2,7 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([emacsy], [0.1], [shane.celis@gmail.com])
+# We'll try to use semantic versioning.  http://semver.org
+AC_INIT([emacsy], [0.1.0], [shane.celis@gmail.com])
 AC_CONFIG_AUX_DIR([support/build-aux])
 # Lies.
 #AM_INIT_GUILE_MODULE
@@ -94,14 +95,23 @@ AC_CONFIG_FILES([ Makefile
                   support/pkg-config/emacsy.pc
                   support/pkg-config/not-installed/emacsy.pc
                   example/Makefile
-                  ], [chmod +x bin/runtests])
+                  ], [chmod +x bin/runtests test/print-install.sh test/works-without-noweb.sh test/dummy.sh])
 dnl We can point the example to the build directory.
 dnl export EMACSY_CFLAGS="-I${ac_abs_top_builddir}/src/emacsy"
 dnl export EMACSY_LIBS="-L${ac_abs_top_builddir}/src/emacsy/.libs"
 
 dnl Autotools are impossible to love.
-export EMACSY_CFLAGS="-I`pwd`/src/emacsy"
-export EMACSY_LIBS="-L`pwd`/src/emacsy/.libs -lemacsy"
-export EMACSY_MODULE="`pwd`/src"
+if test -f configure; then
+  abs_top_srcdir="`pwd`";
+  abs_top_builddir="`pwd`";
+elif test -f ../configure; then
+  abs_top_srcdir="`pwd`/..";
+  abs_top_builddir="`pwd`";
+else
+  AC_MSG_ERROR([Can't detect src and build directories.])  
+fi
+export EMACSY_CFLAGS="-I${abs_top_srcdir}/src/emacsy"
+export EMACSY_LIBS="-L${abs_top_builddir}/src/emacsy/.libs -lemacsy"
+export EMACSY_MODULE="${abs_top_srcdir}/src"
 AC_CONFIG_SUBDIRS([example/hello-emacsy])
 AC_OUTPUT

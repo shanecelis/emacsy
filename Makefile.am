@@ -4,9 +4,6 @@ SUBDIRS = src test bin example
 
 EXTRA_DIST = README.md support
 
-dist-hook:
-	mv $(distdir)/README.md $(distdir)/README
-
 sign-dist: dist
 	gpg -a --output $(distdir).tar.gz.sig --detach-sig $(distdir).tar.gz
 

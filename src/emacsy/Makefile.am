@@ -11,7 +11,7 @@ NOWEB_DOCS = emacsy.pdf
 #
 #NOWEB_DOCS = command-paper.pdf
 
-EXTRA_DIST = $(NOWEB_DOCS)
+EXTRA_DIST = $(NOWEB_DOCS) $(SCHEME_TESTS)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\
 							keymap.nw command.nw buffer.nw block.nw klecl.nw			\
@@ -78,6 +78,6 @@ preview-local: $(NOWEB_DOCS)
 	open -a Skim.app $^ || open -a Preview.app $^
 
 dist-hook:
-	mv $(distdir)/*.pdf $(top_distdir)
+	cp $(distdir)/*.pdf $(top_distdir)
 
 
