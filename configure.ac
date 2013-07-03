@@ -28,16 +28,18 @@ AC_ARG_ENABLE([noweb],
               [enable_noweb=yes])
 AM_CONDITIONAL([NOWEB], [test x"$NOWEB_CHECK" = xyes && test x"$enable_noweb" = xyes])
 
-AC_ARG_ENABLE([latexmk],
-              [AC_HELP_STRING([--enable-latexmk=@<:@yes/no@:>@],
-                              [Enable latexmk @<:@default=yes@:>@])],
-              [enable_latexmk=no],
-              [enable_latexmk=yes])
-AC_CHECK_PROG(LATEXMK_CHECK,latexmk,yes)
-if test x"$LATEXMK_CHECK" != x"yes" ; then
-    AC_MSG_WARN([Must have latexmk installed to produce PDFs.])
+AC_ARG_ENABLE([pdflatex],
+              [AC_HELP_STRING([--enable-pdflatex=@<:@yes/no@:>@],
+                              [Enable pdflatex @<:@default=yes@:>@])],
+              [enable_pdflatex=no],
+              [enable_pdflatex=yes])
+AC_CHECK_PROG(PDFLATEX_CHECK,pdflatex,yes)
+if test x"$PDFLATEX_CHECK" != x"yes" ; then
+    AC_MSG_WARN([Must have pdflatex installed to produce PDFs.])
 fi
-AM_CONDITIONAL([LATEXMK], [test x"$LATEXMK_CHECK" = xyes && test x"$enable_latexmk" = xyes])
+AM_CONDITIONAL([PDFLATEX], [test x"$PDFLATEX_CHECK" = xyes && test x"$enable_pdflatex" = xyes])
+AC_PATH_PROG([pdflatex], pdflatex)
+AC_SUBST(pdflatex)
 
 GUILE_PROGS
 
@@ -77,6 +79,7 @@ dnl AC_SUBST(EMACSY_LIBS, ['${top_srcdir}/../../libemacsy.a'])
 AC_SUBST(latexdir, ['${top_srcdir}/support/latex'])
 AC_SUBST(imagesdir, ['${top_srcdir}/support/images'])
 AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
+pdflatex="TEXINPUTS=${latexdir}:${imagesdir}: $pdflatex";
 
 # Output files.
 AC_CONFIG_HEADERS([src/config.h])

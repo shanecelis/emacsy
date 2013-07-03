@@ -3,10 +3,8 @@
 set -e; # abort if anything fails
 builddir="@abs_top_builddir@"
 cd $builddir
-make dist
+make distdir
 dirname=@DISTDIR@
-filename=$dirname.tar.gz
-tar xfz $filename
 cd $dirname
 ./configure --prefix="$builddir/print-install"
 

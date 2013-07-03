@@ -29,21 +29,16 @@ SCHEME_FILES = windows.scm emacsy.c event.scm util.scm keymap.scm	\
 
 NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS)				
 
+NOWEB_INCLUDES = $(top_srcdir)/support/noweb/boiler-plate.nw
+
 BUILT_SOURCES = 
 
 CLEANFILES = $(BUILT_SOURCES) command-paper.nw command-paper.tex
 
 doc: $(NOWEB_DOCS)
 
-if LATEXMK
-all-local : $(NOWEB_DOCS)
-CLEANFILES += $(NOWEB_DOCS)
-
 # The util file may have its chunks specified anywhere.
 util.scm : util.nw $(NOWEB_FILES)
-
-endif
-clean-local : clean-latexmk
 
 MARKUP_FLAGS = -markup "$(top_srcdir)/bin/namespace-markup.pl -n ctrnn-appendix=ctrnn -n ctrnn-cat=ctrnn --"
 #MARKUP_FLAGS = -markup "$(top_srcdir)/bin/namespace-markup.pl --"

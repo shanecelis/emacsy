@@ -2,25 +2,21 @@
 #SUFFIXES += .nw .tex .pdf
 
 if NOWEB
-BOILERPLATE=$(top_srcdir)/support/noweb/boiler-plate.nw
+NOWEB_INCLUDES ?=
 %.tex : %.nw 
 	$(AM_V_at) $(MAKE) all.defs
 	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -indexfrom all.defs $^ | cpif $@
 
-#	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -index $^ | cpif $@
-
-#	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -x $^ | cpif $@
-
 WARN_NOTANGLE = $(top_srcdir)/bin/warn-notangle
 
 
-%.h : %.nw $(BOILERPLATE)
+%.h : %.nw $(NOWEB_INCLUDES)
 	$(AM_V_GEN) $(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_H_FLAGS) -R"file:$@" $^ 
 
-%-test.c %.c %.cpp : %.nw $(BOILERPLATE)
+%-test.c %.c %.cpp : %.nw $(NOWEB_INCLUDES)
 	$(AM_V_GEN) $(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_C_FLAGS)  -R"file:$@" $^
 
-%-test.scm %.scm : %.nw $(BOILERPLATE)
+%-test.scm %.scm : %.nw $(NOWEB_INCLUDES)
 	$(AM_V_GEN)	$(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
 
 all.defs: $(NOWEB_DEFS)
@@ -32,8 +28,8 @@ all.defs: $(NOWEB_DEFS)
 %.nw.files : %.nw
 	$(AM_V_GEN) noroots $^ | grep file: | perl -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
 
-%-paper.nw : %.nw $(top_srcdir)/support/noweb/paper-wrapper.nw
-	$(AM_V_GEN) (cat $(top_srcdir)/support/noweb/paper-wrapper.nw |	perl -pe "s/\\@FILE\\@/$$(basename -s .nw $<)/;") | cpif $@
+# %-paper.nw : %.nw $(top_srcdir)/support/noweb/paper-wrapper.nw
+# 	$(AM_V_GEN) (cat $(top_srcdir)/support/noweb/paper-wrapper.nw |	perl -pe "s/\\@FILE\\@/$$(basename -s .nw $<)/;") | cpif $@
 
 NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
 NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
@@ -42,32 +38,23 @@ BUILT_SOURCES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
 CLEANFILES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS) all.defs \
 	$(NOWEB_DOCS:.pdf=.aux) $(NOWEB_DOCS:.pdf=.log) $(NOWEB_DOCS:.pdf=.nwi) \
 	$(NOWEB_DOCS:.pdf=.out) $(NOWEB_DOCS:.pdf=.tdo) $(NOWEB_DOCS:.pdf=.toc) \
-	$(NOWEB_DOCS:.pdf=.tex.log)
+	$(NOWEB_DOCS:.pdf=.tex.log) $(NOWEB_DOCS)
 
 else
 %-test.scm %.scm %.h %-test.c %.c %.cpp %.tex : %.nw
 	$(warning Warning: unable to update $@ from changed $< without noweb.)
 endif
 
-if LATEXMK
-%.pdf: %.tex
-	$(AM_V_GEN)	TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
+if PDFLATEX
+
+%.pdf: %.tex $(NOWEB_TEXS)
+	$(AM_V_GEN)	$(pdflatex) -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (echo ERROR; cat $$(basename $<).log; false)
 	noindex $<
-	$(AM_V_GEN) TEXINPUTS=$(latexdir):$(srcdir):$(imagesdir): pdflatex -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (cat $$(basename $<).log; false)
-
-# $(AM_V_GEN)  latexmk -quiet -f -g -pdf $< &> $<.log || cat $<.log
-# noindex $<
-# $(AM_V_GEN) TEXINPUTS=$(srcdir):$(imagesdir): latexmk -quiet -f -g -pdf $< &> $<.log || cat $<.log
-
-clean-latexmk: 
-	for file in $(NOWEB_FILES:.nw=.tex); do \
-		test -f $$file && latexmk -C $$file && rm -f $$file; \
-	done; true
+	$(AM_V_GEN) $(pdflatex) -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (echo ERROR; cat $$(basename $<).log; false)
 
 else
 %.pdf : %.tex
 	$(warning Warning: unable to update $@ from changed $< without latexmk.)
 
-clean-latexmk:
 endif
 

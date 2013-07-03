@@ -28,7 +28,7 @@ option -n 'A-appendix=A'.
 END
     exit(2);
 }
-my $file;
+my $file = 'not-defined';
 open(INPUT, "/opt/local/libexec/noweb/markup " . join(' ', @ARGV) . "|") or die("noweb/markup failed.\n");
 while (<INPUT>) {
     if (/^\@file ([^\.:]+)[^:]*$/) { 
