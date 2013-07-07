@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/usr/bin/env bash 
 # runtests
 
 if [ $# -eq 0 ]; then
@@ -7,4 +7,24 @@ if [ $# -eq 0 ]; then
 fi
 
 export ABS_TOP_SRCDIR="@abs_top_srcdir@";
-DYLD_LIBRARY_PATH=@abs_top_builddir@/src @GUILE@ -L @abs_top_builddir@/src -L @abs_top_srcdir@/src -L @abs_top_srcdir@/support/scheme -l @abs_top_srcdir@/src/line-pragma.scm "$@";
+
+# XXX Unfortunately, since we build the source files using noweb,
+# depending on whether it is built in the source tree or out of the
+# sourcetree, the header files may or may not be where they ought to
+# be and can be in srcdir or builddir.  
+# 
+# If it's run from the distribution, line-pragma.scm is in srcdir.  If
+# it's run from an out-of-tree build directory, then line-pragma.scm
+# is in builddir.
+#
+# Bleh.
+if [ -f @abs_top_srcdir@/src/line-pragma.scm ]; then
+    line_pragma=@abs_top_srcdir@/src/line-pragma.scm;
+elif [ -f @abs_top_builddir@/src/line-pragma.scm ]; then
+    line_pragma=@abs_top_builddir@/src/line-pragma.scm;
+else
+    echo "error: unable to find line-pragma.scm; expected to be in @abs_top_srcdir@/src or @abs_top_builddir@/src." >&2;
+    exit 1;
+fi
+
+DYLD_LIBRARY_PATH=@abs_top_builddir@/src @GUILE@ -L @abs_top_builddir@/src -L @abs_top_srcdir@/src -L @abs_top_srcdir@/support/scheme -l $line_pragma  "$@";

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # print-install.sh.in
 set -e; # abort if anything fails
 builddir="@abs_top_builddir@"

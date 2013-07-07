@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 # namespace-markup.pl
 
 use strict;
@@ -29,15 +29,22 @@ END
     exit(2);
 }
 my $file = 'not-defined';
-open(INPUT, "/opt/local/libexec/noweb/markup " . join(' ', @ARGV) . "|") or die("noweb/markup failed.\n");
-while (<INPUT>) {
-    if (/^\@file ([^\.:]+)[^:]*$/) { 
+$namespaces{$file} = 'not-defined';
+local *INPUT;
+open(INPUT, "@markup@ " . join(' ', @ARGV) . " |") or die("noweb/markup failed.\n");
+while (my $line = <INPUT>) {
+    if ($line =~ /^\@file ([^\.:]+)[^:]*$/) { 
         $file = $1; 
         if (! (defined $namespaces{$file})) { 
             $namespaces{$file} = $file; 
         } 
     } 
-    s/^\@(defn|use) ([^+][^:]*)$/\@$1 $namespaces{$file}:$2/;
-    print;
+    if ($line =~ /^\@(defn|use) ([^+][^:]*)$/) {
+        # I keep getting warnings here about an uninitialized value
+        # that I can't seem to sort out.
+#        no warnings 'uninitialized';
+        $line =~ s/^\@(defn|use) ([^+][^:]*)$/\@$1 $namespaces{$file}:$2/;
+    }
+    print $line;
 }
 

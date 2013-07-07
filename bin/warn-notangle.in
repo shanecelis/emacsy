@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # warn-notangle
 # 
 # Exit with an error code if there is an error in the notangle process.
@@ -24,10 +24,10 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ -z "$output" ]; then
-    notangle "$@";
+    @notangle@ "$@";
     ec=$?;
 else
-    notangle "$@" | cpif "$output"; 
+    @notangle@ "$@" | cpif "$output"; 
     ec=${PIPESTATUS[0]};
 fi
 

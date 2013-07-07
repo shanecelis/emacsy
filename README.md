@@ -22,10 +22,10 @@ Dependencies
 
 * [GNU Guile Scheme 2.0](http://www.gnu.org/software/guile/)
 
-* [Noweb](http://www.cs.tufts.edu/~nr/noweb/)
+* [Noweb](http://www.cs.tufts.edu/~nr/noweb/) - not necessary if building from [distributed source](https://github.com/shanecelis/emacsy/releases)
 
-Building
---------
+Building from github
+--------------------
 
     $ git clone https://github.com/shanecelis/emacsy.git
     $ cd emacsy
@@ -34,10 +34,20 @@ Building
     $ ./configure
     $ make
 
+Building from release
+---------------------
+
+    $ wget https://github.com/shanecelis/emacsy/releases/v0.1.0/641/emacsy-0.1.0.tar.gz
+    $ tar xfz emacsy-0.1.0.tar.gz
+    $ cd emacsy-0.1.0
+    $ ./configure
+    $ make
+
 Running 
 -------
 
-Run the [minimal example program](http://gnufoo.org/emacsy/minimal-emacsy-example.pdf). 
+Run the [minimal example
+program](http://gnufoo.org/emacsy/minimal-emacsy-example.pdf).
 
     $ make run
 
@@ -46,9 +56,17 @@ Run the [minimal example program](http://gnufoo.org/emacsy/minimal-emacsy-exampl
 Reading 
 -------
 
-This is a literate program, so you can read it.
+This is a literate program, so you can read it.  
 
     $ make preview
+
+The literate documents are bundled in the distribution as `emacys.pdf`
+and `hello-emacsy-paper.pdf`.
+
+Running Tests
+-------------
+
+    $ make check
 
 TODO
 ----
@@ -57,4 +75,8 @@ Lots to do.
 
 - [ ] First TODO, collect up all the TODOs.
 
+License
+-------
 
+Emacsy is available under the GNU GPLv3. See the bundled LICENSE file
+for details.  

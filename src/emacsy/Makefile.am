@@ -40,8 +40,7 @@ doc: $(NOWEB_DOCS)
 # The util file may have its chunks specified anywhere.
 util.scm : util.nw $(NOWEB_FILES)
 
-MARKUP_FLAGS = -markup "$(top_srcdir)/bin/namespace-markup.pl -n ctrnn-appendix=ctrnn -n ctrnn-cat=ctrnn --"
-#MARKUP_FLAGS = -markup "$(top_srcdir)/bin/namespace-markup.pl --"
+MARKUP_FLAGS = -markup "$(top_builddir)/bin/namespace-markup --"
 #WARN_NOTANGLE_FLAGS = -W # treat warnings as errors
 WARN_NOTANGLE_FLAGS = 
 NOWEAVE_FLAGS = $(MARKUP_FLAGS)

@@ -5,19 +5,19 @@ if NOWEB
 NOWEB_INCLUDES ?=
 %.tex : %.nw 
 	$(AM_V_at) $(MAKE) all.defs
-	$(AM_V_GEN) noweave $(NOWEAVE_FLAGS) -n -delay -indexfrom all.defs $^ | cpif $@
+	$(AM_V_GEN) $(noweave) $(NOWEAVE_FLAGS) -n -delay -indexfrom all.defs $^ | cpif $@
 
-WARN_NOTANGLE = $(top_srcdir)/bin/warn-notangle
+warn_notangle = $(top_builddir)/bin/warn-notangle
 
 
 %.h : %.nw $(NOWEB_INCLUDES)
-	$(AM_V_GEN) $(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_H_FLAGS) -R"file:$@" $^ 
+	$(AM_V_GEN) $(warn_notangle) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_H_FLAGS) -R"file:$@" $^ 
 
 %-test.c %.c %.cpp : %.nw $(NOWEB_INCLUDES)
-	$(AM_V_GEN) $(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_C_FLAGS)  -R"file:$@" $^
+	$(AM_V_GEN) $(warn_notangle) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_C_FLAGS)  -R"file:$@" $^
 
 %-test.scm %.scm : %.nw $(NOWEB_INCLUDES)
-	$(AM_V_GEN)	$(WARN_NOTANGLE) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
+	$(AM_V_GEN)	$(warn_notangle) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
 
 all.defs: $(NOWEB_DEFS)
 	$(AM_V_GEN)	sort -u $^ | cpif $@
@@ -26,7 +26,7 @@ all.defs: $(NOWEB_DEFS)
 	$(AM_V_GEN) nodefs $< > $@
 
 %.nw.files : %.nw
-	$(AM_V_GEN) noroots $^ | grep file: | perl -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
+	$(AM_V_GEN) $(noroots) $^ | grep file: | $(perl) -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
 
 # %-paper.nw : %.nw $(top_srcdir)/support/noweb/paper-wrapper.nw
 # 	$(AM_V_GEN) (cat $(top_srcdir)/support/noweb/paper-wrapper.nw |	perl -pe "s/\\@FILE\\@/$$(basename -s .nw $<)/;") | cpif $@

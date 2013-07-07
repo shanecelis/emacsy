@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 # We'll try to use semantic versioning.  http://semver.org
-AC_INIT([emacsy], [0.1.0], [shane.celis@gmail.com])
+AC_INIT([emacsy], [0.1.1], [shane.celis@gmail.com])
 AC_CONFIG_AUX_DIR([support/build-aux])
 # Lies.
 #AM_INIT_GUILE_MODULE
@@ -26,7 +26,33 @@ AC_ARG_ENABLE([noweb],
               [AC_HELP_STRING([--enable-noweb=@<:@yes/no@:>@],
                               [Enable noweb @<:@default=yes@:>@])],
               [enable_noweb=no],
-              [enable_noweb=yes])
+              [
+enable_noweb=yes
+
+AC_PATH_PROG([noweb], noweb)
+AC_SUBST(noweb)
+
+AC_PATH_PROG([noweave], noweave)
+AC_SUBST(noweave)
+
+AC_PATH_PROG([notangle], notangle)
+AC_SUBST(notangle)
+
+AC_PATH_PROG([noroots], noroots)
+AC_SUBST(noroots)
+
+AC_PATH_PROG([perl], perl)
+AC_SUBST(perl)
+
+noweb_home=`dirname $noweb`/..
+
+AC_PATH_PROG([markup], markup, no, [$PATH:$noweb_home/libexec/noweb])
+if test "$markup" = "no"; then
+  AC_MSG_ERROR([Must have markup installed to alter literate source code.])
+fi
+AC_SUBST(markup)
+
+])
 AM_CONDITIONAL([NOWEB], [test x"$NOWEB_CHECK" = xyes && test x"$enable_noweb" = xyes])
 
 AC_ARG_ENABLE([pdflatex],
@@ -48,11 +74,15 @@ GUILE_PROGS
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
 
 if test "$prefix" == "/usr/local"; then
-   GUILE_SITE_LIB="$(pkg-config guile-2.0 --variable=pkgdatadir)/site";
+   GUILE_SITE_LIB="`pkg-config guile-2.0 --variable=pkgdatadir`/site";
 else
    GUILE_SITE_LIB="$prefix/share/guile/site";
 fi
 AC_SUBST(GUILE_SITE_LIB)
+
+AC_PATH_PROG([guile_snarf], guile-snarf)
+AC_SUBST(guile_snarf)
+
 
 AM_CONDITIONAL([HELLO_EMACSY], [test -f example/hello-emacsy/README.md])
 
@@ -86,6 +116,8 @@ pdflatex="TEXINPUTS=${latexdir}:${imagesdir}: $pdflatex";
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([ Makefile
                   bin/runtests
+                  bin/warn-notangle
+                  bin/namespace-markup
                   bin/Makefile
                   src/Makefile 
                   src/emacsy/Makefile 
@@ -95,7 +127,7 @@ AC_CONFIG_FILES([ Makefile
                   support/pkg-config/emacsy.pc
                   support/pkg-config/not-installed/emacsy.pc
                   example/Makefile
-                  ], [chmod +x bin/runtests test/print-install.sh test/works-without-noweb.sh test/dummy.sh])
+                  ], [chmod +x bin/runtests bin/warn-notangle bin/namespace-markup test/print-install.sh test/works-without-noweb.sh])
 dnl We can point the example to the build directory.
 dnl export EMACSY_CFLAGS="-I${ac_abs_top_builddir}/src/emacsy"
 dnl export EMACSY_LIBS="-L${ac_abs_top_builddir}/src/emacsy/.libs"
@@ -110,7 +142,12 @@ elif test -f ../configure; then
 else
   AC_MSG_ERROR([Can't detect src and build directories.])  
 fi
-export EMACSY_CFLAGS="-I${abs_top_srcdir}/src/emacsy"
+
+# Unfortunately, since we build the source files using noweb,
+# depending on whether it is built in the source tree or out of the
+# sourcetree, the header files may or may not be where they ought to
+# be in srcdir or builddir.  Bleh.
+export EMACSY_CFLAGS="-I${abs_top_srcdir}/src/emacsy -I${abs_top_builddir}/src/emacsy"
 export EMACSY_LIBS="-L${abs_top_builddir}/src/emacsy/.libs -lemacsy"
 export EMACSY_MODULE="${abs_top_srcdir}/src"
 AC_CONFIG_SUBDIRS([example/hello-emacsy])

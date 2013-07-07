@@ -1,3 +1,3 @@
-EXTRA_DIST = count-lines namespace-markup namespace-markup.pl warn-notangle
+EXTRA_DIST = count-lines namespace-markup warn-notangle
 
 MAINTAINERCLEANFILES = Makefile.in 

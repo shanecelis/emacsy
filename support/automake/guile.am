@@ -2,10 +2,10 @@
 #SUFFIXES += .c.x .cpp.x
 
 %.c.x : %.c
-	$(AM_V_GEN) guile-snarf -o $@ $(GUILE_CFLAGS) $<
+	$(AM_V_GEN) $(guile_snarf) -o $@ $(GUILE_CFLAGS) $<
 
 %.cpp.x : %.cpp
-	$(AM_V_GEN)	guile-snarf -o $@ $(GUILE_CFLAGS) $<
+	$(AM_V_GEN)	$(guile_snarf) -o $@ $(GUILE_CFLAGS) $<
 
 
 
