@@ -110,14 +110,12 @@ dnl AC_SUBST(EMACSY_LIBS, ['${top_srcdir}/../../libemacsy.a'])
 AC_SUBST(latexdir, ['${top_srcdir}/support/latex'])
 AC_SUBST(imagesdir, ['${top_srcdir}/support/images'])
 AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
-pdflatex="TEXINPUTS=${latexdir}:${imagesdir}: $pdflatex";
+AC_SUBST(helloemacsydir, ['${top_srcdir}/example/hello-emacsy/'])
+pdflatex="TEXINPUTS=${latexdir}:${imagesdir}:${helloemacsydir}/support/images: $pdflatex";
 
 # Output files.
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([ Makefile
-                  bin/runtests
-                  bin/warn-notangle
-                  bin/namespace-markup
                   bin/Makefile
                   src/Makefile 
                   src/emacsy/Makefile 
@@ -127,7 +125,13 @@ AC_CONFIG_FILES([ Makefile
                   support/pkg-config/emacsy.pc
                   support/pkg-config/not-installed/emacsy.pc
                   example/Makefile
-                  ], [chmod +x bin/runtests bin/warn-notangle bin/namespace-markup test/print-install.sh test/works-without-noweb.sh])
+                  ], [])
+
+AC_CONFIG_FILES([bin/runtests], [chmod a+x bin/runtests])
+AC_CONFIG_FILES([bin/warn-notangle], [chmod a+x bin/warn-notangle])
+AC_CONFIG_FILES([bin/namespace-markup], [chmod a+x bin/namespace-markup])
+
+
 dnl We can point the example to the build directory.
 dnl export EMACSY_CFLAGS="-I${ac_abs_top_builddir}/src/emacsy"
 dnl export EMACSY_LIBS="-L${ac_abs_top_builddir}/src/emacsy/.libs"

@@ -11,6 +11,12 @@ NOWEB_DOCS = emacsy.pdf
 #
 #NOWEB_DOCS = command-paper.pdf
 
+emacsy.pdf : hello-emacsy.tex
+
+hello-emacsy.tex : $(helloemacsydir)/src/hello-emacsy.tex
+	$(MAKE) -C $(helloemacsydir) pdf
+	cp $(helloemacsydir)/src/hello-emacsy.tex hello-emacsy.tex
+
 EXTRA_DIST = $(NOWEB_DOCS) $(SCHEME_TESTS)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\

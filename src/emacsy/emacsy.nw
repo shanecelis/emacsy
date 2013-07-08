@@ -14,6 +14,8 @@
 \usepackage{graphicx}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage{epigraph}
+\usepackage{pdfpages}
+\usepackage[toc,page]{appendix}
 %\usepackage{url}
 %\usepackage{html} 
 
@@ -81,7 +83,7 @@
 %\newminted{scheme}{bgcolor=bg,mathescape,texcl}
 
 %\title{Emacsy: An Extensible Macro System}
-\title{Emacsy: An Extensible, Embeddable, Emacs-like Macro System}
+\title{Emacsy: An Embeddable Emacs-like Library for GNU Guile Scheme}
 %\title{Emacsey: An Embedable Macro System for Embedding }
 \date{}
 \author{Shane Celis
@@ -371,6 +373,14 @@ These are the core features from Emacs that will be implemented in Emacsy.
 \end{enumerate}
 
 
+
+\chapter{The Garden}
+
+Now for a little entertainment.
+
+\includepdf[pages=-,%addtotoc={1,section,1,The Garden,the-garden},
+  fitpaper=true]{the-garden.pdf}
+
 \chapter{Hello, Emacsy!}
 
 %% \section{Implementation Plan}
@@ -400,9 +410,11 @@ These are the core features from Emacs that will be implemented in Emacsy.
 %% %\item Make code available on github
 %% \end{enumerate}
 
-%\input{examples/hello-emacsy/src/hello-emacsy}
+\input{hello-emacsy}
 
-\part{Implementation} 
+%\part{Implementation}
+%\chapter{C API}
+
 \input{emacsy-c-api}
 
 \lstset{language=lisp}
@@ -512,7 +524,7 @@ Copyright (C) 2012 Shane Celis
 \input{windows} 
 
 %\backmatter  
-\appendix 
+\begin{appendices}
 \part{Appendix}  
 \chapter{Support Code} 
 \input{util}
@@ -707,6 +719,7 @@ for the code.
 \nowebindex 
 \end{multicols}
 @
+\end{appendices}
 \end{document}
 
 %%  LocalWords:  elt args Emacsism lispism Eval rep pel MATLAB Lua
