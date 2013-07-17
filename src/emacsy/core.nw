@@ -391,7 +391,8 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
 
 <<util:procedure>>=
 (define-public (emacsy-log-warning format-msg . args)
-  (apply format (current-error-port) format-msg args))
+  (apply format (current-error-port) format-msg args)
+  (newline (current-error-port)))
 @
 
 <<core:process>>=

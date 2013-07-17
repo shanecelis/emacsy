@@ -4,13 +4,17 @@
 # Exit with an error code if there is an error in the notangle process.
 
 function usage() {
-   echo "usage: warn-notangle -W -o output -- <notangle arguments>" >&2;
+   echo "usage: warn-notangle [-LW] [-o output] -- <notangle arguments>" >&2;
+   echo " -W treat warnings from notangle as errors" >&2;
+   echo " -L add a (use-modules (line-pragma)) header to the file" >&2;
    exit 2;
 }
+addPrefix=0;
 warningsAsErrors=0;
 output="";
-while getopts hWo: opt; do
+while getopts hWo:L opt; do
 	case $opt in
+      L) addPrefix=1;;
 	    W) warningsAsErrors=1;;
       h) usage;;
 	    o) output=$OPTARG;;
@@ -19,15 +23,22 @@ while getopts hWo: opt; do
 done
 shift $[ OPTIND - 1 ]
 
+function notangle() {
+  if [ $addPrefix -eq 1 ]; then
+      echo "(use-modules (line-pragma))";
+  fi
+  @notangle@ "$@";
+}
+
 if [ $# -eq 0 ]; then
     usage;
 fi
 
 if [ -z "$output" ]; then
-    @notangle@ "$@";
+    notangle "$@";
     ec=$?;
 else
-    @notangle@ "$@" | cpif "$output"; 
+    notangle "$@" | cpif "$output"; 
     ec=${PIPESTATUS[0]};
 fi
 

@@ -34,7 +34,7 @@ Building from github
     $ ./configure
     $ make
 
-Building from release
+Building from a release
 ---------------------
 
     $ wget https://github.com/shanecelis/emacsy/releases/v0.1.0/641/emacsy-0.1.0.tar.gz

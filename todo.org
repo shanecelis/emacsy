@@ -1,0 +1,51 @@
+* Emacsy TODO
+  - [ ] have backtraces go to logs
+  - [ ] get rid of noise in emacsy (noise?) log noise?
+  - [ ] implement coroutines in Guile using [[http://www.lua.org/manual/5.2/manual.html][Lua API]] and [[http://wingolog.org/archives/2011/08/30/the-gnu-extension-language][this]] as a basis
+    It'd be nice if the coroutines were interruptable.  Maybe [[http://lists.gnu.org/archive/html/guile-user/2011-10/msg00038.html][this would help.]]
+    This is a [[http://pllab.is.ocha.ac.jp/~asai/cw2011tutorial/main-e.pdf][good tutorial]] on shift and reset.
+
+    Commands should be marked as suspendable.  Suspendable commands
+    will be executed in their own coroutine that may be suspended,
+    resumed, resumed in the background, or killed.  This is similar to
+    the split between builtin commands in shell and regular commands.
+    God, this is going to be COOL!
+  - [ ] make debugging work in emacsy
+  - [ ] fix kill of all buffers bug
+  - [ ] add universal argument C-u
+  - [ ] clear the echo area once other messages start to come.
+  - [ ] figure out how to integrate a browser window, it'll show pdf
+    graphs, images, etc. too!
+  - [ ] implement separate histories for read-from-minibuffer
+  - [ ] there should be a way to turn off the display/runloop from happening.
+  - [ ] make emacsy work with copy/paste [[http://stackoverflow.com/questions/6888862/how-to-access-clipboard-data-programmatically][link]]
+
+  - [ ] [[https://github.com/technomancy/find-file-in-project/blob/master/find-file-in-project.el][Try this find-file-in-project]]
+  - [ ] [[https://groups.google.com/forum/m/?fromgroups#!msg/comp.emacs/j_fNPgtbavM/DVygGrzgQgMJ][Great introduction]] to the bare minimum you need to know to use
+    Emacs
+  - [ ] How to make [[http://www.gnu.org/software/guile/docs/docs-2.0/guile-ref/Identifier-Macros.html#Identifier-Macros][variable aliases]]
+  - [ ] the noweb filter docs2comments does not work with noweb's line pragmas
+  - [ ] how to do [[https://github.com/davexunit/gnumaku/blob/rebirth/gnumaku/coroutine.scm][coroutines]] in guile
+  - [ ] How do syscalls work when Emacsy is in batch mode?
+    
+    Populate event buffer from file handle?  Are syscalls even required
+    if we're not in interactive mode?
+  - [X] In order to terminate potential rogue coroutines, I could set
+    a posix alarm that runs every second or so to check the events.
+  - Readline already offers some completion functions for files
+    and defines.
+  http://www.gnu.org/software/guile/manual/guile.html#Readline-Functions
+  - [[http://ergoemacs.org/emacs/emacs_modernization.html][Emacs modernization]] may have some good ideas to apply to Emacsy
+  - [ ] How to test Emacsy interactions?  It should accept a filehandle that
+    specifies events and plays them back like a macro.
+  - [[http://cygwin.com/ml/guile-emacs/2000-q2/msg00029.html][These folks]] are thinking similarly about how to deal with
+    commands running in the background
+  - [ ] Change shebang lines from #!/usr/bin/env perl to #!@PERL@ etc.
+  - [ ] configure.ac needs to deal with the case where no hello-emacsy
+    is available.
+  - [ ] GLUT needs to be checked at configure time on other OSes.
+  - An interesting way to [[http://lists.gnu.org/archive/html/guile-user/2011-10/msg00038.html][debug at the prompt]] in Guile
+  - [ ] Use DBus as a way to interoperate between Emacsy applications.
+  - [ ] Swap out blocking module for either ethreads or another
+    general continuation method.
+  - [ ] Fix bug with (define-interactive name (let ((x 1)) (lambda () (incr! x))))

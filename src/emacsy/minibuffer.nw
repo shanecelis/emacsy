@@ -75,9 +75,9 @@ the echo area, so we add some hooks.
 
 <<util:procedure>>=
 (define-public (emacsy-log-debug format-msg . args)
-  (apply format (current-error-port) format-msg args))
+  (apply format (current-error-port) format-msg args)
+  (newline (current-error-port)))
 @
-
 
 <<minibuffer:state>>=
 (define-public emacsy-display-minibuffer? #f) ;; or the echo area

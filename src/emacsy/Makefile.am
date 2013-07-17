@@ -19,21 +19,22 @@ hello-emacsy.tex : $(helloemacsydir)/src/hello-emacsy.tex
 
 EXTRA_DIST = $(NOWEB_DOCS) $(SCHEME_TESTS)
 
-NOWEB_FILES = emacsy.nw emacsy-c-api.nw windows.nw event.nw util.nw	\
-							keymap.nw command.nw buffer.nw block.nw klecl.nw			\
-							kbd-macro.nw minibuffer.nw core.nw advice.nw 
+NOWEB_FILES = emacsy.nw emacsy-c-api.nw event.nw util.nw keymap.nw	\
+							command.nw buffer.nw block.nw klecl.nw kbd-macro.nw		\
+							minibuffer.nw core.nw advice.nw windows.nw
 
 SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
 							 buffer-test.scm block-test.scm klecl-test.scm				\
 							 kbd-macro-test.scm minibuffer-test.scm core-test.scm	\
 							 emacsy-test.scm advice-test.scm
 
-SCHEME_FILES = windows.scm emacsy.c event.scm util.scm keymap.scm	\
-							 command.scm buffer.scm block.scm klecl.scm					\
-							 kbd-macro.scm minibuffer.scm core.scm emacsy.scm		\
-							 advice.scm emacsy.h
+SCHEME_FILES = event.scm util.scm keymap.scm command.scm buffer.scm	\
+							 block.scm klecl.scm kbd-macro.scm minibuffer.scm			\
+							 core.scm emacsy.scm advice.scm
 
-NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS)				
+GOBJECTS = $(SCHEME_FILES:%.scm=%.go)
+
+NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS) emacsy.h emacsy.c
 
 NOWEB_INCLUDES = $(top_srcdir)/support/noweb/boiler-plate.nw
 
@@ -48,7 +49,8 @@ util.scm : util.nw $(NOWEB_FILES)
 
 MARKUP_FLAGS = -markup "$(top_builddir)/bin/namespace-markup --"
 #WARN_NOTANGLE_FLAGS = -W # treat warnings as errors
-WARN_NOTANGLE_FLAGS = 
+WARN_NOTANGLE_C_FLAGS = 
+WARN_NOTANGLE_LISP_FLAGS = -L # add a (use-modules (line-pragma)) header
 NOWEAVE_FLAGS = $(MARKUP_FLAGS)
 NOTANGLE_C_FLAGS = -c -L $(MARKUP_FLAGS)
 NOTANGLE_LISP_FLAGS = -L $(MARKUP_FLAGS)
@@ -62,8 +64,8 @@ include_HEADERS = emacsy.h
 
 MAINTAINERCLEANFILES = Makefile.in config.h.in 
 
-guilemoduledir = $(GUILE_SITE_LIB)/$(PACKAGE_TARNAME)
-dist_guilemodule_DATA = $(SCHEME_FILES)
+guilemoduledir = $(prefix)/share/guile/site/$(PACKAGE_TARNAME)
+dist_guilemodule_DATA = $(SCHEME_FILES) $(GOBJECTS)
 
 AM_ETAGSFLAGS = -l scheme
 ETAGS_ARGS = $(SCHEME_FILES) $(SCHEME_TESTS)
@@ -72,15 +74,13 @@ TAGS_DEPENDENCIES = $(SCHEME_FILES) $(SCHEME_TESTS)
 #TESTS_ENVIRONMENT = LOG_COMPILER
 TESTS = $(SCHEME_TESTS)
 TEST_EXTENSIONS = .scm 
-SCM_LOG_COMPILER = $(top_builddir)/bin/runtests
+#SCM_LOG_COMPILER = #$(top_builddir)/bin/runtests
+SCM_LOG_COMPILER = $(top_builddir)/bin/env $(GUILE)
 
 include $(top_srcdir)/support/automake/noweb.am
 include $(top_srcdir)/support/automake/guile.am
 
 emacsy.h emacsy.c : emacsy-c-api.nw
-
-preview-local: $(NOWEB_DOCS)
-	open -a Skim.app $^ || open -a Preview.app $^
 
 dist-hook:
 	cp $(distdir)/*.pdf $(top_distdir)

@@ -46,7 +46,7 @@ AC_SUBST(perl)
 
 noweb_home=`dirname $noweb`/..
 
-AC_PATH_PROG([markup], markup, no, [$PATH:$noweb_home/libexec/noweb])
+AC_PATH_PROG([markup], markup, no, [$PATH:$noweb_home/libexec/noweb:$noweb_home/lib/noweb])
 if test "$markup" = "no"; then
   AC_MSG_ERROR([Must have markup installed to alter literate source code.])
 fi
@@ -73,16 +73,8 @@ GUILE_PROGS
 # Checks for libraries.
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
 
-if test "$prefix" == "/usr/local"; then
-   GUILE_SITE_LIB="`pkg-config guile-2.0 --variable=pkgdatadir`/site";
-else
-   GUILE_SITE_LIB="$prefix/share/guile/site";
-fi
-AC_SUBST(GUILE_SITE_LIB)
-
 AC_PATH_PROG([guile_snarf], guile-snarf)
 AC_SUBST(guile_snarf)
-
 
 AM_CONDITIONAL([HELLO_EMACSY], [test -f example/hello-emacsy/README.md])
 
@@ -127,7 +119,7 @@ AC_CONFIG_FILES([ Makefile
                   example/Makefile
                   ], [])
 
-AC_CONFIG_FILES([bin/runtests], [chmod a+x bin/runtests])
+AC_CONFIG_FILES([bin/env], [chmod a+x bin/env])
 AC_CONFIG_FILES([bin/warn-notangle], [chmod a+x bin/warn-notangle])
 AC_CONFIG_FILES([bin/namespace-markup], [chmod a+x bin/namespace-markup])
 

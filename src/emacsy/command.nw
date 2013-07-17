@@ -90,12 +90,10 @@ We define the global command map.
 (define-syntax-public define-interactive
   (syntax-rules ()
     ((define-interactive (name . args) . body)
-     (begin (define-cmd (name . args)
-              . body)
-            (command-add! global-cmdset 'name)))
+     (define-cmd global-cmdset (name . args)
+       . body))
     ((define-interactive name value)
-     (begin (define-cmd name value)
-            (command-add! global-cmdset 'name)))))
+     (define-cmd global-cmdset name value))))
 @ 
 
 \todo[inline]{Need to fix: define-cmd doesn't respect documentation strings.}
@@ -111,20 +109,21 @@ We define the global command map.
         (set-command-properties! name 'name)))
     ((define-cmd name value)
      (begin 
-       (define name (lambda args
-                      (with-fluids ((in-what-command 'name))
-                        (apply value args))))
+       (define name #f)
+       (let ((v value))
+        (set! name (lambda args
+                       (with-fluids ((in-what-command 'name))
+                         (apply v args))))
         (export name)
-        (set-command-properties! name 'name)))
+        (set-command-properties! name 'name))))
     ((define-cmd cmap (name . args) . body)
      (begin 
        (define-cmd (name . args) . body)
-        (command-add! cmap 'name)))
+       (command-add! cmap 'name)))
     ((define-cmd cmap name value)
-     (begin (define* name value)
-        (export name)
-        (set-command-properties! name 'name)
-        (command-add! cmap 'name)))))
+     (begin
+       (define-cmd name value)
+       (command-add! cmap 'name)))))
 @ 
 
 <<command:procedure>>=
@@ -240,7 +239,8 @@ associated with commands.
 
 <<util:procedure>>=
 (define-public (emacsy-log-info format-msg . args)
-  (apply format (current-error-port) format-msg args))
+  (apply format (current-error-port) format-msg args)
+  (newline (current-error-port)))
 @ 
 
 <<command:state>>=
@@ -248,10 +248,20 @@ associated with commands.
 (define-public last-command #f)
 @ 
 
+<<command:state>>=
+(define-public kill-rogue-coroutine? #f)
+(define-public seconds-to-wait-for-yield 2)
+@ 
+
 <<command:procedure>>=
 (define-public (call-interactively command . args)
-  (with-fluids ((this-interactive-command (command-name command)))
-    (apply command-execute command args)))
+  (dynamic-wind
+   (lambda () (if kill-rogue-coroutine?
+                  (alarm seconds-to-wait-for-yield))) 
+   (lambda () (with-fluids ((this-interactive-command (command-name command)))
+                (apply command-execute command args)))
+   (lambda () (if kill-rogue-coroutine?
+                  (alarm 0)))))
 @ 
 
 <<command:state>>=

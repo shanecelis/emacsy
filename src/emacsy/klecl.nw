@@ -322,7 +322,8 @@ ought to go through [[emacsy-log-error]].
 
 <<util:procedure>>=
 (define-public (emacsy-log-error format-msg . args)
-  (apply format (current-error-port) format-msg args))
+  (apply format (current-error-port) format-msg args)
+  (newline (current-error-port)))
 @
 
 
@@ -352,25 +353,51 @@ loop sets up a fair amount of state.
 @ 
 
 <<klecl:procedure>>=
+(define call-with-sigalrm
+  (if (not (provided? 'posix))
+      (lambda (thunk) (thunk))
+      (lambda (thunk)
+        (let ((handler #f))
+          (dynamic-wind
+            (lambda ()
+              (set! handler
+                    (sigaction SIGALRM
+                      (lambda (sig)
+                        #;(block-yield)
+                        (scm-error 'signal #f "Alarm interrupt" '()
+                                   (list sig))))))
+            thunk
+            (lambda ()
+              (if handler
+                  ;; restore Scheme handler, SIG_IGN or SIG_DFL.
+                  (sigaction SIGALRM (car handler) (cdr handler))
+                  ;; restore original C handler.
+                  (sigaction SIGALRM #f))))))))
+
+<<klecl:procedure>>=
 (define*-public (primitive-command-tick)
   "We do one iteration of the command-loop without any error handling."
-  (let* ((events (read-key-sequence))
-         (keymaps (default-klecl-maps))
-         (key-sequence (map event->kbd events))
-         (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
-    (if keymap
-        (begin
-          (set! last-command-event this-command-event)
-          (set! this-command-event (rcar events))
-          ;; The command hooks might need to go into the command module.
-          (in-out 
-           (run-hook pre-command-hook)
-           (call-interactively (lookup-key keymap key-sequence))
-           (run-hook post-command-hook)))
-        ;; Maybe this should be done by an undefined-command command?
-        (begin (message "~a is undefined."
-                        (string-join key-sequence " "))
-               (values #f 'no-such-command)))))
+  (call-with-sigalrm
+   (lambda ()
+     ((@@ (ice-9 top-repl) call-with-sigint) 
+     (lambda ()
+       (let* ((events (read-key-sequence))
+              (keymaps (default-klecl-maps))
+              (key-sequence (map event->kbd events))
+              (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
+         (if keymap
+             (begin
+               (set! last-command-event this-command-event)
+               (set! this-command-event (rcar events))
+               ;; The command hooks might need to go into the command module.
+               (in-out 
+                (run-hook pre-command-hook)
+                (call-interactively (lookup-key keymap key-sequence))
+                (run-hook post-command-hook)))
+             ;; Maybe this should be done by an undefined-command command?
+             (begin (message "~a is undefined."
+                             (string-join key-sequence " "))
+                    (values #f 'no-such-command)))))))))
 @ 
 
 <<klecl:procedure>>=

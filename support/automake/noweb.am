@@ -9,15 +9,14 @@ NOWEB_INCLUDES ?=
 
 warn_notangle = $(top_builddir)/bin/warn-notangle
 
-
 %.h : %.nw $(NOWEB_INCLUDES)
-	$(AM_V_GEN) $(warn_notangle) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_H_FLAGS) -R"file:$@" $^ 
+	$(AM_V_GEN) $(warn_notangle) -o $@ $(WARN_NOTANGLE_C_FLAGS) -- $(NOTANGLE_H_FLAGS) -R"file:$@" $^ 
 
 %-test.c %.c %.cpp : %.nw $(NOWEB_INCLUDES)
-	$(AM_V_GEN) $(warn_notangle) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_C_FLAGS)  -R"file:$@" $^
+	$(AM_V_GEN) $(warn_notangle) -o $@ $(WARN_NOTANGLE_C_FLAGS) -- $(NOTANGLE_C_FLAGS)  -R"file:$@" $^
 
 %-test.scm %.scm : %.nw $(NOWEB_INCLUDES)
-	$(AM_V_GEN)	$(warn_notangle) -o $@ $(WARN_NOTANGLE_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
+	$(AM_V_GEN)	$(warn_notangle) -o $@ $(WARN_NOTANGLE_LISP_FLAGS) -- $(NOTANGLE_LISP_FLAGS) -R"file:$@" $^
 
 all.defs: $(NOWEB_DEFS)
 	$(AM_V_GEN)	sort -u $^ | cpif $@
@@ -58,3 +57,5 @@ else
 
 endif
 
+preview-local: $(NOWEB_DOCS)
+	open -a Skim.app $^ || open -a Preview.app $^
