@@ -58,7 +58,7 @@ Reading
 
 This is a literate program, so you can read it.  
 
-    $ make preview
+    $ make show-doc
 
 The literate documents are bundled in the distribution as `emacys.pdf`
 and `hello-emacsy-paper.pdf`.
@@ -71,9 +71,7 @@ Running Tests
 TODO
 ----
 
-Lots to do.  
-
-- [ ] First TODO, collect up all the TODOs.
+Lots to do.  See the `todo.org` file.
 
 License
 -------

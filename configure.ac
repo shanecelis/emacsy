@@ -10,77 +10,27 @@ AC_CONFIG_AUX_DIR([support/build-aux])
 
 # We're going to use GNUMake and we're going to like it.
 AM_INIT_AUTOMAKE([-Wall foreign -Wno-portability parallel-tests])
-AM_EXTRA_RECURSIVE_TARGETS([run preview])
+AM_EXTRA_RECURSIVE_TARGETS([run show-doc])
 AM_SILENT_RULES([yes])
 AC_CONFIG_MACRO_DIR([support/m4])
 # Checks for programs.
 AC_PROG_CC_C99
 AC_PROG_CC_C_O
 AC_PROG_LIBTOOL
-
-AC_CHECK_PROG(NOWEB_CHECK,noweb,yes)
-if test x"$NOWEB_CHECK" != x"yes" ; then
-    AC_MSG_WARN([Must have noweb installed to alter literate source code.])
-fi
-AC_ARG_ENABLE([noweb],
-              [AC_HELP_STRING([--enable-noweb=@<:@yes/no@:>@],
-                              [Enable noweb @<:@default=yes@:>@])],
-              [enable_noweb=no],
-              [
-enable_noweb=yes
-
-AC_PATH_PROG([noweb], noweb)
-AC_SUBST(noweb)
-
-AC_PATH_PROG([noweave], noweave)
-AC_SUBST(noweave)
-
-AC_PATH_PROG([notangle], notangle)
-AC_SUBST(notangle)
-
-AC_PATH_PROG([noroots], noroots)
-AC_SUBST(noroots)
-
+AX_CHECK_NOWEB
+AX_CHECK_OPEN
+GUILE_PROGS
 AC_PATH_PROG([PERL], [perl])
 AC_SUBST([PERL])
 
 AC_PATH_PROG([BASH], [bash])
 AC_SUBST([BASH])
 
-AC_PATH_PROG([GREP], [grep])
-AC_SUBST([GREP])
-
-noweb_home=`dirname $noweb`/..
-
-AC_PATH_PROG([markup], markup, no, [$PATH:$noweb_home/libexec/noweb:$noweb_home/lib/noweb])
-if test "$markup" = "no"; then
-  AC_MSG_ERROR([Must have markup installed to alter literate source code.])
-fi
-AC_SUBST(markup)
-
-])
-AM_CONDITIONAL([NOWEB], [test x"$NOWEB_CHECK" = xyes && test x"$enable_noweb" = xyes])
-
-AC_ARG_ENABLE([pdflatex],
-              [AC_HELP_STRING([--enable-pdflatex=@<:@yes/no@:>@],
-                              [Enable pdflatex @<:@default=yes@:>@])],
-              [enable_pdflatex=no],
-              [enable_pdflatex=yes])
-AC_CHECK_PROG(PDFLATEX_CHECK,pdflatex,yes)
-if test x"$PDFLATEX_CHECK" != x"yes" ; then
-    AC_MSG_WARN([Must have pdflatex installed to produce PDFs.])
-fi
-AM_CONDITIONAL([PDFLATEX], [test x"$PDFLATEX_CHECK" = xyes && test x"$enable_pdflatex" = xyes])
-AC_PATH_PROG([pdflatex], pdflatex)
-AC_SUBST(pdflatex)
-
-GUILE_PROGS
+AC_PATH_PROG([guile_snarf], guile-snarf)
+AC_SUBST(guile_snarf)
 
 # Checks for libraries.
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
-
-AC_PATH_PROG([guile_snarf], guile-snarf)
-AC_SUBST(guile_snarf)
 
 AM_CONDITIONAL([HELLO_EMACSY], [test -f example/hello-emacsy/README.md])
 

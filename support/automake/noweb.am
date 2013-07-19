@@ -57,5 +57,5 @@ else
 
 endif
 
-preview-local: $(NOWEB_DOCS)
-	open -a Skim.app $^ || open -a Preview.app $^
+show-doc-local: $(NOWEB_DOCS)
+	$(OPEN) $^
