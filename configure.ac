@@ -41,8 +41,14 @@ AC_SUBST(notangle)
 AC_PATH_PROG([noroots], noroots)
 AC_SUBST(noroots)
 
-AC_PATH_PROG([perl], perl)
-AC_SUBST(perl)
+AC_PATH_PROG([PERL], [perl])
+AC_SUBST([PERL])
+
+AC_PATH_PROG([BASH], [bash])
+AC_SUBST([BASH])
+
+AC_PATH_PROG([GREP], [grep])
+AC_SUBST([GREP])
 
 noweb_home=`dirname $noweb`/..
 
@@ -89,12 +95,12 @@ AC_SUBST(DISTDIR, ["${PACKAGE_TARNAME}-${PACKAGE_VERSION}"])
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdio.h])
 
-AC_CHECK_HEADERS([tap/basic.h], [], [])
+dnl AC_CHECK_HEADERS([tap/basic.h], [], [])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
-AC_CHECK_FUNCS([puts])
+dnl AC_CHECK_FUNCS([puts])
 
 # 
 dnl AC_SUBST(EMACSY_CFLAGS, ['-I${top_srcdir}/../..'])
@@ -104,6 +110,8 @@ AC_SUBST(imagesdir, ['${top_srcdir}/support/images'])
 AC_SUBST(automakedir, ['${top_srcdir}/support/automake'])
 AC_SUBST(helloemacsydir, ['${top_srcdir}/example/hello-emacsy/'])
 pdflatex="TEXINPUTS=${latexdir}:${imagesdir}:${helloemacsydir}/support/images: $pdflatex";
+
+AC_SUBST(ENV, ['${top_builddir}/bin/env'])
 
 # Output files.
 AC_CONFIG_HEADERS([src/config.h])

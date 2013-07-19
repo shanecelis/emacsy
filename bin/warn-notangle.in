@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!@BASH@
 # warn-notangle
 # 
 # Exit with an error code if there is an error in the notangle process.

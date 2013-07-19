@@ -25,7 +25,7 @@ all.defs: $(NOWEB_DEFS)
 	$(AM_V_GEN) nodefs $< > $@
 
 %.nw.files : %.nw
-	$(AM_V_GEN) $(noroots) $^ | grep file: | $(perl) -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
+	$(AM_V_GEN) $(noroots) $^ | $(GREP) file: | $(PERL) -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
 
 # %-paper.nw : %.nw $(top_srcdir)/support/noweb/paper-wrapper.nw
 # 	$(AM_V_GEN) (cat $(top_srcdir)/support/noweb/paper-wrapper.nw |	perl -pe "s/\\@FILE\\@/$$(basename -s .nw $<)/;") | cpif $@

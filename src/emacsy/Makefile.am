@@ -42,6 +42,9 @@ BUILT_SOURCES =
 
 CLEANFILES = $(BUILT_SOURCES) command-paper.nw command-paper.tex
 
+distdir-local: 
+	$(MAKE) all
+
 doc: $(NOWEB_DOCS)
 
 # The util file may have its chunks specified anywhere.

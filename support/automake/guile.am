@@ -1,15 +1,16 @@
 # guile.am
 #SUFFIXES += .c.x .cpp.x
 
+GUILE_WARNINGS = -Wformat -Wunbound-variable -Warity-mismatch -Wunused-variable 
+
 %.c.x : %.c
 	$(AM_V_GEN) $(guile_snarf) -o "$@" $(GUILE_CFLAGS) "$<"
 
 %.cpp.x : %.cpp
 	$(AM_V_GEN)	$(guile_snarf) -o "$@" $(GUILE_CFLAGS) "$<"
 
-
 %.go : %.scm
-	$(GUILE_TOOLS) compile $(GUILE_WARNINGS) -o "$@" "$<"
+	$(AM_V_GEN) $(ENV) $(GUILE_TOOLS) compile $(GUILE_WARNINGS) -o "$@" "$<"
 
 
 

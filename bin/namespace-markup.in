@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!@PERL@ -w
 # namespace-markup.pl
 
 use strict;
