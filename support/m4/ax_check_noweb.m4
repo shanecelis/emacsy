@@ -9,19 +9,20 @@ if test x"$NOWEB_CHECK" != x"yes" ; then
 fi
 AC_ARG_ENABLE([line_pragma],
               [AC_HELP_STRING([--enable-line-pragma=@<:@yes/no@:>@],
-                              [Enable line pragma in noweb @<:@default=yes@:>@])],
-              [enable_line_pragma=no],
-              [enable_line_pragma=yes])
+                              [Enable line pragma in noweb @<:@default=no@:>@])],
+              [],
+              [enable_line_pragma=no])
 
 AM_CONDITIONAL([LINE_PRAGMA], [test x"$enable_line_pragma" = xyes])
 
 AC_ARG_ENABLE([noweb],
               [AC_HELP_STRING([--enable-noweb=@<:@yes/no@:>@],
                               [Enable noweb @<:@default=yes@:>@])],
-              [enable_noweb=no],
-              [
-enable_noweb=yes
+              [],
+              [enable_noweb=yes])
 
+AS_IF([test "x$enable_noweb" = "xyes"],
+[
 AC_PATH_PROG([noweb], noweb)
 AC_SUBST(noweb)
 
@@ -44,8 +45,10 @@ if test "$markup" = "no"; then
   AC_MSG_ERROR([Must have markup installed to alter literate source code.])
 fi
 AC_SUBST(markup)
+],
+[])
 
-])
+
 AM_CONDITIONAL([NOWEB], [test x"$NOWEB_CHECK" = xyes && test x"$enable_noweb" = xyes])
 
 AC_ARG_ENABLE([pdflatex],

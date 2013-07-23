@@ -47,9 +47,9 @@ endif
 if PDFLATEX
 
 %.pdf: %.tex $(NOWEB_TEXS)
-	$(AM_V_GEN)	$(pdflatex) -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (echo ERROR; cat $$(basename $<).log; false)
+	$(AM_V_GEN) $(pdflatex) -draftmode -interaction=nonstopmode -halt-on-error $< 
 	noindex $<
-	$(AM_V_GEN) $(pdflatex) -shell-escape -interaction=batchmode -halt-on-error $< &> $$(basename $<).log || (echo ERROR; cat $$(basename $<).log; false)
+	$(AM_V_GEN) $(pdflatex) -interaction=nonstopmode -halt-on-error $< 
 
 else
 %.pdf : %.tex

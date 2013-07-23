@@ -23,14 +23,15 @@ NOWEB_FILES = emacsy.nw emacsy-c-api.nw event.nw util.nw keymap.nw	\
 							command.nw buffer.nw block.nw klecl.nw kbd-macro.nw		\
 							minibuffer.nw core.nw advice.nw windows.nw
 
-SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
-							 buffer-test.scm block-test.scm klecl-test.scm				\
-							 kbd-macro-test.scm minibuffer-test.scm core-test.scm	\
-							 emacsy-test.scm advice-test.scm
+SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm		\
+buffer-test.scm block-test.scm klecl-test.scm kbd-macro-test.scm	\
+core-test.scm emacsy-test.scm advice-test.scm
+
+#minibuffer-test.scm
 
 SCHEME_FILES = event.scm util.scm keymap.scm command.scm buffer.scm	\
-							 block.scm klecl.scm kbd-macro.scm minibuffer.scm			\
-							 core.scm emacsy.scm advice.scm
+block.scm klecl.scm kbd-macro.scm minibuffer.scm core.scm emacsy.scm	\
+advice.scm
 
 GOBJECTS = $(SCHEME_FILES:%.scm=%.go)
 

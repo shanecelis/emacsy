@@ -1,3 +1,3 @@
-SUBDIRS = . hello-emacsy
+SUBDIRS = . hello-emacsy emacsy-webkit-gtk
 
 MAINTAINERCLEANFILES = Makefile.in 

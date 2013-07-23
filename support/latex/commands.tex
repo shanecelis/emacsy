@@ -1,6 +1,31 @@
-\input{/Users/shane/.latexrc}
+%\input{/Users/shane/.latexrc}
+
 \DeclareMathOperator{\comp}{comp}
 \DeclareMathOperator{\proj}{proj}
 \newcommand{\px}{{\, \unit{px}}}
 \newcommand{\pr}{{\, \unit{pr}}}
 \newcommand{\where}{{\text{where}~}}
+\newcommand{\bv}[1]{\mathbf{#1}}
+\newcommand{\bhv}[1]{\mathbf{\hat{#1}}}
+\newcommand{\M}[1]{\mathbf{#1}}
+\newcommand{\defeq}{\stackrel{\text{\tiny def}}{=}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\ie}{\emph{i.e.}}
+\newcommand{\eg}{\emph{e.g.}}
+\newcommand{\angles}[1]{{\left\langle #1 \right\rangle}}
+\newcommand{\red}[1]{\color{red}#1\color{black}}
+\newcommand{\blue}[1]{\color{blue}#1\color{black}}
+\newcommand{\infinity}{\infty}
+\newcommand{\pd}[2][]{{\partial #1 \over \partial #2}}
+% usage: \td[x]t -> dx/dt
+% usage: \td{t}x -> (d/dt) x
+\newcommand{\td}[2][]{{\d #1 \over \d #2}}
+\renewcommand{\d}{\mathrm{d}}
+
+% \DeclareMathOperator{\foo}{foo}
+% \operatorname{foo}(bar)
+
+\DeclareMathOperator{\tri}{tri}
+\newcommand{\set}{\leftarrow}
+\newcommand{\degree}{\ensuremath{^\circ}}
+\newcommand{\degrees}{\ensuremath{^\circ}}
