@@ -61,7 +61,7 @@ browser](https://github.com/shanecelis/emacsy-webkit-gtk) example.
 
 ![minimal example screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot-small.png)
 
-![browser screenshot](https://raw.github.com/shanecelis/emacsy-webkit-gtk/master/support/image/emacsy-webkit-gtk-screenshot-1-small.png)
+<a href="https://github.com/shanecelis/emacsy-webkit-gtk#screenshot"><img src=https://raw.github.com/shanecelis/emacsy-webkit-gtk/master/support/image/emacsy-webkit-gtk-screenshot-1-small.png></a>
 
 Reading 
 -------
