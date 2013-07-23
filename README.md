@@ -30,7 +30,7 @@ Dependencies
 Building from a release (easy)
 ------------------------------
 
-    $ wget URL
+    $ wget https://github.com/shanecelis/emacsy/releases/download/v0.1.1/emacsy-0.1.1.tar.gz
     $ tar xfz emacsy-0.1.1.tar.gz
     $ cd emacsy-0.1.1
     $ ./configure
