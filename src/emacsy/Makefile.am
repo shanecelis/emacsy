@@ -50,14 +50,20 @@ doc: $(NOWEB_DOCS)
 # The util file may have its chunks specified anywhere.
 util.scm : util.nw $(NOWEB_FILES)
 
+if LINE_PRAGMA
+LINE_PRAGMA_FLAGS = -L
+else
+LINE_PRAGMA_FLAGS = 
+endif
+
 MARKUP_FLAGS = -markup "$(top_builddir)/bin/namespace-markup --"
 #WARN_NOTANGLE_FLAGS = -W # treat warnings as errors
 WARN_NOTANGLE_C_FLAGS = 
-WARN_NOTANGLE_LISP_FLAGS = -L # add a (use-modules (line-pragma)) header
+WARN_NOTANGLE_LISP_FLAGS = $(LINE_PRAGMA_FLAGS) # add a (use-modules (line-pragma)) header
 NOWEAVE_FLAGS = $(MARKUP_FLAGS)
-NOTANGLE_C_FLAGS = -c -L $(MARKUP_FLAGS)
-NOTANGLE_LISP_FLAGS = -L $(MARKUP_FLAGS)
-NOTANGLE_H_FLAGS = -L $(MARKUP_FLAGS)
+NOTANGLE_C_FLAGS = -c $(LINE_PRAGMA_FLAGS) $(MARKUP_FLAGS)
+NOTANGLE_LISP_FLAGS = $(LINE_PRAGMA_FLAGS) $(MARKUP_FLAGS)
+NOTANGLE_H_FLAGS = $(LINE_PRAGMA_FLAGS) $(MARKUP_FLAGS)
 lib_LTLIBRARIES = libemacsy.la
 
 AM_CFLAGS = $(GUILE_CFLAGS)

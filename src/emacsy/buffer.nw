@@ -276,7 +276,7 @@ handle any user interaction.
     (if (pair? result)
      (cdr result)
      ;(variable-ref (make-undefined-variable))
-     'no-such-variable))) ;; how can I throw an undefined value?
+     #f #;(throw 'no-such-local-variable symbol)))) ;; how can I throw an undefined value?
 
 ;; If buffers were in their own modules I could dynamically add variables
 ;; to their namespace.  Interesting idea.
@@ -343,6 +343,102 @@ characters, a point.  \todo{Change goto-char to goto-point!}
 ;(define goto-point! goto-char)
 @ 
 
+Let's add the procedures [[char-before]] and [[char-after]] to inspect
+the characters before and after a point.
+<<buffer:procedure>>=
+;; XXX define-method needs to allow for the definition of optional arguments.
+;; This is getting ridiculous.
+(define-method-public (char-before)
+  (char-before (point) (current-buffer)))
+
+(define-method-public (char-before point)
+  (char-before point (current-buffer)))
+
+(define (gb-char-before gb point)
+  ;; Avert thy eyes.
+  (if (<= point (gb-point-min gb))
+      #f
+      (string-ref (gb->string gb) (- point 2))))
+
+(define (gb-char-after gb point)
+  ;; Avert thy eyes.
+  (if (>= point (gb-point-max gb))
+      #f
+      (string-ref (gb->string gb) (- point 1))))
+
+(define-method-public (char-before point (buffer <text-buffer>))
+  (gb-char-before (gap-buffer buffer) point))
+
+(define-method-public (char-after)
+  (char-after (point) (current-buffer)))
+
+(define-method-public (char-after point)
+  (char-after point (current-buffer)))
+
+(define-method-public (char-after point (buffer <text-buffer>))
+  (gb-char-after (gap-buffer buffer) point))
+
+@ 
+
+There is
+\href{http://gnuvola.org/software/guile/doc/Gap-Buffer.html}{documentation}
+which suggests that [[(ice-9 gap-buffer)]] module has some nice regex
+search features.  However, I can't find the implementation anywhere,
+so I implemented them pretty sloppily here.  They should work find for
+a minibuffer, but probably shouldn't be used for anything bigger.
+
+<<buffer:procedure>>=
+(define*-public (gb-re-search-forward gb regex 
+                                      #:optional (bound #f) (no-error? #f) (repeat 1))
+  ;; This could be done better in the gap-buffer.scm itself.
+  (if (= repeat 0)
+      (gb-point gb)
+      (let* ((string (gb->string gb))
+             (pt (gb-point gb))
+             (match (regexp-exec regex string (- pt 1))))
+        #;(format #t "match ~a ~%" match)
+        (if match
+            (begin 
+              (gb-goto-char gb (+ 1 (match:end match 0)))
+              (gb-re-search-forward gb regex bound no-error? (1- repeat)))
+            (if no-error?
+                #f
+                (scm-error 'no-match 'gb-re-search-forward
+                           
+                           "No match found for regex '~a' in ~s after point ~a" (list regex string pt) #f))))))
+
+(define*-public (gb-re-search-backward gb regex 
+                                       #:optional (bound #f) (no-error? #f) (repeat 1))
+  ;; This could be done better in the gap-buffer.scm itself.
+  (if (= repeat 0)
+      (gb-point gb)
+      (let loop ((start-search 0)
+                 (last-match-start #f))
+       (let* ((string (gb->string gb))
+              (pt (gb-point gb))
+              (match (regexp-exec regex string start-search)))
+         (define (my-error)
+           (if no-error?
+               #f
+               (scm-error 
+                'no-match 'gb-re-search-forward
+                "No match found for regex '~a' in ~s before point ~a" 
+                (list regex string pt) #f)))
+         (define (finish)
+           (if last-match-start
+               (begin 
+                 (gb-goto-char gb (1+ last-match-start))
+                 (gb-re-search-backward gb regex bound no-error? (1- repeat)))
+               (my-error)))
+         #;(format #t "match ~a ~%" match)
+         (if match
+             (if (< (match:start match 0) (1- pt))
+                 ;; continue searching
+                 (loop (match:end match 0) (match:start match 0))
+                 (finish))
+             (finish))))))
+@ 
+
 Some commands to move the point around and insert or delete characters.
 
 <<buffer:procedure>>=
@@ -358,6 +454,18 @@ Some commands to move the point around and insert or delete characters.
 (define-interactive (forward-char #:optional (n 1))
   (goto-char (+ (point) n)))
 
+(define forward-word-regex (make-regexp "\\s*\\w+\\b"))
+(define backward-word-regex (make-regexp "\\b\\w+\\s*"))
+
+;; XXX where is gb-re-search-forward defined?  It has documentation.
+;; but no implementation?
+;; http://gnuvola.org/software/guile/doc/Gap-Buffer.html
+(define-interactive (forward-word #:optional (n 1))
+  (gb-re-search-forward (gap-buffer (current-buffer)) forward-word-regex #f #t n))
+
+(define-interactive (backward-word #:optional (n 1))
+  (gb-re-search-backward (gap-buffer (current-buffer)) backward-word-regex #f #t n))
+
 (define-interactive (move-beginning-of-line #:optional (n 1))
   ;(gb-beginning-of-line (gap-buffer (current-buffer)) n)
   (goto-char (point-min)))
@@ -369,6 +477,38 @@ Some commands to move the point around and insert or delete characters.
 (define-interactive (backward-char #:optional (n 1))
   (forward-char (- n)))
 @ 
+
+Let's test this regex search in a gap buffer.
+<<buffer:test>>=
+(define c (make <text-buffer> #:name "*test-regex*"))
+(add-buffer! c)
+(check (current-buffer) => c)
+(insert "hellos these ard words!")
+;;       1    7     13  17             
+(check (point) => (point-max))
+(check (point-min) => 1)
+(goto-char (point-min))
+(check (gb-char-after (gap-buffer c) 1) => #\h)
+(check (gb-char-before (gap-buffer c) 1) => #f)
+(check (point) => 1)
+(check (forward-word) => 7)
+(check (point) => 7)
+(check (char-before) => #\s)
+(check (char-after) => #\space)
+
+(check (forward-word 2) => 17)
+(check (char-before) => #\d)
+(check (char-after) => #\space)
+(check (backward-word) => 14)
+(check (char-before) => #\space)
+(check (char-after) => #\a)
+
+;;#(!sdrow dra eseht solleh (17 . 24))
+;;  1      8   12    18                    
+;; is               ^      ^
+;; goto      ^
+;; was     ^
+@
 
 Finally, we can insert text.
 
@@ -415,14 +555,21 @@ This macro requires a procedure [[in-out-guard]] defined in the
 <<util:procedure>>=
 (define-public (in-out-guard in thunk out)
   (run-thunk in)
-  (receive (result . my-values) 
-      (catch #t
-        thunk
-        (lambda (key . args)
-          (run-thunk out)
-          (apply throw key args)))
-    (run-thunk out)
-    (apply values result my-values)))
+  (if debug-on-error?
+      ;; Don't run this as robustly so that we can debug the errors
+      ;; more easily.
+      (receive (result . my-values) (run-thunk thunk)
+        (run-thunk out)
+        (apply values result my-values))
+      
+      (receive (result . my-values) 
+       (catch #t
+         thunk
+         (lambda (key . args)
+           (run-thunk out)
+           (apply throw key args)))
+     (run-thunk out)
+     (apply values result my-values))))
 
 ;; Make code a little more obvious.
 (define-public (run-thunk t)
@@ -446,6 +593,8 @@ This macro requires a procedure [[in-out-guard]] defined in the
   #:use-module (ice-9 q)
   #:use-module (ice-9 gap-buffer)
   #:use-module (ice-9 receive)
+  #:use-module (ice-9 regex)
+  #:use-module (srfi srfi-26)
   #:use-module (string completion)
   #:use-module (oop goops)
   #:use-module (emacsy util)

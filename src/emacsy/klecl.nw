@@ -373,6 +373,7 @@ loop sets up a fair amount of state.
                   (sigaction SIGALRM (car handler) (cdr handler))
                   ;; restore original C handler.
                   (sigaction SIGALRM #f))))))))
+@ 
 
 <<klecl:procedure>>=
 (define*-public (primitive-command-tick)
@@ -380,34 +381,59 @@ loop sets up a fair amount of state.
   (call-with-sigalrm
    (lambda ()
      ((@@ (ice-9 top-repl) call-with-sigint) 
-     (lambda ()
-       (let* ((events (read-key-sequence))
-              (keymaps (default-klecl-maps))
-              (key-sequence (map event->kbd events))
-              (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
-         (if keymap
-             (begin
-               (set! last-command-event this-command-event)
-               (set! this-command-event (rcar events))
-               ;; The command hooks might need to go into the command module.
-               (in-out 
-                (run-hook pre-command-hook)
-                (call-interactively (lookup-key keymap key-sequence))
-                (run-hook post-command-hook)))
-             ;; Maybe this should be done by an undefined-command command?
-             (begin (message "~a is undefined."
-                             (string-join key-sequence " "))
-                    (values #f 'no-such-command)))))))))
+      (lambda ()
+        (let* ((events (read-key-sequence))
+               (keymaps (default-klecl-maps))
+               (key-sequence (map event->kbd events))
+               (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
+          (set! emacsy-ran-undefined-command? #f)
+          (if keymap
+              (begin
+                (set! last-command-event this-command-event)
+                (set! this-command-event (rcar events))
+                ;; The command hooks might need to go into the command module.
+                (in-out 
+                 (run-hook pre-command-hook)
+                 (call-interactively (lookup-key keymap key-sequence))
+                 (run-hook post-command-hook)))
+              ;; Maybe this should be done by an undefined-command command?
+              ;; I doubt we want this command to be executed by the user, so
+              ;; we're going to leave it as a procedure.
+              (undefined-command key-sequence))))))))
+@ 
+
+<<klecl:state>>=
+(define-public emacsy-ran-undefined-command? #f)
+@ 
+
+<<klecl:procedure>>=
+(define* (undefined-command key-sequence)
+  (message "~a is undefined."
+           (string-join key-sequence " "))
+  (set! emacsy-ran-undefined-command? #t)
+  (values #f 'no-such-command))
+@ 
+
+<<util:state>>=
+(define-public debug-on-error? #f)
 @ 
 
 <<klecl:procedure>>=
 (define*-public (command-tick #:optional (continue-pred (const #t)))
   "We do one iteration of command-tick and handle errors."
+  
   (catch #t
     (lambda () 
-      (with-backtrace* (lambda ()
-                         (primitive-command-tick))
-                       '(silent-quit quit-command-loop)))
+      (if debug-on-error?
+          (call-with-error-handling
+           (lambda ()
+             (primitive-command-tick))
+           #:pass-keys 
+           '(silent-quit quit-command-loop quit-command))
+          
+          (with-backtrace* (lambda ()
+                             (primitive-command-tick))
+                           '(silent-quit quit-command-loop))))
     (lambda (key . args)
       (case key
         ((silent-quit)
@@ -471,9 +497,16 @@ Finally, here's our command loop with error handling.
   "We iterate with command-tick and handle errors."
   (catch #t
     (lambda () 
-      (with-backtrace* (lambda ()
-                         (primitive-command-loop continue-pred))
-                       '(silent-quit quit-command-loop)))
+      (if debug-on-error?
+          (call-with-error-handling
+           (lambda ()
+             (primitive-command-loop continue-pred))
+           #:pass-keys 
+           '(silent-quit quit-command-loop quit-command))
+          
+          (with-backtrace* (lambda ()
+                             (primitive-command-loop continue-pred))
+                           '(silent-quit quit-command-loop))))
     (lambda (key . args)
       (case key
         ((silent-quit)
@@ -504,6 +537,7 @@ have to worry about any ``pollution'' of Emacs-isms.
   #:use-module (ice-9 q)
   #:use-module (srfi srfi-1)
   #:use-module (oop goops)
+  #:use-module (system repl error-handling)
   #:use-module (emacsy util)
   #:use-module (emacsy keymap)
   #:use-module (emacsy event)

@@ -81,9 +81,10 @@ int emacsy_load_module(const char *module_name);
 @ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
 <<Defines>>=
-#define EY_QUIT_APPLICATION  1
-#define EY_ECHO_AREA_UPDATED 2
-#define EY_MODELINE_UPDATED  4
+#define EY_QUIT_APPLICATION       1
+#define EY_ECHO_AREA_UPDATED      2
+#define EY_MODELINE_UPDATED       4
+#define EY_RAN_UNDEFINED_COMMAND  8
 @ The boilerplate guards so that a C++ program may include
 \verb|emacsy.h| are given below.
 
@@ -197,6 +198,10 @@ int emacsy_tick()
   if (scm_is_true(scm_c_public_ref("emacsy emacsy",
                                    "emacsy-quit-application?")))
     flags |= EY_QUIT_APPLICATION;
+  if (scm_is_true(scm_c_public_ref("emacsy emacsy",
+                                   "emacsy-ran-undefined-command?")))
+    flags |= EY_RAN_UNDEFINED_COMMAND;
+
   return flags;
 }
 

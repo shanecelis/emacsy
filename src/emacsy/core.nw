@@ -253,10 +253,12 @@ These are most of the C API calls.
       (buffer-string minibuffer)
       echo-area))
 
-;; XXX This is wrong. It should identify the buffer associated with the window
-;; not the current buffer; current buffer should be shown in the frame title.
-(define-public (emacsy-mode-line)
-  (format #f "-:**- ~a" (buffer-name)))
+(define-method-public (emacsy-mode-line)
+  (emacsy-mode-line (current-buffer)))
+
+;; XXX this should be moved into the (emacsy buffer) module.
+(define-method-public (emacsy-mode-line (buffer <buffer>))
+  (format #f "-:**- ~a" (buffer-name buffer)))
 
 (define-public (emacsy-minibuffer-point)
   (if emacsy-display-minibuffer?

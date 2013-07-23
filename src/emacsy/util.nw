@@ -73,7 +73,7 @@ used.
   #:use-module (debugging assert)
   ;#:export-syntax (define-syntax-public)
 )
-
+<<util:state>>
 <<util:macro>>
 <<util:procedure>>
 @ 

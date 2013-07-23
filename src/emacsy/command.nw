@@ -128,7 +128,8 @@ We define the global command map.
 
 <<command:procedure>>=
 (define-public (register-interactive name proc)
-  (command-add! global-cmdset name))
+  (command-add! global-cmdset name)
+  (set-command-properties! proc name))
 @ 
 
 <<command:procedure>>=
@@ -137,7 +138,8 @@ We define the global command map.
    ((thunk? command)
     command)
    ((symbol? command)
-    (eval command (interaction-environment)))
+    (eval command (interaction-environment))
+    #;(module-ref (current-module) command))
    (else
     (warn "command->proc not given a command: ~a" command)
     #f)))

@@ -29,6 +29,7 @@ Building from github
 
     $ git clone https://github.com/shanecelis/emacsy.git
     $ cd emacsy
+    $ git submodule init
     $ git submodule update
     $ ./autogen.sh
     $ ./configure

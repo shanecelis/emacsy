@@ -10,7 +10,7 @@ AC_CONFIG_AUX_DIR([support/build-aux])
 
 # We're going to use GNUMake and we're going to like it.
 AM_INIT_AUTOMAKE([-Wall foreign -Wno-portability parallel-tests])
-AM_EXTRA_RECURSIVE_TARGETS([run show-doc])
+dnl AM_EXTRA_RECURSIVE_TARGETS([run show-doc])
 AM_SILENT_RULES([yes])
 AC_CONFIG_MACRO_DIR([support/m4])
 # Checks for programs.
@@ -105,4 +105,5 @@ export EMACSY_CFLAGS="-I${abs_top_srcdir}/src/emacsy -I${abs_top_builddir}/src/e
 export EMACSY_LIBS="-L${abs_top_builddir}/src/emacsy/.libs -lemacsy"
 export EMACSY_MODULE="${abs_top_srcdir}/src"
 AC_CONFIG_SUBDIRS([example/hello-emacsy])
+AC_CONFIG_SUBDIRS([example/emacsy-webkit-gtk])
 AC_OUTPUT

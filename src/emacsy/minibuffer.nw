@@ -36,7 +36,9 @@ We want to be able to move around the buffer as well.
 
 <<minibuffer:state>>=
 (define-key minibuffer-local-map (kbd "C-f") 'forward-char)
+(define-key minibuffer-local-map (kbd "M-f") 'forward-word)
 (define-key minibuffer-local-map (kbd "C-b") 'backward-char)
+(define-key minibuffer-local-map (kbd "M-b") 'backward-word)
 (define-key minibuffer-local-map (kbd "DEL") 'delete-backward-char)
 (define-key minibuffer-local-map (kbd "SPC") 'self-insert-command)
 (define-key minibuffer-local-map (kbd "-")   'self-insert-command)

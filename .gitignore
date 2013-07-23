@@ -2,6 +2,7 @@ Makefile
 Makefile.in
 *.go
 *.defs
+*.trs
 .libs*
 .deps*
 TAGS
