@@ -1,3 +1,0 @@
-[submodule "example/hello-emacsy"]
-	path = example/hello-emacsy
-	url = git@github.com:shanecelis/hello-emacsy.git
