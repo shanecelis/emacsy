@@ -58,4 +58,4 @@ else
 endif
 
 show-doc-local: $(NOWEB_DOCS)
-	$(OPEN) $^
+	for file in $^; do $(OPEN) $$file; done

@@ -22,37 +22,46 @@ Dependencies
 
 * [GNU Guile Scheme 2.0](http://www.gnu.org/software/guile/)
 
-* [Noweb](http://www.cs.tufts.edu/~nr/noweb/) - not necessary if building from [distributed source](https://github.com/shanecelis/emacsy/releases)
+* Only necessary if building from github
+  * [Noweb](http://www.cs.tufts.edu/~nr/noweb/) 
 
-Building from github
---------------------
+  * pdflatex
+
+Building from a release (easy)
+------------------------------
+
+    $ wget URL
+    $ tar xfz emacsy-0.1.1.tar.gz
+    $ cd emacsy-0.1.1
+    $ ./configure
+    $ make
+
+Building from github (harder)
+-----------------------------
 
     $ git clone https://github.com/shanecelis/emacsy.git
-    $ cd emacsy
-    $ git submodule init
-    $ git submodule update
+    $ cd emacsy/example
+    $ git clone https://github.com/shanecelis/hello-emacsy.git
+    $ git clone https://github.com/shanecelis/emacsy-webkit-gtk.git
+    $ cd ..
     $ ./autogen.sh
     $ ./configure
     $ make
 
-Building from a release
----------------------
-
-    $ wget https://github.com/shanecelis/emacsy/releases/v0.1.0/641/emacsy-0.1.0.tar.gz
-    $ tar xfz emacsy-0.1.0.tar.gz
-    $ cd emacsy-0.1.0
-    $ ./configure
-    $ make
 
 Running 
 -------
 
 Run the [minimal example
-program](http://gnufoo.org/emacsy/minimal-emacsy-example.pdf).
+program](http://gnufoo.org/emacsy/minimal-emacsy-example.pdf) and the
+[barebones webkit
+browser](https://github.com/shanecelis/emacsy-webkit-gtk) example.
 
     $ make run
 
-![screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot-small.png)
+![minimal example screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot-small.png)
+
+![browser screenshot](https://raw.github.com/shanecelis/emacsy-webkit-gtk/master/support/image/emacsy-webkit-gtk-screenshot-1-small.png)
 
 Reading 
 -------
