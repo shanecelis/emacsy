@@ -71,6 +71,7 @@ used.
   #:use-module (ice-9 receive)
   #:use-module (srfi srfi-1)
   #:use-module (debugging assert)
+  #:use-module (system repl error-handling)
   ;#:export-syntax (define-syntax-public)
 )
 <<util:state>>

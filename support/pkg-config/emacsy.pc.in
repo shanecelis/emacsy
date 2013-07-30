@@ -3,10 +3,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: <my library>
-Description: <library to do something>
-URL: <homepage>
+Name: Emacsy
+Description: An Emacs-like Library for GNU Guile Scheme
+URL: https://github.com/shanecelis/emacsy
 Version: @VERSION@
-Requires: <dependencies>
-Libs: <link flags>
-Cflags: <compile flags>
+Requires: guile-2.0
+Libs: -L${libdir} -lemacsy
+Cflags: -I${includedir}

@@ -553,23 +553,27 @@ This macro requires a procedure [[in-out-guard]] defined in the
 [[util]] module.
 
 <<util:procedure>>=
-(define-public (in-out-guard in thunk out)
+(define*-public (in-out-guard in thunk out #:optional (pass-keys '(quit)))
   (run-thunk in)
-  (if debug-on-error?
-      ;; Don't run this as robustly so that we can debug the errors
-      ;; more easily.
-      (receive (result . my-values) (run-thunk thunk)
-        (run-thunk out)
-        (apply values result my-values))
-      
-      (receive (result . my-values) 
-       (catch #t
-         thunk
-         (lambda (key . args)
-           (run-thunk out)
-           (apply throw key args)))
-     (run-thunk out)
-     (apply values result my-values))))
+  ;if debug-on-error?
+  ;; Don't run this as robustly so that we can debug the errors
+  ;; more easily.
+  #;
+  (receive (result . my-values) (run-thunk thunk)
+  (run-thunk out)
+  (apply values result my-values))
+  
+  (receive (result . my-values) 
+      (catch #t
+        (if debug-on-error? 
+            (lambda ()
+              (call-with-error-handling thunk #:pass-keys pass-keys))
+            thunk)
+        (lambda (key . args)
+          (run-thunk out)
+          (apply throw key args)))
+    (run-thunk out)
+    (apply values result my-values)))
 
 ;; Make code a little more obvious.
 (define-public (run-thunk t)
@@ -581,7 +585,12 @@ This macro requires a procedure [[in-out-guard]] defined in the
     ((in-out in thunk out)
      (in-out-guard (lambda () in)
                    (lambda () thunk)
-                   (lambda () out)))))
+                   (lambda () out)))
+    ((in-out in thunk out pass-keys)
+     (in-out-guard (lambda () in)
+                   (lambda () thunk)
+                   (lambda () out)
+                   pass-keys))))
 @ %def in-out
 
 

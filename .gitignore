@@ -89,3 +89,7 @@ TAGS
 /config.log
 /config.status
 /configure
+
+support/build-aux/compile
+
+*.log

@@ -240,8 +240,8 @@ the next command is executed.
                  (fluid-set! minibuffer-history-index 0)))))
      (read-from-minibuffer-internal prompt read)
      (begin 
-       (set! (local-keymap minibuffer) original-keymap)
-       ))))
+       (set! (local-keymap minibuffer) original-keymap))
+     '(quit-command keyboard-quit))))
 @ 
 
 <<minibuffer:state>>=

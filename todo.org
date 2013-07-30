@@ -1,5 +1,12 @@
 * Emacsy TODO
   - [ ] have backtraces go to logs
+  - [ ] If module (emacsy emacsy) does not load, it may be because it did
+    not compile. Please show the correct error.
+  - [ ] Make the read-from-minibuffer accept a symbol for a history
+  - [ ] Make the default read-from-minibuffer history symbol be (what-command-am-i)
+  - [ ] Add a couple of variations on the webkit browser
+    - [ ] make it use multiple buffers
+    - [ ] make it use multiple windows
   - [ ] get rid of noise in emacsy (noise?) log noise?
   - [ ] implement coroutines in Guile using [[http://www.lua.org/manual/5.2/manual.html][Lua API]] and [[http://wingolog.org/archives/2011/08/30/the-gnu-extension-language][this]] as a basis
     It'd be nice if the coroutines were interruptable.  Maybe [[http://lists.gnu.org/archive/html/guile-user/2011-10/msg00038.html][this would help.]]

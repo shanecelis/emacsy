@@ -429,7 +429,8 @@ loop sets up a fair amount of state.
            (lambda ()
              (primitive-command-tick))
            #:pass-keys 
-           '(silent-quit quit-command-loop quit-command))
+           ;; XXX what the hell is the story with all these quits?
+           '(silent-quit quit-command-loop quit-command keyboard-quit))
           
           (with-backtrace* (lambda ()
                              (primitive-command-tick))
@@ -502,7 +503,7 @@ Finally, here's our command loop with error handling.
            (lambda ()
              (primitive-command-loop continue-pred))
            #:pass-keys 
-           '(silent-quit quit-command-loop quit-command))
+           '(silent-quit quit-command-loop quit-command keyboard-quit))
           
           (with-backtrace* (lambda ()
                              (primitive-command-loop continue-pred))

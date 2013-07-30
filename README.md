@@ -22,6 +22,8 @@ Dependencies
 
 * [GNU Guile Scheme 2.0](http://www.gnu.org/software/guile/)
 
+* [guile-lib](http://www.nongnu.org/guile-lib/)
+
 * Only necessary if building from github
   * [Noweb](http://www.cs.tufts.edu/~nr/noweb/) 
 
@@ -59,7 +61,9 @@ browser](https://github.com/shanecelis/emacsy-webkit-gtk) example.
 
     $ make run
 
-![minimal example screenshot](https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot-small.png)
+![minimal example screenshot]()
+
+<a href="https://github.com/shanecelis/hello-emacsy#readme"><img src="https://raw.github.com/shanecelis/emacsy/master/support/images/screenshot-small.png"></a>
 
 <a href="https://github.com/shanecelis/emacsy-webkit-gtk#screenshot"><img src=https://raw.github.com/shanecelis/emacsy-webkit-gtk/master/support/image/emacsy-webkit-gtk-screenshot-1-small.png></a>
 

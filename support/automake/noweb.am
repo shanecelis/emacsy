@@ -27,9 +27,6 @@ all.defs: $(NOWEB_DEFS)
 %.nw.files : %.nw
 	$(AM_V_GEN) $(noroots) $^ | $(GREP) file: | $(PERL) -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
 
-# %-paper.nw : %.nw $(top_srcdir)/support/noweb/paper-wrapper.nw
-# 	$(AM_V_GEN) (cat $(top_srcdir)/support/noweb/paper-wrapper.nw |	perl -pe "s/\\@FILE\\@/$$(basename -s .nw $<)/;") | cpif $@
-
 NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
 NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
 EXTRA_DIST += $(NOWEB_FILES) $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
@@ -53,8 +50,7 @@ if PDFLATEX
 
 else
 %.pdf : %.tex
-	$(warning Warning: unable to update $@ from changed $< without latexmk.)
-
+	$(warning Warning: unable to update $@ from changed $< without pdflatex.)
 endif
 
 show-doc-local: $(NOWEB_DOCS)
