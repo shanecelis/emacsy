@@ -39,7 +39,9 @@ command is [[eval-expression]].  Let's write it.
 <<core:command>>=
 (define-interactive 
   (eval-expression
-   #:optional (expression (read-from-string (read-from-minibuffer "Eval: "))))
+   #:optional 
+   (expression (read-from-string 
+               (completing-read "Eval: " apropos-completion-function))))
   (let ((value (eval expression (interaction-environment))))
     (message "~a" value)
     value))
@@ -64,7 +66,7 @@ with \verb|M-x|.
 (define-interactive (execute-extended-command #:optional (n 1))
   ;(display "HERE!\n")
   (let ((str (completing-read "M-x " (completer global-cmdset))))
-    (call-interactively (string->symbol str))))
+    (call-interactively (module-ref (current-module) (string->symbol str)))))
 @ 
 
 <<core:command>>=
@@ -419,6 +421,7 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
 <<file:core.scm>>=
 (define-module (emacsy core)
   #:use-module (ice-9 optargs)
+  #:use-module (ice-9 readline)
   #:use-module (oop goops)
   #:use-module (rnrs io ports)
   #:use-module (debugging assert)

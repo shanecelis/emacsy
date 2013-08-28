@@ -211,6 +211,7 @@ return any single key inputs.
 \verb|a b c|, we will see that it'll behave differently.
 
 <<klecl:test>>=
+(define (no-command) #f)
 (define test-keymap (make-keymap))
 (set! default-klecl-maps (lambda () (list test-keymap)))
 (define-key test-keymap (kbd "a b c") 'no-command)

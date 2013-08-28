@@ -74,6 +74,9 @@ The procedure [[lookup-key]] return a keymap or symbol for a given
 list of keys.  Consider this test keymap
 
 <<keymap:test>>=
+(define (self-insert-command) #f) ;; make a fake command
+(define (mouse-drag-region) #f) ;; make a fake command
+(define (find-file-at-point) #f) ;; make a fake command
 (define k (make-keymap))
 (define-key k (kbd "a")       'self-insert-command)
 (define-key k (kbd "mouse-1") 'mouse-drag-region)
@@ -161,11 +164,13 @@ or a keymap indicating it worked.
 <<keymap:procedure>>=
 (define (make-trampoline module name)
   "Creates a trampoline out of a symbol in a given module, e.g. (lambda () (name))"
-  (let* ((var (module-variable module name))
-         (proc (lambda () ((variable-ref var)))))
-    (set-procedure-property! proc 'name 
-                             (string->symbol (format #f "~a-trampoline" name)))
-    proc))
+  (let ((var (module-variable module name)))
+    (unless var
+      (scm-error 'no-such-variable "make-trampoline" "Can't make a trampoline for variable named '~a that does not exist in module ~a." (list name module) #f))
+    (let ((proc (lambda () ((variable-ref var)))))
+      (set-procedure-property! proc 'name 
+                               (string->symbol (format #f "~a-trampoline" name)))
+      proc)))
 @ 
 
 <<keymap:procedure>>=

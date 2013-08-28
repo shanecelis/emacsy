@@ -34,7 +34,7 @@ would be expected in an editable buffer.\todo{This should probably be
 
 We want to be able to move around the buffer as well.
 
-<<minibuffer:state>>=
+<<minibuffer:keymap>>=
 (define-key minibuffer-local-map (kbd "C-f") 'forward-char)
 (define-key minibuffer-local-map (kbd "M-f") 'forward-word)
 (define-key minibuffer-local-map (kbd "C-b") 'backward-char)
@@ -282,6 +282,10 @@ We want to offer
 <<minibuffer:test>>=
 (check (try-completion "f" (list "foo" "foobar" "barfoo")) => "foo")
 (check (try-completion "b" (list "foo" "foobar" "barfoo")) => "barfoo")
+
+;; Try against readline completer
+(check (try-completion "f" (make-completion-function (list "foo" "foobar" "barfoo"))) => "foo")
+(check (try-completion "b" (make-completion-function (list "foo" "foobar" "barfoo"))) => "barfoo")
 @ 
 
 It can also work with a procedure.
@@ -291,12 +295,47 @@ It can also work with a procedure.
 (check (try-completion "w" (lambda (string predicate all?) (if (string=? string "f") "blah" "huh"))) => "huh")
 @ 
 
+<<minibuffer:procedure>>=
+(define (readline-completer->stream completer string)
+  (define iter
+    (stream-lambda (f)
+                   (let ((result (f))) 
+                     (if (stream-null? result)
+                         result
+                         (stream-cons result (iter f))))))
+  (let ((first (completer string #f)))
+    (if first
+        (stream-cons 
+         first
+         (iter
+          (lambda ()
+            (let ((result (completer string #t)))
+              (if result
+                  result
+                  stream-null)))))
+        stream-null)))
+@ 
+
+<<minibuffer:test>>=
+(check (sort! (stream->list (readline-completer->stream command-completion-function "")) string<?) => (sort! '("switch-to-buffer" "eval-expression" "execute-extended-command" "load-file" "quit-application") string<?))
+@ 
+
+<<minibuffer:procedure>>=
+(define (readline-completer? proc)
+  (let ((req (arity:nreq (car (program-arities proc)))))
+    (= req 2)))
 
 <<minibuffer:procedure>>=
 (define*-public 
   (try-completion string collection #:optional (predicate (const #t)))
+  
   (if (procedure? collection)
-      (collection string predicate #f)
+      (if (readline-completer? collection)
+          (try-completion 
+           string 
+           (stream->list (readline-completer->stream collection string))
+           predicate)
+          (collection string predicate #f))
       (let ((completer (collection->completer collection predicate)))
         (receive (completions expansion exact? unique?)
             (complete completer string)
@@ -306,13 +345,21 @@ It can also work with a procedure.
 <<minibuffer:test>>=
 (check (all-completions "f" (list "foo" "foobar" "barfoo")) => (list "foo" "foobar"))
 (check (all-completions "b" (list "foo" "foobar" "barfoo")) => (list "barfoo"))
+
+(check (all-completions "f" (make-completion-function (list "foo" "foobar" "barfoo"))) => (list "foo" "foobar"))
+(check (all-completions "b" (make-completion-function (list "foo" "foobar" "barfoo"))) => (list "barfoo"))
 @ 
 
 <<minibuffer:procedure>>=
 (define*-public
   (all-completions string collection #:optional (predicate (const #t)))
   (if (procedure? collection)
-      (collection string predicate #t)
+      (if (readline-completer? collection)
+          (all-completions 
+           string 
+           (stream->list (readline-completer->stream collection string))
+           predicate)
+          (collection string predicate #t))
    (let ((completer (collection->completer collection predicate)))
      (receive (completions expansion exact? unique?)
          (complete completer string)
@@ -376,9 +423,14 @@ It can also work with a procedure.
 (define-interactive (minibuffer-complete-word)
   ;; This should only complete a word.
   (minibuffer-complete))
+
+(define-interactive (minibuffer-completion-help)
+  ;; This should only complete a word.
+  (message "minibuffer-complete-help NYI")
+  #f)
 @ 
 
-<<minibuffer:state>>=
+<<minibuffer:keymap>>=
 (define minibuffer-local-completion-map 
   (let ((kmap (make-keymap minibuffer-local-map)))
     (define-key kmap (kbd "SPC") 'minibuffer-complete-word)
@@ -507,9 +559,7 @@ We want to be able to look up filenames.
                   (default-file-name #f)
                   (initial #f)
                   (predicate no-dot-files))
-  
-  
-  (completing-read prompt file-name-completer #:predicate predicate))
+  (completing-read prompt filename-completion-function #:predicate predicate))
 @
 
 <<minibuffer:test>>=
@@ -524,16 +574,22 @@ We want to be able to look up filenames.
 (check (directory? "..") => #t)
 (check (canonize-filename ".") => "./")
 ;(check (files-in-dir ".") => '())
-(check (file-name-completer "mini" (const #t) #t) => '("minibuffer-a" "minibuffer-b"))
-(check (file-name-completer "mini" (const #t) #f) => "minibuffer-")
-(check (file-name-completer "bi" (const #t) #f) => "bin/")
-(check (file-name-completer "bin" (const #t) #f) => "bin/")
-(check (file-name-completer "bin/" (const #t) #f) => "bin/")
-;; Get rid of the dot files.
-(check (file-name-completer "bin" no-dot-files #f) => "bin/run-test")
-(check (file-name-completer "bin/" no-dot-files #f) => "bin/run-test")
-(check (file-name-completer "ex" (const #t) #f) => "exam/")
-(check (file-name-completer "em" (const #t) #f) => "empty-dir/")
+(for-each (lambda (file-name-completer)
+            (check (file-name-completer "mini" (const #t) #t) => '("minibuffer-a" "minibuffer-b"))
+            (check (file-name-completer "mini" (const #t) #f) => "minibuffer-")
+            (check (file-name-completer "bi" (const #t) #f) => "bin/")
+            (check (file-name-completer "bin" (const #t) #f) => "bin/")
+            (check (file-name-completer "bin/" (const #t) #f) => "bin/")
+            ;; Get rid of the dot files.
+            (check (file-name-completer "bin" no-dot-files #f) => "bin/run-test")
+            (check (file-name-completer "bin/" no-dot-files #f) => "bin/run-test")
+            (check (file-name-completer "ex" (const #t) #f) => "exam/")
+            (check (file-name-completer "em" (const #t) #f) => "empty-dir/"))
+          (list file-name-completer
+                #;(lambda (string predicate all?)
+                  (if all?
+                      (stream->list (readline-completer->stream filename-completion-function string))
+                      (filename-completion-function string #f)))))
 (check (dirname "bin/") => ".")
 (check (basename "bin/") => "bin")
 (check (basename "bin/f") => "f")
@@ -629,7 +685,10 @@ Some commands for manipulating the minibuffer history.
   #:use-module (ice-9 session)   
   #:use-module (ice-9 gap-buffer)
   #:use-module (ice-9 pretty-print)
+  #:use-module (ice-9 readline)
   #:use-module (srfi srfi-26)
+  #:use-module (srfi srfi-41) ;; streams
+  #:use-module (system vm program)
   #:use-module (oop goops)
   #:use-module (string completion)
   #:use-module (emacsy util)
@@ -645,6 +704,7 @@ Some commands for manipulating the minibuffer history.
 <<minibuffer:state>>
 <<minibuffer:procedure>>
 <<minibuffer:command>>
+<<minibuffer:keymap>>
 <<minibuffer:process>>
 @ 
 
