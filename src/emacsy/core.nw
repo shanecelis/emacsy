@@ -268,9 +268,15 @@ These are most of the C API calls.
 (define-public (emacsy-run-hook hook . args)
   (catch #t
     (lambda () 
-      (with-backtrace* (lambda ()  
-                         (apply run-hook hook args)
-                         #t)))
+      (if debug-on-error?
+          (call-with-error-handling
+           (lambda ()
+             (apply run-hook hook args)
+             #t))
+          (with-backtrace* 
+           (lambda ()  
+             (apply run-hook hook args)
+             #t))))
     (lambda (key . args)
       (emacsy-log-error "Hook ~a threw error '~a with args ~a " hook key args)
       (emacsy-log-error "Resetting hook ~a" hook)
@@ -278,11 +284,18 @@ These are most of the C API calls.
       #f)))
 
 (define-public emacsy-terminate-hook (make-hook))
+(define-public emacsy-initialize-hook (make-hook))
+(define initialized? #f)
 
 (define-public (emacsy-terminate)
   (run-hook emacsy-terminate-hook))
 
 (define-public (emacsy-tick)
+  (unless initialized?
+    (call-blockable          
+      (lambda ()
+        (run-hook emacsy-initialize-hook)))
+    (set! initialized? #t))
   (block-tick))
 @ 
 
@@ -422,7 +435,8 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
   #:use-module (emacsy block)
   #:use-module (emacsy klecl)
   #:use-module (emacsy kbd-macro)
-  #:use-module (emacsy minibuffer))
+  #:use-module (emacsy minibuffer)
+  #:replace (switch-to-buffer))
 <<core:macro>>
 <<core:class>>
 <<core:state>>

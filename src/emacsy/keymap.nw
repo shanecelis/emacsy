@@ -82,8 +82,13 @@ list of keys.  Consider this test keymap
 \noindent [[lookup-key]] should behave in the following way.
 
 <<keymap:test>>=
-(check (lookup-key k '("a")) => 'self-insert-command)
-(check (lookup-key k (kbd "a")) => 'self-insert-command)
+(define (lookup-key* . args)
+  (let ((result (apply lookup-key args)))
+    (if (procedure? result) 
+        (procedure-name result)
+        result)))
+(check (lookup-key* k '("a")) => 'self-insert-command-trampoline)
+(check (lookup-key* k (kbd "a")) => 'self-insert-command-trampoline)
 (check (lookup-key k '("b")) => #f)
 (check (lookup-key k (kbd "M-x b")) => #f)
 (check-true (keymap? (lookup-key k '("C-x"))))
@@ -153,28 +158,40 @@ or a keymap indicating it worked.
 ;(check (define-key k (kbd "C-x C-f C-a C-b") 'nope) => 2)
 @ 
 
-
+<<keymap:procedure>>=
+(define (make-trampoline module name)
+  "Creates a trampoline out of a symbol in a given module, e.g. (lambda () (name))"
+  (let* ((var (module-variable module name))
+         (proc (lambda () ((variable-ref var)))))
+    (set-procedure-property! proc 'name 
+                             (string->symbol (format #f "~a-trampoline" name)))
+    proc))
+@ 
 
 <<keymap:procedure>>=
-(define-public (define-key keymap keys function-or-keymap)
-  (let ((entry (lookup-key keymap (list (car keys)) #f)))
+(define-public (define-key keymap keys symbol-or-procedure-or-keymap)
+  (let ((entry (lookup-key keymap (list (car keys)) #f))
+        (procedure-or-keymap
+         (if (symbol? symbol-or-procedure-or-keymap)
+             (make-trampoline (current-module) symbol-or-procedure-or-keymap)
+             symbol-or-procedure-or-keymap)))
     (cond
      ;; Error
      ((number? entry)
       (error "Terminal key binding already found for ~a keys." entry))
      ;; Keymap available for the first key; recurse!
      ((keymap? entry)
-      (define-key entry (cdr keys) function-or-keymap))
+      (define-key entry (cdr keys) procedure-or-keymap))
      (else
       (if (= 1 (length keys))
           ;; This is our last key, just add it to our keymap.
           (begin 
-            (hash-set! (entries keymap) (car keys) function-or-keymap)
+            (hash-set! (entries keymap) (car keys) procedure-or-keymap)
             keymap)
           ;; We've got a lot of keys left that need to be hung on some
           ;; keymap.
           (define-key keymap (rcdr keys)
-            (define-key (make-keymap) (list (rcar keys)) function-or-keymap)))))))
+            (define-key (make-keymap) (list (rcar keys)) procedure-or-keymap)))))))
 @ 
 
 I use some procedures to access the last item of a list, which I call

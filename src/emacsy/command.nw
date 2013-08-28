@@ -87,13 +87,46 @@ We define the global command map.
   procedure as a command?}
 
 <<command:macro>>=
+
+(define-public (module-command-interface mod)
+  (unless (module-variable mod '%module-command-interface)
+    (module-define! mod '%module-command-interface 
+                    (let ((iface (make-module)))
+                      (set-module-name! iface (module-name mod))
+                      (set-module-version! iface (module-version mod))
+                      (set-module-kind! iface 'command)
+                      ;(module-use! iface (resolve-interface '(guile)))
+                      iface)))
+  (module-ref mod '%module-command-interface))
+
+
+
+(define-public (module-export-command! m names)
+  (let ((public-i (module-command-interface m)))
+    ;; Add them to this module.
+    (for-each (lambda (name)
+                (let* ((internal-name (if (pair? name) (car name) name))
+                       (external-name (if (pair? name) (cdr name) name))
+                       (var (module-ensure-local-variable! m internal-name)))
+                  (module-add! public-i external-name var)))
+              names)))
+
+(define-syntax-rule (export-command name ...)
+  (eval-when (eval load compile expand)
+    (call-with-deferred-observers
+     (lambda ()
+       (module-export-command! (current-module) '(name ...))))))
+
 (define-syntax-public define-interactive
   (syntax-rules ()
     ((define-interactive (name . args) . body)
-     (define-cmd global-cmdset (name . args)
-       . body))
+     (begin (define-cmd global-cmdset (name . args)
+              . body)
+            (export-command name)))
     ((define-interactive name value)
-     (define-cmd global-cmdset name value))))
+     (begin (define-cmd global-cmdset name value)
+            (export-command name))
+     )))
 @ 
 
 \todo[inline]{Need to fix: define-cmd doesn't respect documentation strings.}
@@ -147,16 +180,12 @@ We define the global command map.
 
 <<command:procedure>>=
 (define-public (command-name command)
-  (and (command->proc command)
-       (procedure-property (command->proc command) 'command-name)))
+  (procedure-name command))
 @ 
 
 <<command:procedure>>=
 (define-public (command? object)
-  (and (procedure? (command->proc object))
-       (and (assq 'command-name 
-                  (procedure-properties (command->proc object))) 
-            #t)))
+  (thunk? object))
 @ 
 
 \subsection{Determine Interactivity}
@@ -204,12 +233,12 @@ associated with commands.
 (define-cmd (test-cmd-3) 3)
 (check (test-cmd) => 1)
 (check-true (command? test-cmd))
-(check-false (command? test-cmd-2))
+(check-true (command? test-cmd-2))
 (check-true (command? test-cmd-3))
 (check (assq-ref (procedure-properties test-cmd) 'command-name) => #f)
 (check (assq 'command-name (procedure-properties test-cmd-2)) => #f)
-(check (command-name test-cmd) => #f)
-(check (command-name test-cmd-2) => #f)
+(check (command-name test-cmd) => 'proc)
+(check (command-name test-cmd-2) => 'test-cmd-2)
 (check (command-name test-cmd-3) => 'test-cmd-3)
 @ 
 
@@ -280,12 +309,14 @@ associated with commands.
   (if (called-interactively?)
       'interactive
       'non-interactive))
-(check (command? 'foo) => #t)
-(check (command-name 'foo) => 'foo)
-(check-true (command->proc 'foo))
+(check (command? 'foo) => #f)
+(check (command? foo) => #t)
+(check (command-name foo) => 'foo)
+(check-true (command->proc foo))
 
-(check (command-execute 'foo) => 'non-interactive)
-(check (call-interactively 'foo) => 'interactive)
+(check-throw (command-execute 'foo) => 'misc-error)
+(check (command-execute foo) => 'non-interactive)
+(check (call-interactively foo) => 'interactive)
 @ 
 
 
@@ -296,7 +327,11 @@ associated with commands.
   #:use-module (string completion)
   #:use-module (oop goops)
   #:use-module (ice-9 optargs)
-  #:use-module (emacsy util))
+  #:use-module (emacsy util)
+  
+  #:export-syntax (export-command
+                   )
+  )
 <<command:macro>>
 <<command:class>>
 <<command:state>>

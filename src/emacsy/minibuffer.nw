@@ -408,6 +408,39 @@ It can also work with a procedure.
    (read-from-minibuffer prompt initial-input #:keymap minibuffer-local-completion-map)))
 @ 
 
+\subsection{Filename Lookup}
+
+\subsubsection{New}
+
+We can do filename lookups by using the readline tab completion facilities.  
+
+<<minibuffer:procedure>>=
+(define-public (apropos-module rgx module)
+  "Return a list of accessible variable names for a given module."
+  (apropos-fold (lambda (module name var data)
+		  (cons name data))
+		'()
+		rgx
+		(apropos-fold-accessible module)))
+
+(define-public command-completion-function
+  (let ((completions '()))
+    (lambda (text cont?)
+      (if (not cont?)
+          (set! completions
+                (map symbol->string
+                     (apropos-module
+                      (string-append "^" (regexp-quote text))
+                      (module-command-interface (resolve-module '(emacsy core)))))))
+      (if (null? completions)
+          #f
+          (let ((retval (car completions)))
+            (begin (set! completions (cdr completions))
+                   retval))))))
+@ 
+
+\subsubsection{Old}
+
 We want to be able to look up filenames.
 
 <<minibuffer:procedure>>=
@@ -592,6 +625,8 @@ Some commands for manipulating the minibuffer history.
 (define-module (emacsy minibuffer)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 receive)
+  #:use-module (ice-9 regex)
+  #:use-module (ice-9 session)   
   #:use-module (ice-9 gap-buffer)
   #:use-module (ice-9 pretty-print)
   #:use-module (srfi srfi-26)

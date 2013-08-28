@@ -1,8 +1,66 @@
 * Emacsy TODO
+  - How to make a trampoline out of a symbol, by mark_weaver:
+
+  (define (make-trampoline s)
+                    (compile `(lambda () (,s)) #:env
+                    <desired-module>))
+
+   here's an implementation of 'make-trampoline' that uses vastly less
+   memory per trampoline, and avoids loading the compiler: (define
+   (make-trampoline module name) (let ((var (module-variable module
+   name))) (lambda () ((variable-ref var)))))
+
+  - [ ] Come up with a way to export commands so that one can indicate
+    what modules one wants to use.  
+
+    1. Let the user do it by creating their own modules.  
+
+       Nice idea because it requires no new infrastructure.  Might
+       encourage the proliferation of new modules.
+
+    2. Let the user export certain symbols as commands.  Pretty much 
+       like a new kind of public interface.  
+
+       Requires some infrastructure.  Possibly want to use this
+       generally to collect up all kinds of other things.  So far I've
+       had commands and fitness functions.  Other things might come
+       along as well.
+
+       (export-commands this that yon)
+
+       (emacsy-export commands '(this that yon))
+
+       (emacsy-export fitness-function '(this that yon))
+
+       %emacsy-local-modules
+
+
+    3. Do what I'm doing now where the user has to define their name
+       for something.
+
+    4. Just make a list of the symbols.  Nothing fancy.  If someone
+       wants only the commands, they do this:
+
+   (resolve-interface '(that-module) #:select (@ (that-module) commands))
+
+   (resolve-interface '(that-module %command)
+       
+   (use-modules ((that-module) #:select (@commands))
+       
+        
   - [ ] have backtraces go to logs
+  - Rethink the commands. Can't we keep them as simple lambdas?
+    Do we have to wrap them?  
+    
+    Also, when the user provides the symbol of a function, let's
+    create a trampoline to that function.  Otherwise, if they provide
+    a lambda, run that lambda.
+
   - [ ] If module (emacsy emacsy) does not load, it may be because it did
     not compile. Please show the correct error.
   - [ ] Make the read-from-minibuffer accept a symbol for a history
+  - [ ] Turn history into an object/record rather than a list and an index.
+  - [ ] Rename EY_* C macros to EMACSY_SAME_NAME_AS_SCHEME_OK_P
   - [ ] Make the default read-from-minibuffer history symbol be (what-command-am-i)
   - [ ] Add a couple of variations on the webkit browser
     - [ ] make it use multiple buffers
@@ -17,22 +75,30 @@
     resumed, resumed in the background, or killed.  This is similar to
     the split between builtin commands in shell and regular commands.
     God, this is going to be COOL!
-  - [ ] make debugging work in emacsy
+
+    
+  - [X] make debugging work in emacsy
+    Getting better with debug-on-error?  
   - [ ] fix kill of all buffers bug
   - [ ] add universal argument C-u
   - [ ] clear the echo area once other messages start to come.
-  - [ ] figure out how to integrate a browser window, it'll show pdf
+  - [X] figure out how to integrate a browser window, it'll show pdf
     graphs, images, etc. too!
   - [ ] implement separate histories for read-from-minibuffer
-  - [ ] there should be a way to turn off the display/runloop from happening.
+  - [ ] there should be a way to turn off the display/runloop from
+    happening.  Or maybe not. Maybe the batch-mode or non-interactive
+    mode for Emacsy shouldn't include Emacsy at all.  It should just
+    be regular Guile that one reverts to.  This has the added
+    advantage that one ends up creating Guile modules that others can
+    use.
   - [ ] make emacsy work with copy/paste [[http://stackoverflow.com/questions/6888862/how-to-access-clipboard-data-programmatically][link]]
 
   - [ ] [[https://github.com/technomancy/find-file-in-project/blob/master/find-file-in-project.el][Try this find-file-in-project]]
   - [ ] [[https://groups.google.com/forum/m/?fromgroups#!msg/comp.emacs/j_fNPgtbavM/DVygGrzgQgMJ][Great introduction]] to the bare minimum you need to know to use
     Emacs
-  - [ ] How to make [[http://www.gnu.org/software/guile/docs/docs-2.0/guile-ref/Identifier-Macros.html#Identifier-Macros][variable aliases]]
-  - [ ] the noweb filter docs2comments does not work with noweb's line pragmas
-  - [ ] how to do [[https://github.com/davexunit/gnumaku/blob/rebirth/gnumaku/coroutine.scm][coroutines]] in guile
+  - How to make [[http://www.gnu.org/software/guile/docs/docs-2.0/guile-ref/Identifier-Macros.html#Identifier-Macros][variable aliases]]
+  - Note: the noweb filter docs2comments does not work with noweb's line pragmas
+  - how to do [[https://github.com/davexunit/gnumaku/blob/rebirth/gnumaku/coroutine.scm][coroutines]] in guile
   - [ ] How do syscalls work when Emacsy is in batch mode?
     
     Populate event buffer from file handle?  Are syscalls even required
@@ -47,10 +113,10 @@
     specifies events and plays them back like a macro.
   - [[http://cygwin.com/ml/guile-emacs/2000-q2/msg00029.html][These folks]] are thinking similarly about how to deal with
     commands running in the background
-  - [ ] Change shebang lines from #!/usr/bin/env perl to #!@PERL@ etc.
+  - [X] Change shebang lines from #!/usr/bin/env perl to #!@PERL@ etc.
   - [ ] configure.ac needs to deal with the case where no hello-emacsy
     is available.
-  - [ ] GLUT needs to be checked at configure time on other OSes.
+  - [X] GLUT needs to be checked at configure time on other OSes.
   - An interesting way to [[http://lists.gnu.org/archive/html/guile-user/2011-10/msg00038.html][debug at the prompt]] in Guile
   - [ ] Use DBus as a way to interoperate between Emacsy applications.
   - [ ] Swap out blocking module for either ethreads or another
