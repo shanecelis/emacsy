@@ -396,7 +396,10 @@ It can also work with a procedure.
       (minibuffer-message " [No match]"))
      ((> (length completions) 1)
       (minibuffer-message 
-       (string-concatenate (list "{" (string-join (rotate-list completions *nth-match*) " | ") "}")))))))
+       (string-concatenate 
+        (list "{" 
+              (string-join (rotate-list completions *nth-match*) " | ")
+              "}")))))))
 @ 
 
 <<minibuffer:state>>=
@@ -433,7 +436,7 @@ It can also work with a procedure.
 <<minibuffer:keymap>>=
 (define minibuffer-local-completion-map 
   (let ((kmap (make-keymap minibuffer-local-map)))
-    (define-key kmap (kbd "SPC") 'minibuffer-complete-word)
+    ;(define-key kmap (kbd "SPC") 'minibuffer-complete-word)
     (define-key kmap (kbd "TAB") 'minibuffer-complete)
     (define-key kmap (kbd "?")   'minibuffer-completion-help)
     (define-key kmap (kbd "C-s") 'next-match)

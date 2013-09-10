@@ -4,8 +4,9 @@ Let's define an root event class.  \todo{Rename time to event-time.}
 
 <<event:class>>=
 (define-class-public <event> ()
-  (time #:getter time #:init-thunk (lambda () (emacsy-time))))
-(export time)
+  (time #:getter time #:init-thunk (lambda () (emacsy-time)))
+  (discrete-event? #:getter discrete-event? #:init-keyword #:discrete-event? #:init-value #t))
+(export time discrete-event?)
 @
 
 This defines the class [[<event>]].  It relies on [[emacsy-time]] that
@@ -23,10 +24,12 @@ Now let's give ourselves an event that'll capture key strokes
 including the modifier keys.
 
 <<event:class>>=
-(define-class-public <key-event> (<event>)
+(define-class-public <modifier-key-event> (<event>)
   (modifier-keys #:getter modifier-keys 
                  #:init-keyword #:modifier-keys 
-                 #:init-value '())
+                 #:init-value '()))
+
+(define-class-public <key-event> (<modifier-key-event>)
   (command-char #:getter command-char 
                 #:init-keyword #:command-char))
 (export modifier-keys command-char)
@@ -58,25 +61,42 @@ does not match the event-type, we return false [[#f]].
 
 <<event:procedure>>=
 (define (kbd-entry->key-event kbd-entry)
-  (let ((regex "^(([ACHMsS]-)*)([^ ]|RET|DEL|ESC|TAB|SPC)$"))
-    (let ((match (string-match regex kbd-entry)))
-      (if match
-          (let* ((char (string->command-char (match:substring match 3)))
-                 (mod-keys (get-modifier-keys (match:substring match 1))))
-            (make <key-event> #:command-char char #:modifier-keys mod-keys))
-          #f))))
+  (match (strip-off-modifier-keys kbd-entry)
+    ((mod-keys kbd-entry)
+     (let ((regex "^([^ ]|RET|DEL|ESC|TAB|SPC)$"))
+       (let ((match (string-match regex kbd-entry)))
+         (if match
+             (let* ((char (string->command-char (match:substring match 1))))
+               (make <key-event> #:command-char char #:modifier-keys mod-keys))
+             #f))))))
 
 (define (get-modifier-keys str)
       (if str
           (map modifier-char->symbol 
                (filter (lambda (x) (not (char=? x #\-))) (string->list str)))
           '()))
+
+(define-public (strip-off-modifier-keys kbd-entry)
+  "Parse the kbd-entry and strip off the modifier-keys and return the kbd-entry
+and a list of modifier keys."
+  (let ((regex "^(([ACHMsS]-)*)(.*)$"))
+    (let ((match (string-match regex kbd-entry)))
+      (if match
+          (let ((mod-keys (get-modifier-keys (match:substring match 1))))
+            (list mod-keys (match:substring match 3)))
+          (list '() kbd-entry)))))
+@ 
+
+<<event:test>>=
+(check (strip-off-modifier-keys "C-a") => '((control) "a"))
+(check (strip-off-modifier-keys "a") => '(() "a"))
+(check (strip-off-modifier-keys "asdf") => '(() "asdf"))
 @ 
 
 For the modifier keys, we are going to emulate Emacs to a fault.
 
 <<event:procedure>>=
-(define (modifier-char->symbol char)
+(define-public (modifier-char->symbol char)
   (case char 
     ((#\A) 'alt)
     ((#\C) 'control)
@@ -262,9 +282,17 @@ Now we convert the [[<key-event>]] back to a [[kbd-entry]].
 
 <<event:procedure>>=
 (define-method-public (event->kbd (event <key-event>))
-  (let ((mods (map string (map modifier-symbol->char (modifier-keys event))))
+  (let ((mods (next-method))
         (cmd-char (command-char->string (command-char event))))
-   (string-join `(,@mods ,cmd-char) "-")))
+    (format #f "~a~a" mods cmd-char)))
+
+(define-method-public (event->kbd (event <modifier-key-event>))
+  (let ((mods (map string (map modifier-symbol->char (modifier-keys event)))))
+    (string-join `(,@mods "") "-")))
+@ 
+
+<<event:test>>=
+(check (event->kbd (make <key-event> #:command-char #\a)) => "a")
 @ 
 
 Instead of using [[define-generic]] I've written a convenience macro
@@ -274,7 +302,7 @@ general, any *-public macro will export the symbol or syntax to the
 current module.
 
 <<event:procedure>>=
-(define (modifier-symbol->char sym)
+(define-public (modifier-symbol->char sym)
     (case sym
       ((alt) #\A)
       ((control) #\C)
@@ -363,6 +391,8 @@ regular expression is
       (if match
           (let* ((symbol (string->symbol (match:substring match 3)))
                  (modifier-keys (get-modifier-keys (match:substring match 1))))
+            ;; Warning that symbol is not used; squelch with this noop ref.
+            symbol
             <<Make and return mouse event.>>)
           ;; It doesn't specify a mouse event; return false.
           #f)))
@@ -453,6 +483,7 @@ temporal macros.
   #:use-module (ice-9 regex)
   #:use-module (ice-9 optargs)
 ;  #:use-module (srfi srfi-1)
+  #:use-module (ice-9 match)
   #:use-module (oop goops)
   #:use-module (emacsy util)
 )

@@ -45,6 +45,11 @@ int emacsy_load_module(const char *module_name);
 
 /* Load a file in the emacsy environment. */
 //int emacsy_load(const char *file_name);
+
+/* Convert the modifier_key_flags into a Scheme list of symbols. */
+// Do I want to include any Scheme objects or keep it strictly C?
+#include <libguile.h>
+SCM modifier_key_flags_to_list(int modifier_key_flags);
 @ 
 <<file:emacsy.h>>=
 /* emacsy.h
@@ -80,10 +85,12 @@ int emacsy_load_module(const char *module_name);
 #define EY_MOUSE_MOTION       2
 @ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
+\todo[inline]{Change prefix from EY to EMACSY, and make these all refer
+to actual Scheme names; for instance [[EY_QUIT_APPLICATION]] should be changed to [[EMACSY_QUIT_APPLICATION_P]] and there should be a scheme value [[emacsy-quit-application?]].}
 <<Defines>>=
 #define EY_QUIT_APPLICATION       1
-#define EY_ECHO_AREA_UPDATED      2
-#define EY_MODELINE_UPDATED       4
+#define EY_ECHO_AREA_UPDATED_P      2
+#define EY_MODELINE_UPDATED_P       4
 #define EY_RAN_UNDEFINED_COMMAND  8
 @ The boilerplate guards so that a C++ program may include
 \verb|emacsy.h| are given below.
@@ -105,7 +112,11 @@ int emacsy_initialize()
 {
   /* Load the (emacsy emacsy) module. */
   const char *module = "emacsy emacsy"; 
-  return emacsy_load_module(module);
+  int err = emacsy_load_module(module);
+  if (err)
+    return err;
+  
+  return err;
 }
 @ The function [[scm_c_use_module]] throws an exception if it cannot
 find the module, so we have to split that functionality into a body
@@ -115,7 +126,7 @@ function [[load_module_try]] and an error handler [[load_module_error]].
 SCM load_module_try(void *data) 
 {
   scm_c_use_module((const char *)data);
-  return SCM_BOOL_T;
+  return scm_list_1(SCM_BOOL_T);
 }
 @ 
 
@@ -123,7 +134,7 @@ SCM load_module_try(void *data)
 SCM load_module_error(void *data, SCM key, SCM args)
 {
   //fprintf(stderr, "error: Unable to load module (%s).\n", (const char*) data);
-  return SCM_BOOL_F;
+  return scm_list_3(SCM_BOOL_F, key, args);
 }
 @ 
 
@@ -135,9 +146,12 @@ int emacsy_load_module(const char *module)
   SCM result = scm_internal_catch(SCM_BOOL_T, 
                                   load_module_try,   (void *) module,
                                   load_module_error, (void *) module);
-  if (scm_is_false(result)) {
-    fprintf(stderr, "error: Unable to load module (%s). Try setting the "
-                    "GUILE_LOAD_PATH environment variable.\n", module);
+  if (scm_is_false(scm_car(result))) {
+    fprintf(stderr, "error: Unable to load module (%s); got error to key %s with args %s. Try setting the "
+                    "GUILE_LOAD_PATH environment variable.\n", module, 
+                    scm_to_locale_string(scm_car(scm_cdr(result))),
+                    scm_to_locale_string(scm_car(scm_cdr(scm_cdr(result))))
+                    );
     return 1; //EY_ERR_NO_MODULE;
   }
   return 0;
@@ -231,7 +245,7 @@ char *emacsy_current_buffer()
 
 \section{emacsy\_mode\_line}
 
-\todo[inline]{Change name from modeline to mode-line.}
+\todo[inline]{Keep name as modeline.}
 <<Functions>>=
 char *emacsy_mode_line()
 {
@@ -292,5 +306,14 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
   }
   
   return list;
+}
+
+SCM_DEFINE(scm_modifier_key_flags_to_list, "modifier-key-flags->list", 
+           1, 0, 0,
+           (SCM flags),
+           "Convert an integer of modifier key flags to a list of symbols.")
+{
+  int modifier_key_flags = scm_to_int(flags);
+  return modifier_key_flags_to_list(modifier_key_flags);
 }
 @

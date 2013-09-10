@@ -1,4 +1,15 @@
 * Emacsy TODO
+  - [ ] It'd be nice to have a for-each which didn't use lambdas and
+    was more like loop.  The for-each action list where action can be
+    long then the list that it operates on is kind of jaring.)
+  - [ ] How to implement defvar: Use [[http://www.gnu.org/software/guile/manual/guile.html#Object-Properties][object-properties]] on the variable
+    from (module-variable). Thanks, Andy!
+  - [X] Incorporating modifier keys should be easy.  Split <key-event>
+    into <modifier-key-event> and <key-event.
+  - [X] Need to pick up modifier-keys from GLFW.
+  - [ ] Need to fix history.  Just make an indexable list class.
+  - [ ] 
+
   - How to make a trampoline out of a symbol, by mark_weaver:
 
   (define (make-trampoline s)
@@ -47,7 +58,9 @@
        
    (use-modules ((that-module) #:select (@commands))
        
-        
+
+  - [ ] rename read-file-name to EITHER read-filename OR
+    read-filename-from-minibuffer
   - [ ] have backtraces go to logs
   - Rethink the commands. Can't we keep them as simple lambdas?
     Do we have to wrap them?  

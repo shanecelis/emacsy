@@ -144,15 +144,23 @@ mouse events may be changed into click or drag events.\todo{There's probably a b
 
 \subsection{read-key-sequence}
 
-[[read-key-sequence]] is a higher level than [[read-key]].  It
+[[read-key-sequence]] is at a higher level than [[read-key]].  It
 considers the currently active keymaps.  If a sequence is defined in
 the keymap, it returns that event sequence.  If it doesn't match a
 sequence yet, it continues to read more keys.  If it cannot match any
 sequence, it returns that event sequence.\todo{Consider using values
-to return multiple values.}
+  to return multiple values.}
 
 <<klecl:procedure>>=
-(define*-public (read-key-sequence #:optional (prompt #f))
+(define*-public (read-key-sequence 
+                 #:optional 
+                 (prompt #f))
+  (define (read-discrete-key)
+    (let mini-loop ((event (read-key prompt)))
+      (format #t "EVENT ~a~%" event)
+      (if (discrete-event? event)
+          event
+          (mini-loop (read-key prompt)))))
   (let loop ((events (list (read-key prompt))))
     (let* ((keys (reverse (map (compose event->kbd canonize-event!) events)))
            (last-key (rcar keys)))
@@ -173,7 +181,7 @@ to return multiple values.}
          ;; Yes. We have enough keys.
          (reverse events)
          ;; No.  Let's get some more.
-         (loop (cons (read-key prompt) events))))))
+         (loop (cons (read-discrete-key) events))))))
 @ 
 
 We also check all the maps for a quit key, typically defined as \verb|C-g|.
