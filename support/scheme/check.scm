@@ -49,8 +49,9 @@
             check-passed?
             check:failed
             check-report
+            check-exit
             )
-  #:export-syntax (check check-throw check-true check-false)
+  #:export-syntax (check check-throw check-true check-false use-private-modules)
   ) 
 
 (define check:write write)
@@ -294,3 +295,18 @@
     ((check-ec q1 q2             etc ...)
      (check-ec (nested q1 q2)    etc ...))))
 
+;; XXX I added this just so I could integrate it with unit tests.
+(define (check-exit)
+  (exit (if (and #;(= (length test-errors) 0) 
+                 (= 0 (length check:failed))) 0 1)))
+
+;; Include everything a module uses including its non-exported
+;; interface. This is intended to be used with unit testing ONLY!
+(define-syntax use-private-modules
+  (syntax-rules ()
+    ((use-private-modules . modules)
+     (eval-when (compile load eval)
+                ;; Some trickery so we can test private procedures.
+                (for-each (lambda (module) 
+                            (module-use! (current-module) (resolve-module module)))
+                          'modules)))))

@@ -1,11 +1,36 @@
 # noweb.am
 #SUFFIXES += .nw .tex .pdf
 
+SUFFIXES = .nw .html .tex
+
 if NOWEB
+
 NOWEB_INCLUDES ?=
+NOWEAVE_FLAGS ?= 
+NOWEAVE_UNWRAPPED_FLAGS ?= -n -delay
+NOWEAVE_HTML_FLAGS ?= -filter l2h -index -html
+NOWEAVE_HEADER ?= 
+NOWEAVE_FOOTER ?= 
+
+wrapper = $(abs_top_builddir)/bin/wrapper
+
 %.tex : %.nw 
 	$(AM_V_at) $(MAKE) all.defs
-	$(AM_V_GEN) $(noweave) $(NOWEAVE_FLAGS) -n -delay -indexfrom all.defs $^ | cpif $@
+	if [ -z "$(NOWEAVE_HEADER)" ] && [ -z "$(NOWEAVE_FOOTER)" ]; then \
+		$(AM_V_GEN) $(noweave) $(NOWEAVE_FLAGS) -indexfrom all.defs $^ | cpif $@; \
+	else \
+		$(AM_V_GEN) $(wrapper) -H "$(NOWEAVE_HEADER)" -F "$(NOWEAVE_FOOTER)" -- $(noweave) $(NOWEAVE_UNWRAPPED_FLAGS) -indexfrom all.defs $^ | cpif $@; \
+	fi
+
+# This creates a LaTeX file from that Noweb that may be easily included into a larger
+# TeX file.  It uses a similar convention of _name like that of Compass to denote that
+# it is a partial TeX and not complete.
+_%.tex : %.nw 
+	$(AM_V_at) $(MAKE) all.defs
+	$(AM_V_GEN) $(noweave) $(NOWEAVE_UNWRAPPED_FLAGS) -indexfrom all.defs $^ | cpif $@
+
+%.html : %.nw 
+	$(AM_V_GEN) $(noweave) $(NOWEAVE_HTML_FLAGS) $^ | cpif $@
 
 warn_notangle = $(top_builddir)/bin/warn-notangle
 
@@ -27,11 +52,15 @@ all.defs: $(NOWEB_DEFS)
 %.nw.files : %.nw
 	$(AM_V_GEN) $(noroots) $^ | $(GREP) file: | $(PERL) -pe 's/<<file:(\S+)>>/\1/g;' | cpif $@
 
+
+# %-doc.nw : %.nw _%.tex $(NOWEB_WRAPPER)
+# 	$(AM_V_GEN) (cat $(NOWEB_WRAPPER) |	$(PERL) -pe "s/\\@FILE\\@/_$$(basename -s .nw $<)/;") | cpif $@
+
 NOWEB_DEFS = $(NOWEB_FILES:.nw=.defs)
 NOWEB_TEXS = $(NOWEB_FILES:.nw=.tex)
-EXTRA_DIST += $(NOWEB_FILES) $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
-BUILT_SOURCES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
-CLEANFILES += $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS) all.defs \
+NOWEB_EXTRA_DIST = $(NOWEB_FILES) $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+NOWEB_BUILT_FILES = $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS)
+NOWEB_CLEANFILES = $(NOWEB_TEXS) $(NOWEB_DEFS) $(NOWEB_PRODUCTS) all.defs \
 	$(NOWEB_DOCS:.pdf=.aux) $(NOWEB_DOCS:.pdf=.log) $(NOWEB_DOCS:.pdf=.nwi) \
 	$(NOWEB_DOCS:.pdf=.out) $(NOWEB_DOCS:.pdf=.tdo) $(NOWEB_DOCS:.pdf=.toc) \
 	$(NOWEB_DOCS:.pdf=.tex.log) $(NOWEB_DOCS)
@@ -48,9 +77,14 @@ if PDFLATEX
 	noindex $<
 	$(AM_V_GEN) $(pdflatex) -interaction=nonstopmode -halt-on-error $< 
 
+pdf-local: $(NOWEB_DOCS) 
+
+doc-local: pdf-local
+
 else
 %.pdf : %.tex
-	$(warning Warning: unable to update $@ from changed $< without pdflatex.)
+	$(warning Warning: unable to update $@ from changed $< without latexmk.)
+
 endif
 
 show-doc-local: $(NOWEB_DOCS)

@@ -1,5 +1,5 @@
 # guile.am
-#SUFFIXES += .c.x .cpp.x
+SUFFIXES += .c.x .cpp.x .x .go
 
 GUILE_WARNINGS = -Wformat -Wunbound-variable -Warity-mismatch -Wunused-variable 
 

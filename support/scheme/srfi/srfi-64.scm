@@ -75,14 +75,18 @@
                ((srfi srfi-35) :select (condition-type?
                                         condition?
                                         condition-has-type?))
-               ((ice-9 regex)  :select (string-match)))
+               ((ice-9 regex)  :select (string-match))
+               (rnrs io ports)
+               )
   (cond-expand
    (guile-2)
    (else
     ;; Guile 1.8 fails the test suite for testing srfi-64 by Donovan Kolbly
     ;; because of nested block comments used in srfi-64-test.scm file.
     ;; Comments are comments. So, not problem.
-    (use-modules (ice-9 syncase)))))
+    (use-modules (ice-9 syncase)
+                 (rnrs io ports)
+                 ))))
  (kawa
   (module-compile-options warn-undefined-variable: #t
                           warn-invoke-unknown-method: #t)
@@ -594,8 +598,10 @@
                                                 'truncate/replace)))
                        (guile-2
                         (set! log-file
-                              (with-fluids ((%default-port-encoding "UTF-8"))
-                                           (open-output-file log-file-name))))
+                              #;(with-fluids ((%default-port-encoding "UTF-8"))
+                                           (open-output-file log-file-name))
+                              (standard-output-port)
+                              ))
                        (else
                         (set! log-file (open-output-file log-file-name))))
                       (display "  (Writing full log to \"")
@@ -649,7 +655,8 @@
           (if (or (and (procedure? test-log-to-file)
                        (not (output-port? (test-log-to-file))))
                   (not (output-port? test-log-to-file)))
-              (close-output-port log))))
+              (if (not (eq? standard-output-port log)) 
+                  (close-output-port log)))))
     (%display (current-output-port))
     (list pass-count xfail-count xpass-count fail-count skip-count)))
 
