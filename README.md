@@ -29,6 +29,15 @@ Dependencies
 
   * pdflatex
 
+  * automake >= v1.14
+
+    If you get an error saying that "warning: macro
+    'AM\_EXTRA\_RECURSIVE\_TARGETS' not found in library", this means
+    your version of automake is too old.  (Alternatively, you can
+    comment out the AM\_EXTRA\_RECURSIVE\_TARGETS in configure.ac.)
+
+  * autoconf >= v2.69
+
 Building from a release (easy)
 ------------------------------
 

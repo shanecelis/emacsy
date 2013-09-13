@@ -1,0 +1,220 @@
+\section{Help}
+
+Emacs offers a fantastic comprehensive help system.  Emacsy intends to
+replicate most of this functionality.  One distinction that would be
+nice to make is to partition Scheme values into procedures, variables,
+and parameters.  In Scheme, all these kinds of values are the handled
+the same way.  In Emacs, each are accessible by the help system
+distinctly.  For instance, [[C-h f]] looks up functions, [[C-h v]]
+looks up variables.  In addition to defining what kind of value a
+variable holds, this also allows one to include documentation for
+values which is not included in Guile Scheme by default. (XXX fact check.)
+
+\subsection{define-variable}
+
+<<procedure>>=
+(define (object-documentation-ref object)
+  "Return the docstring for OBJECT.
+OBJECT can be a procedure, macro or any object that has its
+`documentation' property set."
+  (object-property object 'documentation))
+
+(define (object-documentation-set! object value)
+  "Return the docstring for OBJECT.
+OBJECT can be a procedure, macro or any object that has its
+`documentation' property set."
+  (set-object-property! object 'documentation value))
+@ 
+
+<<procedure>>=
+(define (emacsy-kind-ref object)
+  "Return the kind for the OBJECT."
+  (object-property object 'emacsy-kind))
+
+(define (emacsy-kind-set! object kind)
+  "Return the kind for the OBJECT."
+  (set-object-property! object 'emacsy-kind kind))
+@ 
+
+
+<<macro>>=
+(define-syntax-public define-variable
+  (syntax-rules ()
+    ((define-variable name value documentation)
+     (let ((v #f))
+       ;; If it's not defined, define it.
+       (define-once name value)
+       (set! v (module-variable (current-module) 'name))
+       (emacsy-kind-set! v 'variable)
+       (object-documentation-set! v documentation)
+       (set-object-property! v 'source-properties (current-source-location))))
+    
+    ((define-variable name value)
+     (define-variable name value ""))))
+@ 
+
+<<macro>>=
+(define-syntax-public variable-documentation
+  (syntax-rules ()
+    ((variable-documentation name)
+     (let ((v (module-variable (current-module) 'name)))
+       (if v
+         (object-documentation-ref v)
+         #f)))))
+@ 
+
+<<test>>=
+(define-variable x 1 "This is the variable x.")
+(check x => 1)
+(check (variable-documentation x) => "This is the variable x.")
+(define-variable x 2 "This is the variable x.")
+(check x => 1)
+(check (variable-documentation x) => "This is the variable x.")
+(set! x 3)
+(check x => 3)
+(check (variable-documentation x) => "This is the variable x.")
+
+;; When we re-define x, the documentation stays.
+(define x 4)
+(check (variable-documentation x) => "This is the variable x.")
+(check x => 4)
+(define-variable x 5 "This is the variable x; it is!")
+(check x => 4)
+(check (variable-documentation x) => "This is the variable x; it is!")
+
+(define-variable x 5 "This is the variable x.")
+@ 
+
+We also want to be able to collect up all the variables in some given
+module.
+
+<<procedure>>=
+(define* (emacsy-collect-kind module kind #:optional (depth 0))
+    "Return the symbols that are of the variable, parameter, or
+command kind. Inspects symbols defined locally within the module and
+of the interfaces it includes (up to a given depth)."
+    (let ((results '()))
+      (define (collect module) 
+        (module-for-each 
+         (lambda (symbol variable)
+           (if (eq? kind (emacsy-kind-ref variable))
+               (cons! symbol results))) 
+         module))
+      (define expander
+        (match-lambda
+         ((mod current-depth)
+          (map (lambda (child-mod)
+                 (list child-mod (1+ current-depth)))
+               (module-uses mod)))))
+      (define done?
+        (match-lambda
+         ((mod current-depth)
+          (if (<= current-depth depth) 
+           (collect mod))
+          (> current-depth depth))))
+      (breadth-first-search (list module 0) done? expander)
+      results))
+@ 
+
+<<test>>=
+(check (emacsy-collect-kind (current-module) 'variable) => '(x))
+@ 
+
+
+\subsection{define-parameter}
+
+Parameters behave similarly to variables; however, whenever they are
+defined, their values are set.
+
+<<macro>>=
+(define-syntax-public define-parameter
+  (syntax-rules ()
+    ((define-parameter name value documentation)
+     (begin 
+       (define name value)
+       (let ((v (module-variable (current-module) 'name)))
+         (when v
+           (emacsy-kind-set! v 'parameter)
+           (object-documentation-set! v documentation)
+           (set-object-property! v 'source-properties (current-source-location))))))
+    ((define-parameter name value)
+     (define-parameter name value ""))))
+@ 
+
+<<test>>=
+(define-parameter y 1 "This is the parameter y.")
+(check y => 1)
+(check (variable-documentation y) => "This is the parameter y.")
+(define-parameter y 2 "This is the parameter y.")
+(check y => 2)
+(check (variable-documentation y) => "This is the parameter y.")
+(set! y 3)
+(check y => 3)
+(check (variable-documentation y) => "This is the parameter y.")
+;(check (object-properties (module-variable (current-module) 'y)) => '())
+(check (emacsy-collect-kind (current-module) 'parameter) => '(y))
+(define emacsy-collect-all-kind emacsy-collect-kind)
+(check (emacsy-collect-all-kind (current-module) 'parameter 0) => '(y))
+@ 
+
+Now let's try to start a new module.  And probe some of the behavior.
+
+<<test-this-last>>=
+(define-module (test-this)
+  #:use-module (check))
+(use-private-modules (emacsy help))
+
+(check (emacsy-collect-kind (current-module) 'parameter) => '())
+(check (emacsy-collect-kind (current-module) 'variable) => '())
+(check (variable-documentation x) => #f)
+(check (variable-documentation y) => #f)
+
+(use-private-modules (guile-user))
+
+(check x => 4)
+(check y => 3)
+(check (variable-documentation x) => "This is the variable x.")
+(check (variable-documentation y) => "This is the parameter y.")
+(check (emacsy-collect-kind (current-module) 'variable) => '())
+(check (emacsy-collect-kind (current-module) 'parameter) => '())
+
+(check (emacsy-collect-all-kind (current-module) 'variable) => '())
+(check (emacsy-collect-all-kind (current-module) 'parameter) => '())
+
+(check (emacsy-collect-all-kind (current-module) 'variable 1) => '(x))
+(check (emacsy-collect-all-kind (current-module) 'parameter 1) => '(y))
+
+(check (assoc-ref (current-source-location) 'filename) => "emacsy/help-test.scm")
+(check (current-filename) => #f)
+(check (source-properties x) => '())
+(check (source-properties 'x) => '())
+(check (source-properties (module-variable (current-module) 'x)) => '())
+@ 
+
+
+
+\subsection{File Layout}
+
+<<file:help.scm>>=
+(define-module (emacsy help)
+  #:use-module (emacsy util)
+  #:use-module (srfi srfi-1)
+  #:use-module (search basic)
+  #:use-module (ice-9 optargs)
+  #:use-module (ice-9 match)
+  #:use-module (ice-9 documentation))
+
+<<procedure>>
+<<macro>>
+@ 
+
+<<file:help-test.scm>>=
+(use-modules (check))
+(use-private-modules (emacsy help))
+
+<<test>>
+
+<<test-this-last>>
+
+(check-exit)
+@ 

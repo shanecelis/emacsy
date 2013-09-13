@@ -1,7 +1,12 @@
 * Emacsy TODO
+  - [ ] Defining variables with define-variable leaves warnings about
+    that variable not being defined.
   - [ ] It'd be nice to have a for-each which didn't use lambdas and
     was more like loop.  The for-each action list where action can be
     long then the list that it operates on is kind of jaring.)
+  - [ ] Maybe there should be hook such that a REPL can be invoked
+    from within Emacsy that then in the simplest case reports the port
+    and hostname. Or perhaps invokes Emacs to enter it.
   - [ ] How to implement defvar: Use [[http://www.gnu.org/software/guile/manual/guile.html#Object-Properties][object-properties]] on the variable
     from (module-variable). Thanks, Andy!
   - [X] Incorporating modifier keys should be easy.  Split <key-event>

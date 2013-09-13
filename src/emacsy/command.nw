@@ -87,7 +87,6 @@ We define the global command map.
   procedure as a command?}
 
 <<command:macro>>=
-
 (define-public (module-command-interface mod)
   (unless (module-variable mod '%module-command-interface)
     (module-define! mod '%module-command-interface 
