@@ -28,18 +28,18 @@ The window class contains a renderable window that is associated with
 a buffer.  
 
 <<Classes>>=
-(define-class <window-node> ()
+(define-class <window> ()
   (window-parent #:accessor window-parent #:init-value #f)
-  (user-data #:accessor user-data #:init-keyword #:user-data #:init-value #f))
-
-(define-class <window> (<window-node>)
+  (user-data #:accessor user-data #:init-keyword #:user-data #:init-value #f)
   (window-buffer #:accessor window-buffer #:init-keyword #:window-buffer #:init-value #f)
   (window-dedicated? #:accessor window-dedicated? #:init-value #f))
 @ %def <window>
 @ The internal window class contains other windows.
 
 <<Classes>>=
-(define-class <internal-window> (<window-node>)
+(define-class <internal-window> ()
+  (window-parent #:accessor window-parent #:init-value #f)
+  (user-data #:accessor user-data #:init-keyword #:user-data #:init-value #f)
   (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
   (orientation #:accessor orientation #:init-keyword #:orientation #:init-value 'vertical) ; or 'horizontal
   (size #:accessor size #:init-keyword #:size #:init-value .5))
@@ -262,13 +262,14 @@ ultimate parent window.
 <<Windows Tests>>=
 (let* ((w (make <window>))
        (sw (split-window w))
-       (c (cdr (window-children sw)))
+       (c (cadr (window-children sw)))
        (sc (split-window c))
+       (nc (cadr (window-children sc)))
   )
 
   (check (window-list w) => (list w))
-  (check (window-tree sw) => (list w c))
-  (check (window-list sw) => (list w c))
+  (check (window-tree sw) => (list w (list c nc)))
+  (check (window-list sw) => (list w c nc))
   ;(check (window-list sw) => (list w c #f))
   )
 @ \section{Window Commands}
