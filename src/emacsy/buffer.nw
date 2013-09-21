@@ -9,16 +9,19 @@ A buffer in Emacs represents text, including its mode, local
 variables, etc.  A Emacsy buffer is not necessarily text.  It can be
 extended to hold whatever the host application is interested in.
 Emacs' concepts of buffer, window, and mode are directly analogous to
-the model, view, and controller or MVC pattern.
+the model, view, and controller respectively---the MVC pattern.
 
 <<buffer:class>>=
 (define-class-public <buffer> ()
   (name #:init-keyword #:name)
   (keymap #:accessor local-keymap #:init-keyword #:keymap #:init-form (make-keymap))
   (locals #:accessor local-variables #:init-form '())
+  (before-change-hook #:accessor before-change-hook #:init-form (make-hook 0))
+  (after-change-hook #:accessor after-change-hook #:init-form (make-hook 0))
   (buffer-enter-hook #:accessor buffer-enter-hook #:init-form (make-hook 0))
-  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0)))
-(export local-keymap local-variables buffer-enter-hook buffer-exit-hook)
+  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0))
+  )
+(export local-keymap local-variables buffer-enter-hook buffer-exit-hook before-change-hook after-change-hook after-change-hook before-change-hook)
 @ 
 
 Buffer's have a name, and there is always a current buffer or it's
@@ -33,6 +36,13 @@ number of arguments as shown below.
 
 (define-method-public (buffer-name (buffer <buffer>))
   (slot-ref buffer 'name))
+
+(define-method-public (set-buffer-name! name)
+  (set-buffer-name! name (current-buffer)))
+
+(define-method-public (set-buffer-name! name (buffer <buffer>))
+  (slot-set! buffer 'name name))
+
 
 (define-method (write (obj <buffer>) port)
   (write (string-concatenate (list "#<buffer '" (buffer-name obj) "'>")) port))
@@ -518,12 +528,14 @@ Finally, we can insert text.
    (if (null? args)
        0 
        (let ((arg (car args)))
+         (run-hook (before-change-hook (current-buffer)))
          (cond
           ((string? arg)
            (gb-insert-string! (gap-buffer (current-buffer)) arg))
           ((char? arg)
            (gb-insert-char! (gap-buffer (current-buffer)) arg))
-          (else #f))))))
+          (else #f))
+         (run-hook (after-change-hook (current-buffer)))))))
 @
 
 <<buffer:procedure>>=
@@ -553,7 +565,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
 [[util]] module.
 
 <<util:procedure>>=
-(define*-public (in-out-guard in thunk out #:optional (pass-keys '(quit)))
+(define*-public (in-out-guard in thunk out #:optional (pass-keys '(quit quit-command)))
   (run-thunk in)
   ;if debug-on-error?
   ;; Don't run this as robustly so that we can debug the errors

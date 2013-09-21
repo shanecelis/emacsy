@@ -507,22 +507,27 @@ We want to be able to look up filenames.
         (cons! filename filenames)
         (loop (readdir dir))))
     (closedir dir)
-    filenames))
+    (sort-filenames filenames)))
 
 (define (make-filename dir name)
   (format #f "~a~a" (if (slash-suffix? dir)
                         dir
                         (format #f "~a/" dir)) name))
 
+(define (sort-filenames lst)
+  (sort lst string<))
+
 (define (files-in-parent-dir filename)
+
   (let* ((dir (my-dirname filename))
          (base (basename filename))
          (filenames (files-in-dir dir)))
-    (if (or (string-prefix? dir filename)
-            (string-prefix? filename dir)) ;; the directory is a prefix of
-                                      ;; the string--good!
-        (map (compose canonize-filename (cut make-filename dir <>)) filenames)
-        (map canonize-filename filenames))))
+    (sort-filenames 
+     (if (or (string-prefix? dir filename)
+             (string-prefix? filename dir)) ;; the directory is a prefix of
+         ;; the string--good!
+         (map (compose canonize-filename (cut make-filename dir <>)) filenames)
+         (map canonize-filename filenames)))))
 
 (define (directory? filename)
   (and (access? filename F_OK) 
@@ -598,11 +603,11 @@ We want to be able to look up filenames.
 (check (basename "bin/f") => "f")
 (check (dirname "bin/f") => "bin")
 (check (my-dirname "bin/") => "bin/")
-(check (files-in-parent-dir "bin/") => '("bin/run-test" "bin/../" "bin/./"))
-(check (files-in-parent-dir "bin") => '("bin/run-test" "bin/../" "bin/./"))
+(check (files-in-parent-dir "bin/") => '("bin/../" "bin/./" "bin/run-test"))
+(check (files-in-parent-dir "bin") => '( "bin/../" "bin/./" "bin/run-test"))
 
-(check (files-in-dir "bin/") => '("run-test" ".." "."))
-(check (files-in-dir "bin") => '("run-test" ".." "."))
+(check (files-in-dir "bin/") => '("." ".." "run-test"))
+(check (files-in-dir "bin") => '( "." ".." "run-test"))
 (check (file-name-completer "bin/" no-dot-files #t) => '("bin/run-test"))
 
 ;(check (files-in-dir "..") => '())

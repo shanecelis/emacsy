@@ -1,0 +1,297 @@
+\section{Windows (Optional)}   
+
+Emacsy aims to offer the minimal amount of intrusion to acquire big
+gains in program functionality.  Windows is an optional module for
+Emacsy.  If you want to offer windows that behave like Emacs windows,
+you can, but you aren't required to.  
+
+<<file:window.scm>>=
+<<+ Lisp File Header>>
+<<Module>>
+<<Classes>>
+<<State>>
+<<Procedures>>
+<<Commands>>
+<<Key bindings>>
+@
+<<Module>>=
+(define-module (emacsy window)
+  #:use-module (oop goops)
+  #:use-module (emacsy emacsy)
+  <<Include Modules>>
+  #:export ( <<Exported Symbols>> window-buffer window-children orientation user-data window-list root-window current-window)
+  #:export-syntax ( <<Exported Syntax>> ) 
+)
+@ \section{Classes}
+
+The window class contains a renderable window that is associated with
+a buffer.  
+
+<<Classes>>=
+(define-class <window-node> ()
+  (window-parent #:accessor window-parent #:init-value #f)
+  (user-data #:accessor user-data #:init-keyword #:user-data #:init-value #f))
+
+(define-class <window> (<window-node>)
+  (window-buffer #:accessor window-buffer #:init-keyword #:window-buffer #:init-value #f)
+  (window-dedicated? #:accessor window-dedicated? #:init-value #f))
+@ %def <window>
+@ The internal window class contains other windows.
+
+<<Classes>>=
+(define-class <internal-window> (<window-node>)
+  (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
+  (orientation #:accessor orientation #:init-keyword #:orientation #:init-value 'vertical) ; or 'horizontal
+  (size #:accessor size #:init-keyword #:size #:init-value .5))
+@ %def <internal-window>
+<<Exported Symbols>>=
+<window> <internal-window>
+@ \section{Procedures}
+
+<<Procedures>>=
+(define-method (initialize (obj <internal-window>) initargs)
+  (next-method)
+  (for-each (lambda (window)
+    (set! (window-parent window) obj)) (window-children obj)))
+@
+
+<<Procedures>>=
+(define (window? o)
+  (or (is-a? o <window>) (is-a? o <internal-window>) )
+  )
+@ 
+<<Exported Symbols>>=
+window?
+@ 
+<<Windows Tests>>=
+  (check (window? root-window) => #t)
+@ 
+<<Procedures>>=
+(define (window-live? o)
+  (is-a? o <window>))
+@ 
+<<Windows Tests>>=
+  (check (window-live? root-window) => #t)
+@ 
+<<Procedures>>=
+(define (frame-root-window)
+  root-window)
+<<State>>=
+(define-public root-window (make <window>))
+<<Include Modules>>=
+  #:use-module (ice-9 match)
+@ Emacs uses the edges of windows \verb|(left top right bottom)|, but
+I'm more comfortable using bounded coordinate systems
+\verb|(left bottom width height)|.  So let's write some converters.
+
+<<Procedures>>=
+(define (edges->bcoords edges)
+  (match edges
+   ((left top right bottom)
+    (list left bottom (- right left) (- top bottom)))))
+@ 
+<<Windows Tests>>=
+(check (edges->bcoords '(0 1 1 0)) => '(0 0 1 1))
+@ 
+<<Procedures>>=
+(define (bcoords->edges coords)
+  (match coords
+  ((x y w h)
+    (list x (+ y h) (+ x w) y))))
+@ 
+<<Windows Tests>>=
+(check (bcoords->edges '(0 0 1 1)) => '(0 1 1 0))
+@ The best way I can think to tile and scale all these windows is like
+this.  Let's use a normalized bounded coordinates for the internal
+windows.  This way the frame size can change and the pixel edges can
+be recomputed.
+
+\begin{figure}
+  \centering
+%  \includegraphics[scale=0.75]{window-diagram.pdf} 
+  \caption[Window Diagram]{\label{window-diagram}Window $A$ can be
+    fully described by two vectors: its origin $\bv o_a = (ox, oy)$
+    and its end $\bv e_a = (w_a, h_a)$.}
+\end{figure}
+
+
+Imagine the frame has a width $W$ and a height H.  My root window has
+the bounded coordinates \verb|(0 0 1 1)|.  When I call
+\verb|window-pixel-coords| on it, it will return \verb|(0 0 W H)|.
+
+Consider the case where my root window is split vertically in half.
+My root window would be an internal window with the same bounded
+coordinates as before.  The top child, however, will have its pixel
+bounded coordinates as \verb|(0 (/ H 2) W (/ H 2)|. And the bottom
+child will have \verb|(0 0 W (/ H 2))|.  
+
+One way to think of this is every \verb|<window>| takes up all its
+space; intrinsically, they are all set to \verb|(0 0 1 1)|.  The trick
+is each \verb|<internal-window>| divides up the space recursively.  So
+the internal window in the preceding example that was split
+vertically, it passes \verb|0 .5 1 .5| to the top child and
+\verb|0 0 1 .5|.
+
+When the root window, or frame in Emacs parlance, is resized, we want
+each windows by default to resize proportionately.  The windows will
+be tiled; therefore, it seems appropriate to use the unit of
+proportions as our representation over pixels. There will be some
+windows that will have a size of a particular pixel size, like the
+minibuffer window.  A little bit of specialization to maintain a
+particular pixel height will require some callbacks or hooks.
+
+\subsection{Overriding switch-to-buffer}
+
+When the user switches to a buffer, that the current window should be
+switched to that window.  It'd be preferrable to use an advice
+mechanism, but I haven't finished writing that module yet, so we'll
+have to settle for something a little more clunky.
+
+<<Procedures>>=
+(let ((old-func switch-to-buffer))
+  (set! switch-to-buffer
+        (lambda-cmd args
+                    (let ((result (apply old-func args)))
+                      (format #t "Setting current window to buffer ~a~%" (current-buffer))
+                      (set! (window-buffer current-window) (current-buffer))
+                      result))))
+@ 
+
+\subsection{Split Window}
+
+Be careful with \verb|deep-clone|. If you deep clone one window that
+has references to other windows, you will clone entire object graph.
+
+<<Commands>>=
+(define-interactive (split-window #:optional 
+                     (window (selected-window))
+                     (size 0.5)
+                     (side 'below))
+  (define (substitute x y)
+    "Returns a function that will substitute x for y when given x."
+    (lambda (z)
+     (if (eq? z x)
+         y
+         z)))
+  (let* ((original-parent (window-parent window))
+         (new-child (shallow-clone window))
+         (internal-window (make <internal-window> 
+                                #:window-children (list window new-child)
+                                #:size size
+                                #:orientation (if (memq side '(below above))
+                                                  'vertical
+                                                  'horizontal))))
+    (set! (window-parent internal-window) original-parent)
+    (set! (window-parent window)    internal-window)
+    (set! (window-parent new-child) internal-window)
+    (when original-parent
+     (set! (window-children original-parent)
+           (map (substitute window internal-window) 
+                (window-children original-parent))))
+    (update-window internal-window)
+  internal-window))
+@ %def split-window
+<<Exported Symbols>>=
+ split-window
+@  
+<<Procedures>>=
+(define (selected-window)
+  current-window)
+@ 
+<<State>>=
+(define current-window #f)
+@ If the internal window size is changed, we want to update the sizes of
+its children.  
+
+<<Procedures>>=
+(define-method (update-window (window <internal-window>))
+ #f
+ #;(let ((children (window-children window)))
+  (if (eq? (orientation window) 'vertical)
+    <<Update vertical window.>>
+    <<Update horizontal window.>>)))
+@ 
+
+Let's project a point in the current window to the point in its
+ultimate parent window.  
+  
+<<Windows Tests>>=
+(define i-window (make <internal-window>))
+(define window (make <window>))
+(check (window? i-window) => #t)
+(check (window? window) => #t)
+@ Let's test window splitting.
+
+<<Windows Tests>>=
+(check (procedure? split-window) => #t)
+(define s-window (split-window window))
+(check (is-a? s-window <internal-window>) => #t)
+@ Let's test window splitting with a different size value.
+<<Windows Tests>>=
+(define small-window (make <window>))
+(define parent-window (split-window small-window 0.2))
+(define big-window (cdr (window-children parent-window)))
+(check (orientation parent-window) => 'vertical)
+@ Let's test window splitting with a different orientation.
+
+<<Windows Tests>>=
+(define left-window (make <window>))
+(define parent-window-2 (split-window left-window 0.2 'right))
+(define right-window (cdr (window-children parent-window-2)))
+(check (orientation parent-window-2) => 'horizontal)
+@ 
+
+\subsection{Window List}
+
+<<Procedures>>=
+(define-method (window-tree (w <internal-window>))
+  (map window-tree (window-children w)))
+
+(define-method (window-tree (w <window>))
+  w)
+
+<<Procedures>>=
+(define (flatten x)
+    (cond ((null? x) '())
+          ((not (pair? x)) (list x))
+          (else (append (flatten (car x))
+                        (flatten (cdr x))))))
+
+(define* (window-list #:optional (w root-window))
+  (flatten (window-tree w)))
+<<Windows Tests>>=
+(let* ((w (make <window>))
+       (sw (split-window w))
+       (c (cdr (window-children sw)))
+       (sc (split-window c))
+  )
+
+  (check (window-list w) => (list w))
+  (check (window-tree sw) => (list w c))
+  (check (window-list sw) => (list w c))
+  ;(check (window-list sw) => (list w c #f))
+  )
+@ \section{Window Commands}
+
+<<Commands>>=
+(define-interactive (split-window-below #:optional (size .5))
+  (split-window (selected-window) size 'below))
+@ \section{Window Key Bindings}
+
+It will come as no surprise that these key bindings will mimic the
+behavior of Emacs.
+
+<<Key bindings>>=
+(define-key global-map (kbd "C-x 2") 'split-window-below)
+<<file:window-test.scm>>=
+<<+ Lisp File Header>>  
+<<+ Test Preamble>>
+
+(use-modules (emacsy window))
+(eval-when (compile load eval)
+           (module-use! (current-module) (resolve-module '(emacsy window)))) 
+<<Windows Tests>> 
+<<Projection Tests>>
+
+<<+ Test Postscript>>
+@

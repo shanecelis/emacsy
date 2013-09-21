@@ -1,4 +1,4 @@
-\chapter{Optional Windows}   
+\section{Windows (Optional)}   
 
 Emacsy aims to offer the minimal amount of intrusion to acquire big
 gains in program functionality.  Windows is an optional module for

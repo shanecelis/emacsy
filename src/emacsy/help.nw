@@ -41,13 +41,12 @@ OBJECT can be a procedure, macro or any object that has its
 (define-syntax-public define-variable
   (syntax-rules ()
     ((define-variable name value documentation)
-     (let ((v #f))
-       ;; If it's not defined, define it.
+     (begin
        (define-once name value)
-       (set! v (module-variable (current-module) 'name))
-       (emacsy-kind-set! v 'variable)
-       (object-documentation-set! v documentation)
-       (set-object-property! v 'source-properties (current-source-location))))
+       (let ((v (module-variable (current-module) 'name)))
+         (emacsy-kind-set! v 'variable)
+         (object-documentation-set! v documentation)
+         (set-object-property! v 'source-properties (current-source-location)))))
     
     ((define-variable name value)
      (define-variable name value ""))))
@@ -161,11 +160,14 @@ Now let's try to start a new module.  And probe some of the behavior.
 
 <<test-this-last>>=
 (define-module (test-this)
-  #:use-module (check))
-(use-private-modules (emacsy help))
+  #:use-module (check)
+  #:use-module (emacsy help))
+
 
 (check (emacsy-collect-kind (current-module) 'parameter) => '())
 (check (emacsy-collect-kind (current-module) 'variable) => '())
+(check (module-name (current-module)) => '(test-this))
+(check (module-variable (current-module) 'x) => #f)
 (check (variable-documentation x) => #f)
 (check (variable-documentation y) => #f)
 
@@ -202,14 +204,16 @@ Now let's try to start a new module.  And probe some of the behavior.
   #:use-module (search basic)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 match)
-  #:use-module (ice-9 documentation))
+  #:use-module (ice-9 documentation)
+  #:export (emacsy-collect-kind))
 
 <<procedure>>
 <<macro>>
 @ 
 
 <<file:help-test.scm>>=
-(use-modules (check))
+(use-modules (check)
+             (emacsy help))
 (use-private-modules (emacsy help))
 
 <<test>>

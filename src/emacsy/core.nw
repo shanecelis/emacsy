@@ -185,7 +185,7 @@ instantiate.
 \subsection{Messages Buffer}
 
 <<core:state>>=
-(define messages 
+(define-public messages 
   (make <text-buffer> #:keymap (make-keymap) #:name "*Messages*"))
 @ 
 
