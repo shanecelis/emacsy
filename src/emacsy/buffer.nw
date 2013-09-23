@@ -16,12 +16,16 @@ the model, view, and controller respectively---the MVC pattern.
   (name #:init-keyword #:name)
   (keymap #:accessor local-keymap #:init-keyword #:keymap #:init-form (make-keymap))
   (locals #:accessor local-variables #:init-form '())
-  (before-change-hook #:accessor before-change-hook #:init-form (make-hook 0))
-  (after-change-hook #:accessor after-change-hook #:init-form (make-hook 0))
+  (buffer-modified? #:accessor buffer-modified? #:init-value #f)
+  (buffer-modified-tick #:accessor buffer-modified-tick #:init-value 0)
   (buffer-enter-hook #:accessor buffer-enter-hook #:init-form (make-hook 0))
-  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0))
-  )
-(export local-keymap local-variables buffer-enter-hook buffer-exit-hook before-change-hook after-change-hook after-change-hook before-change-hook)
+  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0)))
+(export local-keymap local-variables buffer-enter-hook buffer-exit-hook before-buffer-change-hook after-buffer-change-hook after-change-hook before-change-hook buffer-modified-tick)
+@ 
+
+<<buffer:state>>=
+(define-variable before-buffer-change-hook (make-hook 1) "This hook is called prior to the buffer being changed with one argument, the buffer.")
+(define-variable after-buffer-change-hook (make-hook 1) "This hook is called after to the buffer has changed with one argument, the buffer.")
 @ 
 
 Buffer's have a name, and there is always a current buffer or it's
@@ -43,6 +47,11 @@ number of arguments as shown below.
 (define-method-public (set-buffer-name! name (buffer <buffer>))
   (slot-set! buffer 'name name))
 
+(define-method-public (buffer-modified?)
+  (buffer-modified? (current-buffer)))
+
+(define-method-public (buffer-modified-tick)
+  (buffer-modified-tick (current-buffer)))
 
 (define-method (write (obj <buffer>) port)
   (write (string-concatenate (list "#<buffer '" (buffer-name obj) "'>")) port))
@@ -493,7 +502,11 @@ Let's test this regex search in a gap buffer.
 (define c (make <text-buffer> #:name "*test-regex*"))
 (add-buffer! c)
 (check (current-buffer) => c)
+(check (buffer-modified?) => #f)
+(check (buffer-modified-tick) => 0)
 (insert "hellos these ard words!")
+(check (buffer-modified?) => #t)
+(check (buffer-modified-tick) => 1)
 ;;       1    7     13  17             
 (check (point) => (point-max))
 (check (point-min) => 1)
@@ -528,14 +541,16 @@ Finally, we can insert text.
    (if (null? args)
        0 
        (let ((arg (car args)))
-         (run-hook (before-change-hook (current-buffer)))
+         (run-hook before-buffer-change-hook (current-buffer))
          (cond
           ((string? arg)
            (gb-insert-string! (gap-buffer (current-buffer)) arg))
           ((char? arg)
            (gb-insert-char! (gap-buffer (current-buffer)) arg))
           (else #f))
-         (run-hook (after-change-hook (current-buffer)))))))
+         (set! (buffer-modified? (current-buffer)) #t)
+         (incr! (buffer-modified-tick (current-buffer)))
+         (run-hook after-buffer-change-hook (current-buffer))))))
 @
 
 <<buffer:procedure>>=
@@ -623,6 +638,7 @@ This macro requires a procedure [[in-out-guard]] defined in the
   #:use-module (emacsy keymap)
   #:use-module (emacsy command)
   #:use-module (emacsy klecl)
+  #:use-module (emacsy help)
   #:use-module (rnrs base)
   )
 <<buffer:macro>>
@@ -634,7 +650,8 @@ This macro requires a procedure [[in-out-guard]] defined in the
 
 Layout for tests.
 <<file:buffer-test.scm>>=
-(use-modules (emacsy buffer)
+(use-modules (check)
+             (emacsy buffer)
              (emacsy command)                  
              (emacsy event)
              (emacsy keymap)
@@ -642,9 +659,7 @@ Layout for tests.
              (rnrs base)
              )
 
-(eval-when (compile load eval)
-           ;; Some trickery so we can test private procedures.
-           (module-use! (current-module) (resolve-module '(emacsy buffer))))
+(use-private-modules (emacsy buffer))
 
 <<+ Test Preamble>>
 <<buffer:test>>

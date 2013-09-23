@@ -99,5 +99,5 @@ Lots to do.  See the `todo.org` file.
 License
 -------
 
-Emacsy is available under the GNU GPLv3. See the bundled LICENSE file
+Emacsy is available under the GNU GPLv3+. See the bundled LICENSE file
 for details.  

@@ -466,7 +466,8 @@ re-exports all of the public interfaces for each module.
   #:use-module (emacsy klecl)
   #:use-module (emacsy kbd-macro)
   #:use-module (emacsy minibuffer)
-  #:use-module (emacsy core))
+  #:use-module (emacsy core)
+  #:use-module (emacsy help))
 <<emacsy:procedure>>
 <<emacsy:process>>
 @ 
@@ -493,7 +494,8 @@ re-exports all of the public interfaces for each module.
  '(emacsy klecl)
  '(emacsy kbd-macro)
  '(emacsy minibuffer)
- '(emacsy core))
+ '(emacsy core)
+ '(emacsy help))
 @ 
 
  

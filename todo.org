@@ -1,19 +1,18 @@
 * Emacsy TODO
-  - [ ] Defining variables with define-variable leaves warnings about
-    that variable not being defined.
+  - [X] Defining variables with define-variable leaves warnings about
+    that variable not being defined. FIXED.
   - [ ] It'd be nice to have a for-each which didn't use lambdas and
     was more like loop.  The for-each action list where action can be
     long then the list that it operates on is kind of jaring.)
   - [ ] Maybe there should be hook such that a REPL can be invoked
     from within Emacsy that then in the simplest case reports the port
     and hostname. Or perhaps invokes Emacs to enter it.
-  - [ ] How to implement defvar: Use [[http://www.gnu.org/software/guile/manual/guile.html#Object-Properties][object-properties]] on the variable
+  - [X] How to implement defvar: Use [[http://www.gnu.org/software/guile/manual/guile.html#Object-Properties][object-properties]] on the variable
     from (module-variable). Thanks, Andy!
   - [X] Incorporating modifier keys should be easy.  Split <key-event>
     into <modifier-key-event> and <key-event.
   - [X] Need to pick up modifier-keys from GLFW.
   - [ ] Need to fix history.  Just make an indexable list class.
-  - [ ] 
 
   - How to make a trampoline out of a symbol, by mark_weaver:
 
@@ -74,14 +73,16 @@
     create a trampoline to that function.  Otherwise, if they provide
     a lambda, run that lambda.
 
-  - [ ] If module (emacsy emacsy) does not load, it may be because it did
-    not compile. Please show the correct error.
+  - [X] If module (emacsy emacsy) does not load, it may be because it did
+    not compile. Please show the correct error. FIXED.
   - [ ] Make the read-from-minibuffer accept a symbol for a history
-  - [ ] Turn history into an object/record rather than a list and an index.
+  - [ ] Turn history into an object/record rather than a list and an
+    index.  Need a list with a cursor or a zipper; can use 2 lists for
+    what's in front and behind the current position.
   - [ ] Rename EY_* C macros to EMACSY_SAME_NAME_AS_SCHEME_OK_P
   - [ ] Make the default read-from-minibuffer history symbol be (what-command-am-i)
-  - [ ] Add a couple of variations on the webkit browser
-    - [ ] make it use multiple buffers
+  - [-] Add a couple of variations on the webkit browser
+    - [X] make it use multiple buffers
     - [ ] make it use multiple windows
   - [ ] get rid of noise in emacsy (noise?) log noise?
   - [ ] implement coroutines in Guile using [[http://www.lua.org/manual/5.2/manual.html][Lua API]] and [[http://wingolog.org/archives/2011/08/30/the-gnu-extension-language][this]] as a basis
@@ -103,7 +104,7 @@
   - [X] figure out how to integrate a browser window, it'll show pdf
     graphs, images, etc. too!
   - [ ] implement separate histories for read-from-minibuffer
-  - [ ] there should be a way to turn off the display/runloop from
+  - [X] there should be a way to turn off the display/runloop from
     happening.  Or maybe not. Maybe the batch-mode or non-interactive
     mode for Emacsy shouldn't include Emacsy at all.  It should just
     be regular Guile that one reverts to.  This has the added
@@ -140,3 +141,4 @@
   - [ ] Swap out blocking module for either ethreads or another
     general continuation method.
   - [ ] Fix bug with (define-interactive name (let ((x 1)) (lambda () (incr! x))))
+  - [ ] Fix bug with define-interactive not using documentation strings.

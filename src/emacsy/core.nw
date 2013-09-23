@@ -323,16 +323,7 @@ may pop up.
 @
 
 We want to be able to define variables that are not redefined if a
-source file or module is reloaded.
-
-<<core:macro>>=
-(define-syntax-public define-variable
-  (syntax-rules ()
-    ;; Should be able to include a description.
-    ((define-variable name variable)
-     (if (not (module-variable (current-module) 'name))
-         (module-define! (current-module) 'name variable)))))
-@ 
+source file or module is reloaded, just like [[define-once]].
 
 \subsection{Mouse Movement}
 

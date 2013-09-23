@@ -19,7 +19,7 @@ you can, but you aren't required to.
   #:use-module (oop goops)
   #:use-module (emacsy emacsy)
   <<Include Modules>>
-  #:export ( <<Exported Symbols>> window-buffer window-children orientation user-data window-list root-window current-window)
+  #:export ( <<Exported Symbols>> window-buffer window-children orientation user-data window-list root-window current-window window-configuration-change-hook window-clone)
   #:export-syntax ( <<Exported Syntax>> ) 
 )
 @ \section{Classes}
@@ -174,7 +174,7 @@ has references to other windows, you will clone entire object graph.
          y
          z)))
   (let* ((original-parent (window-parent window))
-         (new-child (shallow-clone window))
+         (new-child (window-clone window))
          (internal-window (make <internal-window> 
                                 #:window-children (list window new-child)
                                 #:size size
@@ -188,14 +188,22 @@ has references to other windows, you will clone entire object graph.
      (set! (window-children original-parent)
            (map (substitute window internal-window) 
                 (window-children original-parent))))
+    (run-hook window-configuration-change-hook original-parent)
     (update-window internal-window)
   internal-window))
 @ %def split-window
 <<Exported Symbols>>=
  split-window
 @  
+
 <<Procedures>>=
-(define (selected-window)
+(define-method (window-clone (window <window>))
+  (shallow-clone window))
+@ 
+<<State>>=
+(define-variable window-configuration-change-hook (make-hook 1) "This hook is called when a window is split.")
+<<Procedures>>=
+(define-public (selected-window)
   current-window)
 @ 
 <<State>>=
@@ -277,13 +285,55 @@ ultimate parent window.
 <<Commands>>=
 (define-interactive (split-window-below #:optional (size .5))
   (split-window (selected-window) size 'below))
-@ \section{Window Key Bindings}
+@ 
+
+<<Commands>>=
+(define-interactive (split-window-right #:optional (size .5))
+  (split-window (selected-window) size 'right))
+@ 
+
+<<Commands>>=
+(define-interactive (delete-window #:optional (window (selected-window)))
+  (let ((p (window-parent window)))
+    ;; Only delete if it has a parent.
+    (when p
+      (let* ((children (window-children p))
+             (new-children (delq window children)))
+        (set! (window-children p) new-children)
+        (set! current-window (car new-children))
+        (run-hook window-configuration-change-hook p)
+        ;; XXX We will want to divest ourselves of any internal-windows
+        ;; that only contain one child. Not sure if we want to do that here
+        ;; or in another method though.
+        #;(if (= 1 (length new-children))
+            (car new-children)
+            (begin
+              
+              #t))))))
+
+(define-interactive (delete-other-windows #:optional (window (selected-window)))
+  (set! root-window (make <internal-window> #:window-children (list window)))
+  (set! current-window window)
+  (run-hook window-configuration-change-hook root-window))
+
+(define-interactive (other-window #:optional (count 1))
+  (let* ((lst (window-list root-window))
+         (index (member-ref current-window lst)))
+    (set! current-window (list-ref lst (modulo (+ index count) (length lst))))))
+@ 
+
+\section{Window Key Bindings}
 
 It will come as no surprise that these key bindings will mimic the
 behavior of Emacs.
 
 <<Key bindings>>=
+(define-key global-map (kbd "C-x 0") 'delete-window)
+(define-key global-map (kbd "C-x 1") 'delete-other-windows)
 (define-key global-map (kbd "C-x 2") 'split-window-below)
+(define-key global-map (kbd "C-x 3") 'split-window-right)
+
+(define-key global-map (kbd "C-x o") 'other-window)
 <<file:window-test.scm>>=
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>
