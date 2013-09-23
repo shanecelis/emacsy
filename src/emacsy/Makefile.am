@@ -11,13 +11,17 @@ NOWEB_DOCS = _emacsy.pdf
 #
 #NOWEB_DOCS = command-paper.pdf
 
-_emacsy.pdf : hello-emacsy.tex _emacsy-c-api.tex _event.tex _keymap.tex _command.tex _block.tex _klecl.tex _advice.tex _buffer.tex _minibuffer.tex _core.tex _windows.tex _util.tex
+PARTIAL_TEX = _emacsy-c-api.tex _event.tex _keymap.tex _command.tex _block.tex _klecl.tex _advice.tex _buffer.tex _minibuffer.tex _core.tex _window.tex _util.tex
+_emacsy.pdf : $(PARTIAL_TEX)
 
-hello-emacsy.tex : $(helloemacsydir)/src/hello-emacsy.tex
-	$(MAKE) -C $(helloemacsydir) pdf
-	cp $(helloemacsydir)/src/hello-emacsy.tex hello-emacsy.tex
+# XXX this rule that pulls something from one of the examples is not working.
+# I'm going to just copy the file over for the meantime.  Ugh.
 
-EXTRA_DIST = $(NOWEB_DOCS) $(SCHEME_TESTS)
+# hello-emacsy.tex : $(helloemacsydir)/src/hello-emacsy.nw
+# 	$(MAKE) -C $(helloemacsydir) all
+# 	cp $(helloemacsydir)/src/hello-emacsy.tex hello-emacsy.tex
+
+EXTRA_DIST = $(SCHEME_TESTS) $(NOWEB_FILES) 
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw event.nw util.nw keymap.nw	\
 							command.nw buffer.nw block.nw klecl.nw kbd-macro.nw		\
@@ -38,9 +42,9 @@ NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS) emacsy.h emacsy.c
 
 NOWEB_INCLUDES = $(top_srcdir)/support/noweb/boiler-plate.nw
 
-BUILT_SOURCES = 
+BUILT_SOURCES = $(NOWEB_PRODUCTS)
 
-CLEANFILES = $(BUILT_SOURCES) command-paper.nw command-paper.tex
+CLEANFILES = $(NOWEB_CLEANFILES) $(GOBJECTS)
 
 distdir-local: 
 	$(MAKE) all
@@ -71,6 +75,7 @@ libemacsy_la_LIBADD  = $(GUILE_LIBS)
 libemacsy_la_SOURCES = emacsy.c
 include_HEADERS = emacsy.h 
 
+DISTCLEANFILES = $(PARTIAL_TEX) _emacsy.tex
 MAINTAINERCLEANFILES = Makefile.in config.h.in 
 
 guilemoduledir = $(prefix)/share/guile/site/$(PACKAGE_TARNAME)
@@ -90,7 +95,7 @@ include $(top_srcdir)/support/automake/guile.am
 
 emacsy.h emacsy.c : emacsy-c-api.nw
 
-dist-hook:
-	cp $(distdir)/*.pdf $(top_distdir)
+dist-hook: _emacsy.pdf
+	cp $(builddir)/_emacsy.pdf $(top_distdir)/emacsy.pdf
 
 

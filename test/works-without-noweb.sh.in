@@ -10,6 +10,6 @@ cd $dirname
 # Make sure it can be built without noweb and cleaned without removing
 # anything important.
 make
-make pdf
+#make pdf
 make clean
 make 

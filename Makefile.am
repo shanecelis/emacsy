@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS         = -I support/m4
 
 SUBDIRS = src test bin example
 
-EXTRA_DIST = README.md support
+EXTRA_DIST = README.md support bin
 
 sign-dist: dist
 	gpg -a --output $(distdir).tar.gz.sig --detach-sig $(distdir).tar.gz

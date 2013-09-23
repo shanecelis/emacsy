@@ -530,7 +530,7 @@ Copyright (C) 2012 Shane Celis
 \part{Appendix}  
 \chapter{Support Code} 
 \input{_util}
-\input{../line-pragma}
+%\input{../_line-pragma}
 @ \section{Unit Testing Support}
 
 We want to be able to easily write and aggregate unit tests.  It's not

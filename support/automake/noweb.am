@@ -16,10 +16,10 @@ wrapper = $(abs_top_builddir)/bin/wrapper
 
 %.tex : %.nw 
 	$(AM_V_at) $(MAKE) all.defs
-	if [ -z "$(NOWEAVE_HEADER)" ] && [ -z "$(NOWEAVE_FOOTER)" ]; then \
-		$(AM_V_GEN) $(noweave) $(NOWEAVE_FLAGS) -indexfrom all.defs $^ | cpif $@; \
+	$(AM_V_GEN) if [ -z "$(NOWEAVE_HEADER)" ] && [ -z "$(NOWEAVE_FOOTER)" ]; then \
+		 $(noweave) $(NOWEAVE_FLAGS) -indexfrom all.defs $^ | cpif $@; \
 	else \
-		$(AM_V_GEN) $(wrapper) -H "$(NOWEAVE_HEADER)" -F "$(NOWEAVE_FOOTER)" -- $(noweave) $(NOWEAVE_UNWRAPPED_FLAGS) -indexfrom all.defs $^ | cpif $@; \
+		 $(wrapper) -H "$(NOWEAVE_HEADER)" -F "$(NOWEAVE_FOOTER)" -- $(noweave) $(NOWEAVE_UNWRAPPED_FLAGS) -indexfrom all.defs $^ | cpif $@; \
 	fi
 
 # This creates a LaTeX file from that Noweb that may be easily included into a larger
