@@ -42,7 +42,7 @@ noweb_home=`AS_DIRNAME(["$noweb"])`/..
 
 AC_PATH_PROG([markup], markup, no, [$PATH:$noweb_home/libexec/noweb:$noweb_home/lib/noweb])
 if test "$markup" = "no"; then
-  AC_MSG_ERROR([Must have markup installed to alter literate source code.])
+  AC_MSG_ERROR([Must have noweb's markup installed to alter literate source code.])
 fi
 AC_SUBST(markup)
 ],

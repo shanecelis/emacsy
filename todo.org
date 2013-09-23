@@ -1,6 +1,6 @@
 * Emacsy TODO
   - [X] Defining variables with define-variable leaves warnings about
-    that variable not being defined. FIXED.
+    that variable not being defined. FIXED. Thanks, Mark Weaver!
   - [ ] It'd be nice to have a for-each which didn't use lambdas and
     was more like loop.  The for-each action list where action can be
     long then the list that it operates on is kind of jaring.)
@@ -142,3 +142,7 @@
     general continuation method.
   - [ ] Fix bug with (define-interactive name (let ((x 1)) (lambda () (incr! x))))
   - [ ] Fix bug with define-interactive not using documentation strings.
+  - [ ] Idea: Maybe create an eshell like mode where the BNF from bash
+    is used as a command mode for scheme. shelly? gash? bashy?
+  - [ ] Integrate noweb into guile, such that guile will run off noweb
+    files. Guile [[http://draketo.de/light/english/wisp-lisp-indentation-preprocessor#v0.5-repl][wisp]] already shows how to do it.
