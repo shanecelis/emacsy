@@ -3,7 +3,7 @@
 # http://darrendev.blogspot.com/2008/06/stopping-make-delete-intermediate-files.html
 .SECONDARY:
 
-NOWEB_DOCS = emacsy.pdf
+NOWEB_DOCS = _emacsy.pdf
 # Any noweb document can be built by itself as a stand-alone document by
 # appending a -paper suffix to its name.  So if you're working on just
 # the command.nw, you may want to change NOWEB_DOCS to only make its
@@ -11,7 +11,7 @@ NOWEB_DOCS = emacsy.pdf
 #
 #NOWEB_DOCS = command-paper.pdf
 
-emacsy.pdf : hello-emacsy.tex
+_emacsy.pdf : hello-emacsy.tex _emacsy-c-api.tex _event.tex _keymap.tex _command.tex _block.tex _klecl.tex _advice.tex _buffer.tex _minibuffer.tex _core.tex _windows.tex _util.tex
 
 hello-emacsy.tex : $(helloemacsydir)/src/hello-emacsy.tex
 	$(MAKE) -C $(helloemacsydir) pdf

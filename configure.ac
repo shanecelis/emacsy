@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 # We'll try to use semantic versioning.  http://semver.org
-AC_INIT([emacsy], [0.1.1], [shane.celis@gmail.com])
+AC_INIT([emacsy], [0.1.2], [shane.celis@gmail.com])
 AC_CONFIG_AUX_DIR([support/build-aux])
 # Lies.
 #AM_INIT_GUILE_MODULE

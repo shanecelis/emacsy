@@ -415,7 +415,7 @@ Now for a little entertainment.
 %\part{Implementation}
 %\chapter{C API}
 
-\input{emacsy-c-api}
+\input{_emacsy-c-api}
 
 \lstset{language=lisp}
 \chapter{KLECL} 
@@ -425,28 +425,28 @@ I expounded on the virtues of the Key Lookup Execute Command Loop
 KLECL, which requires fleshing out some concepts.  We need events,
 keymaps, and commands.  Let's begin with events.
 
-\input{event}
+\input{_event}
 
-\input{keymap}
+\input{_keymap}
 
-\input{command}  
+\input{_command}  
 
-\input{block}  
+\input{_block}  
  
-\input{klecl}
+\input{_klecl}
 
-\input{advice}
+\input{_advice}
 
 \chapter{Emacs-like Personality}
 
 We now want to take our KLECL and implement an Emacs-like UI on top of
 it.  This will include buffers, keyboard macros, and a minibuffer.  
 
-\input{buffer} 
+\input{_buffer} 
 
-\input{minibuffer} 
+\input{_minibuffer} 
 
-\input{core} 
+\input{_core} 
 
 \section{Emacsy Facade}
 
@@ -523,13 +523,13 @@ DO NOT EDIT - automatically generated from emacsy.w.
 Copyright (C) 2012 Shane Celis 
 @ 
 
-\input{windows} 
+%\input{_window} 
 
 %\backmatter  
 \begin{appendices}
 \part{Appendix}  
 \chapter{Support Code} 
-\input{util}
+\input{_util}
 \input{../line-pragma}
 @ \section{Unit Testing Support}
 
