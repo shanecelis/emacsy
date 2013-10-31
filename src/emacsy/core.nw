@@ -1,6 +1,6 @@
 \section{Core}
 
-\epigraph{...}{...}
+%\epigraph{...}{...}
 
 Now we're going to put in place some core functionality that makes
 Emacsy an Emacs-like library.  
@@ -21,15 +21,17 @@ We need a global keymap.
 (set! default-klecl-maps current-active-maps)
 @ 
 
-And here are the most essential key bindings.
+And here are the essential key bindings.
 
 <<core:keybinding>>=
 (define-key global-map (kbd "M-:")     'eval-expression)
 (define-key global-map (kbd "M-x")     'execute-extended-command)
 (define-key global-map (kbd "C-g")     'keyboard-quit)
 (define-key global-map (kbd "C-x C-c") 'quit-application)
+(define-key global-map (kbd "C-u")     'universal-argument)
 @ 
 
+\subsection{eval-expression}
 There is one command that I consider fundamental for an Emacs-like
 program.  Whenever I'm presented with a program that claims to be
 Emacs-like, I try this out \verb|M-: (+ 1 2)|. If it doesn't work then
@@ -59,6 +61,8 @@ command is [[eval-expression]].  Let's write it.
   (call-with-input-string string (lambda (port) (read port))))
 @ 
 
+\subsection{execute-extended-command}
+
 The second fundamental command is [[execute-extended-command]] invoked
 with \verb|M-x|.
 
@@ -77,6 +81,72 @@ with \verb|M-x|.
 <<core:state>>=
 (define-public emacsy-quit-application? #f)
 @ 
+
+\subsection{universal-argument}
+
+<<core:state>>=
+;(define-parameter universal-argument-queue (make-q) "This holds the current universal argument value.")
+(define universal-argument-queue (make-q))
+@
+<<core:procedure>>=
+(define-public (universal-argument-ref)
+  (if (q-empty? universal-argument-queue)
+      1
+      (q-front universal-argument-queue)))
+
+(define-public (universal-argument-pop!)
+  (if (q-empty? universal-argument-queue)
+      1
+      (q-pop! universal-argument-queue)))
+
+(define-public (universal-argument-push! arg)
+  (q-push! universal-argument-queue arg))
+@
+
+<<core:command>>=
+(define-interactive (universal-argument)
+  (let ((count 0)
+        (ua-keymap (make-keymap))
+        (prompt "C-u ")
+        (acceptable-chars (char-set-adjoin char-set:digit #\-)))
+    (define (add-to-prompt string)
+      (set! prompt (string-concatenate (list prompt string " "))))
+    (define (process-arg number)
+      (add-to-prompt (number->string number))
+      (set! count (+ (* count 10) number)))
+    ;; (define-key ua-keymap "1" (lambda () (process-arg 1)))
+    ;; (define-key ua-keymap "2" (lambda () (process-arg 2)))
+    ;; (define-key ua-keymap "3" (lambda () (process-arg 3)))
+    ;; (define-key ua-keymap "4" (lambda () (process-arg 4)))
+    ;; (define-key ua-keymap "5" (lambda () (process-arg 5)))
+    ;; (define-key ua-keymap "6" (lambda () (process-arg 6)))
+    ;; (define-key ua-keymap "7" (lambda () (process-arg 7)))    
+    ;; (define-key ua-keymap "8" (lambda () (process-arg 8)))
+    ;; (define-key ua-keymap "9" (lambda () (process-arg 9)))
+    ;; (define-key ua-keymap "0" (lambda () (process-arg 0)))
+    ;; (define-key ua-keymap "-" (lambda () (set! count (- count))))
+      (let loop ((input (read-key prompt)))
+        ;; We only admit numbers and a dash
+        (if (and (is-a? input <key-event>)
+                 (null? (modifier-keys input))
+                 (char-set-contains? acceptable-chars (command-char input)))
+            (begin 
+              (cond
+               ((char=? (command-char input) #\-)
+                (add-to-prompt "-")
+                (set! count (- count)))
+               (else
+                (process-arg (string->number (string (command-char input))))))
+              (loop (read-key prompt)))
+            (begin 
+              (if (= count 0)
+                  (universal-argument-push! 4)
+                  (universal-argument-push! count))
+              (emacsy-event-unread input))))))
+@ 
+
+
+
 
 \subsubsection{Keyboard Macro Keybindings}
 
@@ -150,7 +220,7 @@ So let's write it.
     (begin (message "Buffer or buffer-name expected.")
            #f))))
 @ 
-\todo{XXX Should define-interactive export the symbol?}
+%\todo{XXX Should define-interactive export the symbol? NO.}
 
 We will need to register classes that will be available to the user to
 instantiate.
@@ -229,8 +299,8 @@ it in core rather than placing echo-area handling code in minibuffer.
 @ 
 
 
-We want to be able to load a scheme file.\todo{We should have a
-  read-filename procedure.}
+We want to be able to load a scheme file.  %\todo{We should have a
+%  read-filename procedure.}
 
 <<core:command>>=
 (define-interactive 
@@ -293,12 +363,21 @@ These are most of the C API calls.
   (run-hook emacsy-terminate-hook))
 
 (define-public (emacsy-tick)
-  (unless initialized?
-    (call-blockable          
+  (define (my-tick)
+   (unless initialized?
+     (call-blockable          
       (lambda ()
         (run-hook emacsy-initialize-hook)))
-    (set! initialized? #t))
-  (block-tick))
+     (set! initialized? #t))
+   (block-tick))
+  
+  (if debug-on-error?
+      (call-with-error-handling
+       (lambda ()
+         (my-tick)))
+      (with-backtrace* 
+       (lambda ()  
+         (my-tick)))))
 @ 
 
 We need to be able to deal with exceptions gracefully where ever they
@@ -407,10 +486,12 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
 (add-hook! no-blocking-continuations-hook restart-command-loop)
 @ 
 
+
 \subsection*{File Layout} 
 
 <<file:core.scm>>=
 (define-module (emacsy core)
+  #:use-module (ice-9 q)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 readline)
   #:use-module (oop goops)

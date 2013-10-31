@@ -154,7 +154,9 @@ sequence, it returns that event sequence.\todo{Consider using values
 <<klecl:procedure>>=
 (define*-public (read-key-sequence 
                  #:optional 
-                 (prompt #f))
+                 (prompt #f)
+                 #:key
+                 (keymaps (default-klecl-maps)))
   (define (read-discrete-key)
     (let mini-loop ((event (read-key prompt)))
       (format #t "EVENT ~a~%" event)
@@ -171,13 +173,13 @@ sequence, it returns that event sequence.\todo{Consider using values
           (or (quit-key? last-key)
               (any (lambda (keymap)
                      (lookup-key? keymap keys))
-                   (default-klecl-maps)))
+                   keymaps))
           ;; OR does none of the keymaps point to a command or keymap (or
           ;; is the quit key)?
           (not (or (quit-key? last-key)
                    (any (lambda (keymap)
                           (lookup-key? keymap keys #t))
-                        (default-klecl-maps)))))
+                        keymaps))))
          ;; Yes. We have enough keys.
          (reverse events)
          ;; No.  Let's get some more.
@@ -271,7 +273,7 @@ Let's test keyboard quitting.
 I find it convenient to begin emitting messages in case of error.
 However, I would like for there to be a clean separation between
 Emacsy and its KLECL such that someone may write a clean vim-y using
-it if they so chose.  So this message will merely go to the stdout;
+it if they so chose.  So this message will merely go to the stdout\;
 however, it will be redefined later.
 
 <<klecl:procedure>>=
@@ -384,15 +386,20 @@ loop sets up a fair amount of state.
                   (sigaction SIGALRM #f))))))))
 @ 
 
+XXX Rename this to klec, for Key-Lookup-Execute-Command (KLEC)---just
+missing the loop component?
+
 <<klecl:procedure>>=
-(define*-public (primitive-command-tick)
+(define*-public (primitive-command-tick #:optional
+                                        (prompt #f)
+                                        #:key 
+                                        (keymaps (default-klecl-maps)))
   "We do one iteration of the command-loop without any error handling."
   (call-with-sigalrm
    (lambda ()
      ((@@ (ice-9 top-repl) call-with-sigint) 
       (lambda ()
-        (let* ((events (read-key-sequence))
-               (keymaps (default-klecl-maps))
+        (let* ((events (read-key-sequence prompt #:keymaps keymaps))
                (key-sequence (map event->kbd events))
                (keymap (find (lambda (k) (lookup-key? k key-sequence)) keymaps)))
           (set! emacsy-ran-undefined-command? #f)
@@ -428,7 +435,7 @@ loop sets up a fair amount of state.
 @ 
 
 <<klecl:procedure>>=
-(define*-public (command-tick #:optional (continue-pred (const #t)))
+(define*-public (command-tick #:key (keymaps (default-klecl-maps)))
   "We do one iteration of command-tick and handle errors."
   
   (catch #t
@@ -436,13 +443,13 @@ loop sets up a fair amount of state.
       (if debug-on-error?
           (call-with-error-handling
            (lambda ()
-             (primitive-command-tick))
+             (primitive-command-tick #:keymaps keymaps))
            #:pass-keys 
            ;; XXX what the hell is the story with all these quits?
            '(silent-quit quit-command-loop quit-command keyboard-quit))
           
           (with-backtrace* (lambda ()
-                             (primitive-command-tick))
+                             (primitive-command-tick #:keymaps keymaps))
                            '(silent-quit quit-command-loop))))
     (lambda (key . args)
       (case key

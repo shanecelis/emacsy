@@ -1,6 +1,8 @@
 * Emacsy TODO
   - [X] Defining variables with define-variable leaves warnings about
     that variable not being defined. FIXED. Thanks, Mark Weaver!
+  - [ ] The frame title should show the current buffer whereas the
+    modeline show's the window's buffer
   - [ ] It'd be nice to have a for-each which didn't use lambdas and
     was more like loop.  The for-each action list where action can be
     long then the list that it operates on is kind of jaring.)
@@ -13,6 +15,7 @@
     into <modifier-key-event> and <key-event.
   - [X] Need to pick up modifier-keys from GLFW.
   - [ ] Need to fix history.  Just make an indexable list class.
+    - [ ] cursor-list now exists.
 
   - How to make a trampoline out of a symbol, by mark_weaver:
 

@@ -181,20 +181,31 @@ the next command is executed.
                                       #:key 
                                       (read #f)
                                       (keymap minibuffer-local-map)
-                                      ; XXX I want to get history in here somehow
-                                      ;(history #f)
-                                      )
+                                      (history (what-command-am-i?)))
+  "history can be #f, a symbol, or a <cursor-list>."
   (define (read-from-minibuffer-internal prompt read)
     (when minibuffer-reading?
       (minibuffer-message
        " [Command attempted to use minibuffer while in minibuffer.]")
       (throw 'quit-command 'already-in-minibuffer))
-   (history-insert! (fluid-ref minibuffer-history-index) "")
+    (when history
+      (cond
+       ((symbol? history)
+        (let ((entry (hashq-ref history-symbol-map history #f)))
+          (unless entry
+            (set! entry (make-history))
+            (hashq-set! history-symbol-map history entry))
+          (set! minibuffer-history entry)))
+       ((cursor-list? history)
+          (set! minibuffer-history history))
+       (else
+        (scm-error 'invalid-argument "read-from-minibuffer" "Expecting #f, a symbol, or a <cursor-list> for history argument; instead got ~a." (list history) #f))))
+    (history-insert! minibuffer-history "")      
    (emacsy-log-debug "Switching to minibuffer now.")
    (switch-to-buffer minibuffer)
    (delete-minibuffer-contents minibuffer)
    (with-buffer minibuffer
-    (if initial-contents
+    (when initial-contents
       (insert initial-contents))
     (goto-char (point-min)))
    (set! (minibuffer-prompt minibuffer) (or prompt ""))
@@ -214,33 +225,22 @@ the next command is executed.
             (if (eq? (current-buffer) minibuffer)
                 (switch-to-buffer last-buffer))
             (throw 'quit-command 'quit-read-from-minibuffer))
-          
-          (history-set! (fluid-ref minibuffer-history-index) 
-                        (minibuffer-contents))))
+          (begin 
+            (history-set! minibuffer-history (minibuffer-contents))
+            (cursor-right! minibuffer-history)
+            (minibuffer-contents))))
     (set! minibuffer-reading? #f)))
   
   (let ((original-keymap #f)
-        (history-list #f)
-        (history-index #f))
-    
+        (original-history #f))
     (in-out
      (begin (set! original-keymap (local-keymap minibuffer))
             (set! (local-keymap minibuffer) keymap)
-            ; XXX implement history correctly.
-            #;(set! history-list (fluid-ref minibuffer-history))
-            #;(set! history-index (fluid-ref minibuffer-history-index))
-            #;
-            (when history
-              (match history
-                ((list . index)
-                 (fluid-set! minibuffer-history list)
-                 (fluid-set! minibuffer-history-index index))
-                (list
-                 (fluid-set! minibuffer-history list)
-                 (fluid-set! minibuffer-history-index 0)))))
+            (set! original-history minibuffer-history))
      (read-from-minibuffer-internal prompt read)
      (begin 
-       (set! (local-keymap minibuffer) original-keymap))
+       (set! (local-keymap minibuffer) original-keymap)
+       (set! minibuffer-history original-history))
      '(quit-command keyboard-quit))))
 @ 
 
@@ -257,10 +257,10 @@ the next command is executed.
 Test regular input to minibuffer.
 
 <<minibuffer:test>>=
-;; (emacsy-discard-input!)
-;; (emacsy-key-event #\a)
-;; (emacsy-key-event #\cr)
-;; (check (read-from-minibuffer "What? ") => "a")
+(emacsy-discard-input!)
+(emacsy-key-event #\a)
+(emacsy-key-event #\cr)
+(check (read-from-minibuffer "What? ") => "a")
 @ 
 
 Test quitting the minibuffer.  
@@ -269,8 +269,65 @@ Test quitting the minibuffer.
 (emacsy-discard-input!)
 (emacsy-key-event #\a)
 (emacsy-key-event #\g '(control))
-;(with-backtrace* (read-from-minibuffer "What? "))
+;(with-backtrace* (read-from-minibuffer "What?1 "))
 (check-throw (read-from-minibuffer "What?1 ") => 'quit-command)
+@ 
+
+Test retaining history in the minibuffer.  
+
+<<minibuffer:test>>=
+(emacsy-discard-input!)
+(emacsy-key-event #\h)
+(emacsy-key-event #\i)
+(emacsy-key-event #\cr)
+(emacsy-key-event #\b)
+(emacsy-key-event #\y)
+(emacsy-key-event #\e)
+(emacsy-key-event #\cr)
+;(with-backtrace* (read-from-minibuffer "What?1 "))
+(let ((h (make-history '())))
+  (check (read-from-minibuffer "What?3 " #:history h) => "hi")
+  (check (cursor-list->list h) => '("hi"))
+  (check (read-from-minibuffer "What?4 " #:history h) => "bye")
+  (check (cursor-list->list h) => '("hi" "bye"))
+  )
+@ 
+
+Test accessing history in the minibuffer.  
+
+<<minibuffer:test>>=
+(emacsy-discard-input!)
+(emacsy-key-event #\p '(meta))
+(emacsy-key-event #\cr)
+(emacsy-key-event #\1)
+(emacsy-key-event #\cr)
+;(with-backtrace* (read-from-minibuffer "What?1 "))
+(let ((h (make-history '("hi"))))
+  (check (cursor-list->list h) => '("hi"))
+  (check (read-from-minibuffer "What?3 " #:history h) => "hi")
+  (check (cursor-list->list h) => '("hi" ""))
+  (check (read-from-minibuffer "What?5 " #:history h) => "1")
+  (check (cursor-list->list h) => '("hi" "1" ""))
+)
+@ 
+
+Test accessing history in the minibuffer using a symbol.  
+
+<<minibuffer:test>>=
+(emacsy-discard-input!)
+(emacsy-key-event #\1)
+(emacsy-key-event #\cr)
+(emacsy-key-event #\p '(meta))
+(emacsy-key-event #\cr)
+(emacsy-key-event #\p '(meta))
+(emacsy-key-event #\cr)
+;(with-backtrace* (read-from-minibuffer "What?1 "))
+(let ((h (make-history '("hi"))))
+  (check (read-from-minibuffer "What?6 " #:history 'h1) => "1")
+  (check (read-from-minibuffer "What?7 " #:history 'h1) => "1")
+
+  (check (read-from-minibuffer "What?6 " #:history 'h2) => "")
+)
 @ 
 
 \subsection{Tab Completion}
@@ -317,7 +374,7 @@ It can also work with a procedure.
 @ 
 
 <<minibuffer:test>>=
-(check (sort! (stream->list (readline-completer->stream command-completion-function "")) string<?) => (sort! '("switch-to-buffer" "eval-expression" "execute-extended-command" "load-file" "quit-application") string<?))
+(check (sort! (stream->list (readline-completer->stream command-completion-function "")) string<?) => (sort! '("switch-to-buffer" "eval-expression" "execute-extended-command" "load-file" "quit-application" "universal-argument") string<?))
 @ 
 
 <<minibuffer:procedure>>=
@@ -379,27 +436,32 @@ It can also work with a procedure.
 
 <<minibuffer:command>>=
 (define-interactive (minibuffer-complete)
-  (let ((expansion (try-completion 
-                    (minibuffer-contents) 
-                    (fluid-ref minibuffer-completion-table)
-                    (fluid-ref minibuffer-completion-predicate)))
-        (completions (all-completions 
-                      (minibuffer-contents) 
+  (with-buffer 
+   minibuffer
+   (let* ((contents (substring (minibuffer-contents) 0 (- (point) (point-min))))
+          (expansion (try-completion 
+                      contents 
                       (fluid-ref minibuffer-completion-table)
-                      (fluid-ref minibuffer-completion-predicate))))
-    (with-buffer minibuffer
-                 (goto-char (point-min))
-                 (kill-line)
-                 (insert expansion))
-    (cond
-     ((= 0 (length completions))
-      (minibuffer-message " [No match]"))
-     ((> (length completions) 1)
-      (minibuffer-message 
-       (string-concatenate 
-        (list "{" 
-              (string-join (rotate-list completions *nth-match*) " | ")
-              "}")))))))
+                      (fluid-ref minibuffer-completion-predicate)))
+          (completions (all-completions 
+                        contents 
+                        (fluid-ref minibuffer-completion-table)
+                        (fluid-ref minibuffer-completion-predicate))))
+     ;(format #t "contents = ~a~%" contents)
+     (while (not (= (point) (point-min)))
+       (delete-backward-char))
+                                        ;(goto-char (point-min))
+                                        ;(kill-line)
+     (insert expansion)
+     (cond
+      ((= 0 (length completions))
+       (minibuffer-message " [No match]"))
+      ((> (length completions) 1)
+       (minibuffer-message 
+        (string-concatenate 
+         (list "{" 
+               (string-join (rotate-list completions *nth-match*) " | ")
+               "}"))))))))
 @ 
 
 <<minibuffer:state>>=
@@ -620,25 +682,38 @@ We want to be able to look up filenames.
 \subsection{Minibuffer History}
 
 <<minibuffer:procedure>>=
-(define-public (history-insert! index value)
-  (fluid-set! minibuffer-history
+(define*-public (make-history #:optional (list '()) (index #f))
+  (make-cursor-list list (or index (length list))))
+
+(set! minibuffer-history (make-history))
+
+(define-public (history-insert! history value)
+  (cursor-right-insert! history value)
+  #;(fluid-set! minibuffer-history
               (list-insert! (fluid-ref minibuffer-history)
                          index
                          value)))
 
-(define-public (history-ref index)
-  (list-ref (fluid-ref minibuffer-history) index))
+(define-public (history-ref history)
+  (if (cursor-right? history)
+   (cursor-right-ref history)
+   #f)
+  #;(list-ref (fluid-ref minibuffer-history) index))
 
-(define-public (history-set! index value)
-  (let ((lst (fluid-ref minibuffer-history)))
+(define-public (history-set! history value)
+      (cursor-right-set! history value)
+      #;(if (cursor-right? history)
+      (cursor-right-set! history value)
+      (cursor-right-insert! history value))
+  #;(let ((lst (fluid-ref minibuffer-history)))
     (list-set! lst index value)
     (fluid-set! minibuffer-history lst))
   value)
 @ 
 
 <<minibuffer:state>>=
-(define-public minibuffer-history (make-fluid '()))
-(define-public minibuffer-history-index (make-fluid 0))
+(define-public minibuffer-history #f)
+(define history-symbol-map (make-hash-table))
 @ 
 
 <<util:procedure>>=
@@ -649,26 +724,57 @@ We want to be able to look up filenames.
 @ 
 
 <<minibuffer:test>>=
-(with-fluids ((minibuffer-history '("1" "2" "3")))
-    (check ( history-ref 0) => "1")
-    ( history-set! 0 "a")
-    (check ( history-ref 0) => "a")
-    (check ( history-ref 1) => "2")
-    (check (fluid-ref minibuffer-history) => '("a" "2" "3")))
+(let ((h (make-history '("3" "2" "1"))))
+  (cursor-left! h)
+    (check ( history-ref h) => "1")
+    (history-set! h "a")
+    (check ( history-ref h) => "a")
+    (cursor-left! h)
+    (check ( history-ref h) => "2")
+    (cursor-right! h)
+    (cursor-right! h)
+    (check (cursor-list->list h) => '("3" "2" "a")))
 @ 
 
 Some commands for manipulating the minibuffer history.
 
 <<minibuffer:command>>=
 (define-interactive (previous-history-element #:optional (n 1))
-  (let* ((i (fluid-ref minibuffer-history-index))
+  (define (previous-history-element* n) 
+    (cond
+    ((> n 0)
+     (if (cursor-left? minibuffer-history)
+         (begin 
+           (cursor-left! minibuffer-history)
+           (previous-history-element* (1- n)))
+         (begin (minibuffer-message " [Beginning of history; no preceding item]")
+                #;(previous-history-element 0))))
+    ((< n 0)
+     (if (cursor-right? minibuffer-history 2)
+         (begin 
+           (cursor-right! minibuffer-history)
+           (previous-history-element* (1+ n)))
+         (begin (minibuffer-message " [End of history; no default available]")
+                #;(previous-history-element 0))))
+    ((= n 0)
+     #f)))
+  ;;
+  (history-set! minibuffer-history (minibuffer-contents))
+  (previous-history-element* n)
+(with-buffer minibuffer (goto-char (point-min)))
+(delete-minibuffer-contents minibuffer)
+(insert (history-ref minibuffer-history))
+(format #t "minibuffer-history ~a~%" minibuffer-history)
+(history-ref minibuffer-history)
+
+  #;(let* ((i (fluid-ref minibuffer-history-index))
          (j (+ i n))
          (history (fluid-ref minibuffer-history)))
     (pretty-print history)
     (pretty-print i)
     (pretty-print j)
     (cond ((< j 0)
-           (minibuffer-message " [End of history; no default available]"))
+           )
           ((>= j (length history))
            (minibuffer-message " [Beginning of history; no preceding item]"))
           (else
@@ -699,6 +805,7 @@ Some commands for manipulating the minibuffer history.
   #:use-module (system vm program)
   #:use-module (oop goops)
   #:use-module (string completion)
+  #:use-module (cursor-list)
   #:use-module (emacsy util)
   #:use-module (emacsy keymap)
   #:use-module (emacsy event)
