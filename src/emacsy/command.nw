@@ -131,31 +131,49 @@ We define the global command map.
 \todo[inline]{Need to fix: define-cmd doesn't respect documentation strings.}
 <<command:macro>>=
 (define-syntax-public define-cmd
-  (syntax-rules ()
-    ((define-cmd (name . args) . body)
-     (begin 
-       (define* (name . args)
-         (with-fluids ((in-what-command 'name))
-           . body))
-        (export name)
-        (set-command-properties! name 'name)))
-    ((define-cmd name value)
-     (begin 
-       (define name #f)
-       (let ((v value))
-        (set! name (lambda args
-                       (with-fluids ((in-what-command 'name))
-                         (apply v args))))
-        (export name)
-        (set-command-properties! name 'name))))
-    ((define-cmd cmap (name . args) . body)
-     (begin 
-       (define-cmd (name . args) . body)
-       (command-add! cmap 'name)))
-    ((define-cmd cmap name value)
-     (begin
-       (define-cmd name value)
-       (command-add! cmap 'name)))))
+  (lambda (x)
+    (syntax-case x ()
+      ((define-cmd (name . args) only-expr)
+       #'(begin 
+           (define* (name . args)
+             (with-fluids ((in-what-command 'name))
+               only-expr))
+           (export name)
+           (set-command-properties! name 'name)))
+      ((define-cmd (name . args) first-expr . body)
+       (if (string? (syntax->datum #'first-expr))
+           #'(begin 
+               (define* (name . args)
+                 first-expr
+                 (with-fluids ((in-what-command 'name))
+                   (let ()
+                     . body)))
+               (export name)
+               (set-command-properties! name 'name))
+           #'(begin 
+               (define* (name . args)
+                 (with-fluids ((in-what-command 'name))
+                   (let ()
+                     first-expr . body)))
+               (export name)
+                (set-command-properties! name 'name))))
+      ((define-cmd name value)
+       #'(begin 
+           (define name #f)
+           (let ((v value))
+             (set! name (lambda args
+                          (with-fluids ((in-what-command 'name))
+                            (apply v args))))
+             (export name)
+             (set-command-properties! name 'name))))
+      ((define-cmd cmap (name . args) . body)
+       #'(begin 
+           (define-cmd (name . args) . body)
+           (command-add! cmap 'name)))
+      ((define-cmd cmap name value)
+       #'(begin
+           (define-cmd name value)
+           (command-add! cmap 'name))))))
 @ 
 
 <<command:procedure>>=
@@ -230,6 +248,7 @@ associated with commands.
 (define test-cmd (lambda-cmd args 1))
 (define (test-cmd-2) 2)
 (define-cmd (test-cmd-3) 3)
+(check (procedure-documentation test-cmd-3) => #f)
 (check (test-cmd) => 1)
 (check-true (command? test-cmd))
 (check-true (command? test-cmd-2))
@@ -248,11 +267,13 @@ associated with commands.
 
 <<command:test>>=
 (define-cmd (test-who-am-i?) 
+  "test-who-am-i? documentation"
   (let ((w (what-command-am-i?)))
     1
     w))
 (check (command-name test-who-am-i?) => 'test-who-am-i?)
 (check (test-who-am-i?) => 'test-who-am-i?)
+(check (procedure-documentation test-who-am-i?) => "test-who-am-i? documentation")
 @ 
 
 <<command:procedure>>=

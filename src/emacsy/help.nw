@@ -53,6 +53,18 @@ OBJECT can be a procedure, macro or any object that has its
 @ 
 
 <<macro>>=
+(define-syntax-public define-documentation
+  (syntax-rules ()
+    ((define-documentation name documentation)
+     (begin
+       (let ((v (module-variable (current-module) 'name)))
+         (object-documentation-set! v documentation)
+         (set-object-property! v 'source-properties (current-source-location)))))))
+@ 
+
+XXX Rename from variable-documentation to just documentation.
+
+<<macro>>=
 (define-syntax-public variable-documentation
   (syntax-rules ()
     ((variable-documentation name)
@@ -118,7 +130,6 @@ of the interfaces it includes (up to a given depth)."
 <<test>>=
 (check (emacsy-collect-kind (current-module) 'variable) => '(x))
 @ 
-
 
 \subsection{define-parameter}
 

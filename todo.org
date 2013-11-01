@@ -89,6 +89,7 @@
     - [X] make it use multiple buffers
     - [ ] make it use multiple windows
   - [ ] get rid of noise in emacsy (noise?) log noise?
+  - [ ] Change define-cmd to define-command
   - [ ] implement coroutines in Guile using [[http://www.lua.org/manual/5.2/manual.html][Lua API]] and [[http://wingolog.org/archives/2011/08/30/the-gnu-extension-language][this]] as a basis
     It'd be nice if the coroutines were interruptable.  Maybe [[http://lists.gnu.org/archive/html/guile-user/2011-10/msg00038.html][this would help.]]
     This is a [[http://pllab.is.ocha.ac.jp/~asai/cw2011tutorial/main-e.pdf][good tutorial]] on shift and reset.
