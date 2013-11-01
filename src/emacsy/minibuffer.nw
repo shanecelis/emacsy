@@ -518,11 +518,12 @@ It can also work with a procedure.
                    #:key 
                    (predicate (const #t))
                    (require-match? #f)
-                   (initial-input #f))
+                   (initial-input #f)
+                   (history (what-command-am-i?)))
 ;; XXX implement require-match?
   (with-fluids ((minibuffer-completion-table collection)
                 (minibuffer-completion-predicate predicate))
-   (read-from-minibuffer prompt initial-input #:keymap minibuffer-local-completion-map)))
+   (read-from-minibuffer prompt initial-input #:keymap minibuffer-local-completion-map #:history history)))
 @ 
 
 \subsection{Filename Lookup}
@@ -628,8 +629,13 @@ We want to be able to look up filenames.
                   (dir #f)
                   (default-file-name #f)
                   (initial #f)
-                  (predicate no-dot-files))
-  (completing-read prompt filename-completion-function #:predicate predicate))
+                  (predicate no-dot-files)
+                  (history (what-command-am-i?))
+                  )
+  (completing-read prompt 
+                   filename-completion-function 
+                   #:predicate predicate 
+                   #:history history))
 @
 
 <<minibuffer:test>>=

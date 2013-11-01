@@ -71,27 +71,27 @@ SCM modifier_key_flags_to_list(int modifier_key_flags);
 
 <<Defines>>=
 
-#define EY_MODKEY_COUNT   6
+#define EMACSY_MODKEY_COUNT   6
 
-#define EY_MODKEY_ALT     1 // A
-#define EY_MODKEY_CONTROL 2 // C
-#define EY_MODKEY_HYPER   4 // H
-#define EY_MODKEY_META    8 // M
-#define EY_MODKEY_SUPER  16 // s
-#define EY_MODKEY_SHIFT  32 // S
+#define EMACSY_MODKEY_ALT     1 // A
+#define EMACSY_MODKEY_CONTROL 2 // C
+#define EMACSY_MODKEY_HYPER   4 // H
+#define EMACSY_MODKEY_META    8 // M
+#define EMACSY_MODKEY_SUPER  16 // s
+#define EMACSY_MODKEY_SHIFT  32 // S
 
-#define EY_MOUSE_BUTTON_DOWN  0
-#define EY_MOUSE_BUTTON_UP    1
-#define EY_MOUSE_MOTION       2
+#define EMACSY_MOUSE_BUTTON_DOWN  0
+#define EMACSY_MOUSE_BUTTON_UP    1
+#define EMACSY_MOUSE_MOTION       2
 @ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
 \todo[inline]{Change prefix from EY to EMACSY, and make these all refer
-to actual Scheme names; for instance [[EY_QUIT_APPLICATION]] should be changed to [[EMACSY_QUIT_APPLICATION_P]] and there should be a scheme value [[emacsy-quit-application?]].}
+to actual Scheme names; for instance [[EMACSY_QUIT_APPLICATION]] should be changed to [[EMACSY_QUIT_APPLICATION_P]] and there should be a scheme value [[emacsy-quit-application?]].}
 <<Defines>>=
-#define EY_QUIT_APPLICATION       1
-#define EY_ECHO_AREA_UPDATED_P      2
-#define EY_MODELINE_UPDATED_P       4
-#define EY_RAN_UNDEFINED_COMMAND  8
+#define EMACSY_QUIT_APPLICATION_P       1
+#define EMACSY_ECHO_AREA_UPDATED_P      2
+#define EMACSY_MODELINE_UPDATED_P       4
+#define EMACSY_RAN_UNDEFINED_COMMAND_P  8
 @ The boilerplate guards so that a C++ program may include
 \verb|emacsy.h| are given below.
 
@@ -152,7 +152,7 @@ int emacsy_load_module(const char *module)
                     scm_to_locale_string(scm_car(scm_cdr(result))),
                     scm_to_locale_string(scm_car(scm_cdr(scm_cdr(result))))
                     );
-    return 1; //EY_ERR_NO_MODULE;
+    return 1; //EMACSY_ERR_NO_MODULE;
   }
   return 0;
 }
@@ -186,9 +186,9 @@ void emacsy_mouse_event(int x, int y,
   SCM motion_sym = scm_c_string_to_symbol("motion");
   SCM state_sym;
   switch(state) {
-  case EY_MOUSE_BUTTON_UP:   state_sym = up_sym;     break;
-  case EY_MOUSE_BUTTON_DOWN: state_sym = down_sym;   break;
-  case EY_MOUSE_MOTION:      state_sym = motion_sym; break;
+  case EMACSY_MOUSE_BUTTON_UP:   state_sym = up_sym;     break;
+  case EMACSY_MOUSE_BUTTON_DOWN: state_sym = down_sym;   break;
+  case EMACSY_MOUSE_MOTION:      state_sym = motion_sym; break;
   default:
     fprintf(stderr, "warning: mouse event state received invalid input %d.\n",
             state);
@@ -211,10 +211,10 @@ int emacsy_tick()
                                      "emacsy-tick"));
   if (scm_is_true(scm_c_public_ref("emacsy emacsy",
                                    "emacsy-quit-application?")))
-    flags |= EY_QUIT_APPLICATION;
+    flags |= EMACSY_QUIT_APPLICATION_P;
   if (scm_is_true(scm_c_public_ref("emacsy emacsy",
                                    "emacsy-ran-undefined-command?")))
-    flags |= EY_RAN_UNDEFINED_COMMAND;
+    flags |= EMACSY_RAN_UNDEFINED_COMMAND_P;
 
   return flags;
 }
@@ -299,7 +299,7 @@ SCM modifier_key_flags_to_list(int modifier_key_flags)
 {
   const char* modifiers[] = { "alt", "control", "hyper", "meta", "super", "shift" };
   SCM list = SCM_EOL;
-  for (int i = 0; i < EY_MODKEY_COUNT; i++) {
+  for (int i = 0; i < EMACSY_MODKEY_COUNT; i++) {
     if (modifier_key_flags & (1 @<< i)) {
       list = scm_cons(scm_c_string_to_symbol(modifiers[i]), list);
     }

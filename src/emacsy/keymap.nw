@@ -174,12 +174,15 @@ or a keymap indicating it worked.
 @ 
 
 <<keymap:procedure>>=
-(define-public (define-key keymap keys symbol-or-procedure-or-keymap)
-  (let ((entry (lookup-key keymap (list (car keys)) #f))
-        (procedure-or-keymap
-         (if (symbol? symbol-or-procedure-or-keymap)
-             (make-trampoline (current-module) symbol-or-procedure-or-keymap)
-             symbol-or-procedure-or-keymap)))
+(define-public (define-key keymap key-list-or-string symbol-or-procedure-or-keymap)
+  (let* ((keys (if (string? key-list-or-string)
+                   (kbd key-list-or-string)
+                   key-list-or-string))
+         (entry (lookup-key keymap (list (car keys)) #f))
+         (procedure-or-keymap
+          (if (symbol? symbol-or-procedure-or-keymap)
+              (make-trampoline (current-module) symbol-or-procedure-or-keymap)
+              symbol-or-procedure-or-keymap)))
     (cond
      ;; Error
      ((number? entry)
@@ -259,8 +262,6 @@ for predicates which seems more natural.
   (and (not (boolean? result)) (not (number? result))))
 @ 
 
-
-
 \subsection*{File Layout}
 
 <<file:keymap.scm>>=
@@ -268,7 +269,8 @@ for predicates which seems more natural.
   #:use-module (ice-9 regex)
   #:use-module (ice-9 optargs)
   #:use-module (oop goops)
-  #:use-module (emacsy util))
+  #:use-module (emacsy util)
+  #:use-module (emacsy event))
 <<keymap:macro>>
 <<keymap:class>>
 <<keymap:state>>

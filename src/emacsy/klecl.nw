@@ -393,7 +393,8 @@ missing the loop component?
 (define*-public (primitive-command-tick #:optional
                                         (prompt #f)
                                         #:key 
-                                        (keymaps (default-klecl-maps)))
+                                        (keymaps (default-klecl-maps))
+                                        (undefined-command undefined-command))
   "We do one iteration of the command-loop without any error handling."
   (call-with-sigalrm
    (lambda ()
@@ -415,7 +416,7 @@ missing the loop component?
               ;; Maybe this should be done by an undefined-command command?
               ;; I doubt we want this command to be executed by the user, so
               ;; we're going to leave it as a procedure.
-              (undefined-command key-sequence))))))))
+              (undefined-command key-sequence events))))))))
 @ 
 
 <<klecl:state>>=
@@ -423,7 +424,7 @@ missing the loop component?
 @ 
 
 <<klecl:procedure>>=
-(define* (undefined-command key-sequence)
+(define* (undefined-command key-sequence events)
   (message "~a is undefined."
            (string-join key-sequence " "))
   (set! emacsy-ran-undefined-command? #t)

@@ -1,7 +1,7 @@
 * Emacsy TODO
   - [X] Defining variables with define-variable leaves warnings about
     that variable not being defined. FIXED. Thanks, Mark Weaver!
-  - [ ] The frame title should show the current buffer whereas the
+  - [ ] BUG: The frame title should show the current buffer whereas the
     modeline show's the window's buffer
   - [ ] It'd be nice to have a for-each which didn't use lambdas and
     was more like loop.  The for-each action list where action can be
@@ -14,8 +14,9 @@
   - [X] Incorporating modifier keys should be easy.  Split <key-event>
     into <modifier-key-event> and <key-event.
   - [X] Need to pick up modifier-keys from GLFW.
-  - [ ] Need to fix history.  Just make an indexable list class.
-    - [ ] cursor-list now exists.
+  - [X] Remove (kbd "C-...") It's useless noise.
+  - [X] Need to fix history.  Just make an indexable list class.
+    - [X] cursor-list now exists.
 
   - How to make a trampoline out of a symbol, by mark_weaver:
 
@@ -69,7 +70,7 @@
   - [ ] rename read-file-name to EITHER read-filename OR
     read-filename-from-minibuffer
   - [ ] have backtraces go to logs
-  - Rethink the commands. Can't we keep them as simple lambdas?
+  - [X] Rethink the commands. Can't we keep them as simple lambdas?
     Do we have to wrap them?  
     
     Also, when the user provides the symbol of a function, let's
@@ -78,12 +79,12 @@
 
   - [X] If module (emacsy emacsy) does not load, it may be because it did
     not compile. Please show the correct error. FIXED.
-  - [ ] Make the read-from-minibuffer accept a symbol for a history
-  - [ ] Turn history into an object/record rather than a list and an
+  - [X] Make the read-from-minibuffer accept a symbol for a history
+  - [X] Turn history into an object/record rather than a list and an
     index.  Need a list with a cursor or a zipper; can use 2 lists for
     what's in front and behind the current position.
   - [ ] Rename EY_* C macros to EMACSY_SAME_NAME_AS_SCHEME_OK_P
-  - [ ] Make the default read-from-minibuffer history symbol be (what-command-am-i)
+  - [X] Make the default read-from-minibuffer history symbol be (what-command-am-i)
   - [-] Add a couple of variations on the webkit browser
     - [X] make it use multiple buffers
     - [ ] make it use multiple windows
@@ -102,11 +103,10 @@
   - [X] make debugging work in emacsy
     Getting better with debug-on-error?  
   - [ ] fix kill of all buffers bug
-  - [ ] add universal argument C-u
+  - [X] add universal argument C-u
   - [ ] clear the echo area once other messages start to come.
   - [X] figure out how to integrate a browser window, it'll show pdf
     graphs, images, etc. too!
-  - [ ] implement separate histories for read-from-minibuffer
   - [X] there should be a way to turn off the display/runloop from
     happening.  Or maybe not. Maybe the batch-mode or non-interactive
     mode for Emacsy shouldn't include Emacsy at all.  It should just
@@ -116,7 +116,7 @@
   - [ ] make emacsy work with copy/paste [[http://stackoverflow.com/questions/6888862/how-to-access-clipboard-data-programmatically][link]]
 
   - [ ] [[https://github.com/technomancy/find-file-in-project/blob/master/find-file-in-project.el][Try this find-file-in-project]]
-  - [ ] [[https://groups.google.com/forum/m/?fromgroups#!msg/comp.emacs/j_fNPgtbavM/DVygGrzgQgMJ][Great introduction]] to the bare minimum you need to know to use
+  - [[https://groups.google.com/forum/m/?fromgroups#!msg/comp.emacs/j_fNPgtbavM/DVygGrzgQgMJ][Great introduction]] to the bare minimum you need to know to use
     Emacs
   - How to make [[http://www.gnu.org/software/guile/docs/docs-2.0/guile-ref/Identifier-Macros.html#Identifier-Macros][variable aliases]]
   - Note: the noweb filter docs2comments does not work with noweb's line pragmas

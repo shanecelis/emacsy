@@ -103,29 +103,58 @@ with \verb|M-x|.
   (q-push! universal-argument-queue arg))
 @
 
+This [[universal-argument]] command is written using a different style
+than is typical for interative Emacs commands.  Most Emacs commands
+are written with their state, keymaps, and ancillary procedures as
+public variables.  This style has a benefit of allowing one to
+manipulate or extend some pieces; however, there are some benefits to
+having everything encapsulated in this command procedure.  For
+instance, if the minibuffer were written in this style, one could
+invoke recursive minibuffers.
+
 <<core:command>>=
 (define-interactive (universal-argument)
+  "Universal argument is used as numerical input for many functions."
   (let ((count 0)
         (ua-keymap (make-keymap))
         (prompt "C-u ")
-        (acceptable-chars (char-set-adjoin char-set:digit #\-)))
+        ;(acceptable-chars (char-set-adjoin char-set:digit #\-))
+        (done? #f))
     (define (add-to-prompt string)
       (set! prompt (string-concatenate (list prompt string " "))))
     (define (process-arg number)
       (add-to-prompt (number->string number))
       (set! count (+ (* count 10) number)))
-    ;; (define-key ua-keymap "1" (lambda () (process-arg 1)))
-    ;; (define-key ua-keymap "2" (lambda () (process-arg 2)))
-    ;; (define-key ua-keymap "3" (lambda () (process-arg 3)))
-    ;; (define-key ua-keymap "4" (lambda () (process-arg 4)))
-    ;; (define-key ua-keymap "5" (lambda () (process-arg 5)))
-    ;; (define-key ua-keymap "6" (lambda () (process-arg 6)))
-    ;; (define-key ua-keymap "7" (lambda () (process-arg 7)))    
-    ;; (define-key ua-keymap "8" (lambda () (process-arg 8)))
-    ;; (define-key ua-keymap "9" (lambda () (process-arg 9)))
-    ;; (define-key ua-keymap "0" (lambda () (process-arg 0)))
-    ;; (define-key ua-keymap "-" (lambda () (set! count (- count))))
-      (let loop ((input (read-key prompt)))
+    (define (my-undefined-command key-sequence events)
+      (if (= count 0)
+          (universal-argument-push! 4)
+          (universal-argument-push! count))
+      (set! done? #t)
+      (set! echo-area "") ;; Clear the echo area.
+      (for-each emacsy-event-unread (reverse events)))
+    (define-key ua-keymap "1" (lambda () (process-arg 1)))
+    (define-key ua-keymap "2" (lambda () (process-arg 2)))
+    (define-key ua-keymap "3" (lambda () (process-arg 3)))
+    (define-key ua-keymap "4" (lambda () (process-arg 4)))
+    (define-key ua-keymap "5" (lambda () (process-arg 5)))
+    (define-key ua-keymap "6" (lambda () (process-arg 6)))
+    (define-key ua-keymap "7" (lambda () (process-arg 7)))    
+    (define-key ua-keymap "8" (lambda () (process-arg 8)))
+    (define-key ua-keymap "9" (lambda () (process-arg 9)))
+    (define-key ua-keymap "0" (lambda () (process-arg 0)))
+    (define-key ua-keymap "-" (lambda () 
+                                      (set! count (- count))
+                                      (add-to-prompt "-")))
+    (define-key ua-keymap "C-u" (lambda () 
+                                        (when (= count 0)
+                                            (set! count 4))
+                                        (set! count (* count 4))
+                                        (add-to-prompt "C-u")))
+    (while (not done?)
+      (primitive-command-tick prompt 
+                              #:keymaps (list ua-keymap)
+                              #:undefined-command my-undefined-command))
+    #;(let loop ((input (read-key prompt)))
         ;; We only admit numbers and a dash
         (if (and (is-a? input <key-event>)
                  (null? (modifier-keys input))
