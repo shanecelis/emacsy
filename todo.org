@@ -150,3 +150,47 @@
     is used as a command mode for scheme. shelly? gash? bashy?
   - [ ] Integrate noweb into guile, such that guile will run off noweb
     files. Guile [[http://draketo.de/light/english/wisp-lisp-indentation-preprocessor#v0.5-repl][wisp]] already shows how to do it.
+* Trying to rework block code into something more malleable.
+(define* (wait #:optional (delay 1))
+  "Yield coroutine and schdule the continuation to be run after DELAY
+ticks."
+  (yield (lambda (resume) (agenda-schedule resume delay))))
+
+(define* (suspend)
+  "Yield coroutine and schdule the continuation to be run after DELAY
+ticks."
+  (yield (lambda (resume) (agenda-schedule resume delay))))
+
+(foreground) must happen outside the coroutine.
+
+(define-command (suspend)
+  (cosignal 'suspend foreground-cid))
+
+(define-command (interrupt)
+  (cosignal 'interrupt foreground-cid))
+
+(define (cosignal sig cid)
+  ((cid->resume cid) 'signal   
+(case sig
+    ((kill)
+     (lambda () (coexit -1)))
+    ((suspend)
+     (lambda () ()))
+)
+))
+
+(define (coexit code)
+  (yield (lambda (resume) code)))
+
+(define (coexit . args)
+  (yield (lambda (resume) (apply values args)))
+
+cid <-> coroutine
+
+
+
+(cowait cid-1 cid-2)
+
+
+Does suspend happen inside or outside the coroutine?  Signals happened
+from outside the process in unix.

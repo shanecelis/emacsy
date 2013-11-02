@@ -135,15 +135,16 @@ We define the global command map.
     (syntax-case x ()
       ((define-cmd (name . args) only-expr)
        #'(begin 
-           (define* (name . args)
+           (codefine* (name . args)
              (with-fluids ((in-what-command 'name))
                only-expr))
            (export name)
            (set-command-properties! name 'name)))
       ((define-cmd (name . args) first-expr . body)
        (if (string? (syntax->datum #'first-expr))
+           ;; Handle the case where there is a documentation string.
            #'(begin 
-               (define* (name . args)
+               (codefine* (name . args)
                  first-expr
                  (with-fluids ((in-what-command 'name))
                    (let ()
@@ -151,7 +152,7 @@ We define the global command map.
                (export name)
                (set-command-properties! name 'name))
            #'(begin 
-               (define* (name . args)
+               (codefine* (name . args)
                  (with-fluids ((in-what-command 'name))
                    (let ()
                      first-expr . body)))
@@ -161,7 +162,7 @@ We define the global command map.
        #'(begin 
            (define name #f)
            (let ((v value))
-             (set! name (lambda args
+             (set! name (colambda args
                           (with-fluids ((in-what-command 'name))
                             (apply v args))))
              (export name)
@@ -187,9 +188,6 @@ We define the global command map.
   (cond
    ((thunk? command)
     command)
-   ((symbol? command)
-    (eval command (interaction-environment))
-    #;(module-ref (current-module) command))
    (else
     (warn "command->proc not given a command: ~a" command)
     #f)))
@@ -348,6 +346,7 @@ associated with commands.
   #:use-module (oop goops)
   #:use-module (ice-9 optargs)
   #:use-module (emacsy util)
+  #:use-module (emacsy coroutine)
   
   #:export-syntax (export-command
                    )

@@ -583,7 +583,7 @@ We want to be able to look up filenames.
 (define (files-in-parent-dir filename)
 
   (let* ((dir (my-dirname filename))
-         (base (basename filename))
+         ;(base (basename filename))
          (filenames (files-in-dir dir)))
     (sort-filenames 
      (if (or (string-prefix? dir filename)
@@ -630,8 +630,7 @@ We want to be able to look up filenames.
                   (default-file-name #f)
                   (initial #f)
                   (predicate no-dot-files)
-                  (history (what-command-am-i?))
-                  )
+                  (history (what-command-am-i?)))
   (completing-read prompt 
                    filename-completion-function 
                    #:predicate predicate 

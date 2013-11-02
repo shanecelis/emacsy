@@ -67,6 +67,34 @@ will block if there are no events to read.
   (let ((event (deq! event-queue)))
     (run-hook read-event-hook event)
     event))
+
+(define*-public (read-event #:optional (prompt #f))
+  (yield (lambda (resume)
+           (block-read-event (coroutine->cid resume) prompt resume))))
+
+(define reader-request-queue (make-q))
+
+(define (block-read-event cid prompt resume)
+  (format #t "block-read-event ~a~%" (list cid prompt resume))
+  (enq! reader-request-queue (list cid prompt resume)))
+
+(codefine (fulfill-read-requests)
+   (while #t
+     (format #t "fulfill-read-requests CHECK~%")
+     (when (and (not (q-empty? event-queue)) 
+                (not (q-empty? reader-request-queue)))
+       (format #t "fulfill-read-requests DO~%")
+       (match (deq! reader-request-queue)
+         ((cid prompt resume)
+          (if prompt
+              (message prompt))
+          (let ((event (deq! event-queue)))
+            (run-hook read-event-hook event)
+            ;; Do I need to schedule this with the agenda to make it behave properly?
+            (resume event)))))
+     (wait)))
+
+(agenda-schedule fulfill-read-requests)
 @ 
 
 <<klecl:state>>=
@@ -159,7 +187,7 @@ sequence, it returns that event sequence.\todo{Consider using values
                  (keymaps (default-klecl-maps)))
   (define (read-discrete-key)
     (let mini-loop ((event (read-key prompt)))
-      (format #t "EVENT ~a~%" event)
+      (emacsy-log-trace "EVENT ~a~%" event)
       (if (discrete-event? event)
           event
           (mini-loop (read-key prompt)))))
@@ -170,13 +198,13 @@ sequence, it returns that event sequence.\todo{Consider using values
      (if (or
           ;; Does one of the keymaps points to a command (or is it the
           ;; quit key)?
-          (or (quit-key? last-key)
+          (or (quit-key? last-key keymaps)
               (any (lambda (keymap)
                      (lookup-key? keymap keys))
                    keymaps))
           ;; OR does none of the keymaps point to a command or keymap (or
           ;; is the quit key)?
-          (not (or (quit-key? last-key)
+          (not (or (quit-key? last-key keymaps)
                    (any (lambda (keymap)
                           (lookup-key? keymap keys #t))
                         keymaps))))
@@ -189,12 +217,12 @@ sequence, it returns that event sequence.\todo{Consider using values
 We also check all the maps for a quit key, typically defined as \verb|C-g|.
 
 <<klecl:procedure>>=
-(define-public (quit-key? aKey)
+(define-public (quit-key? aKey keymaps)
   (define (quit-key?* key keymap)
    (let ((result (lookup-key keymap (list key))))
      (and (not (keymap? result)) (lookup-key-entry? result)
           (eq? 'keyboard-quit result))))
-  (any (lambda (keymap) (quit-key?* aKey keymap)) (default-klecl-maps)))
+  (any (lambda (keymap) (quit-key?* aKey keymap)) keymaps))
 @ 
 
 <<klecl:command>>=
@@ -283,39 +311,6 @@ however, it will be redefined later.
 
 \subsection{What is a command?}
 
-<<klecl:procedure>>=
-;; XXX Why is this complicated?  It seems like this should be a much 
-;; simpler procedure.
-(define-public (command-execute-orig command)
-  (let ((cmd-proc (command->proc command)))
-    (if cmd-proc
-        (let* ((exception #f)
-               (result #f))
-          (catch #t
-            (lambda () 
-              (with-backtrace* (lambda () 
-                                 (set! result (apply cmd-proc '())))
-                               '(quit-command quit-command-loop)))
-            (lambda (key . args)
-              (set! exception (cons key args))
-              (case key
-                ((quit-command)
-                 ;(message "Quit!")
-                 ;(values #f 'quit-command)
-                 (apply throw key args))
-                ((quit-command-loop)
-                 ;; Rethrow this one.
-                 (apply throw key args))
-                (else
-                 (format 
-                  (current-error-port)
-                  "command-execute: Uncaught throw to '~a: ~a\n" key args)))))
-          (values result exception))
-        (begin
-          (message "No interactive command '~a'" command)
-          (values #f (list 'no-command command))))))
-@
-
 <<util:procedure>>=
 (define*-public (with-backtrace* thunk #:optional (no-backtrace-for-keys '()))
   (with-throw-handler 
@@ -333,6 +328,10 @@ ought to go through [[emacsy-log-error]].
 
 <<util:procedure>>=
 (define-public (emacsy-log-error format-msg . args)
+  (apply format (current-error-port) format-msg args)
+  (newline (current-error-port)))
+
+(define-public (emacsy-log-trace format-msg . args)
   (apply format (current-error-port) format-msg args)
   (newline (current-error-port)))
 @
@@ -511,7 +510,7 @@ Each command loop is given a different number.
 Finally, here's our command loop with error handling.
 
 <<klecl:procedure>>=
-(define*-public (command-loop #:optional (continue-pred (const #t)))
+(define* (command-loop #:optional (continue-pred (const #t)))
   "We iterate with command-tick and handle errors."
   (catch #t
     (lambda () 
@@ -552,6 +551,7 @@ have to worry about any ``pollution'' of Emacs-isms.
 <<file:klecl.scm>>=
 (define-module (emacsy klecl)
   #:use-module (ice-9 optargs)
+  #:use-module (ice-9 match)
   #:use-module (ice-9 q)
   #:use-module (srfi srfi-1)
   #:use-module (oop goops)
@@ -560,7 +560,11 @@ have to worry about any ``pollution'' of Emacs-isms.
   #:use-module (emacsy keymap)
   #:use-module (emacsy event)
   #:use-module (emacsy command)
-  #:use-module (emacsy block))
+  #:use-module (emacsy block)
+  #:use-module (emacsy coroutine)
+  #:use-module (emacsy agenda)
+  #:export (command-loop)
+  )
 <<klecl:macro>>
 <<klecl:class>>
 <<klecl:state>>
