@@ -28,6 +28,7 @@
             codefine*
             coroutine->cid
             strip-optargs
+            strip-optargs*
             )
   #:replace (yield))
 
@@ -94,13 +95,15 @@ keyword arguments that is run as a coroutine."
 
 (define-syntax strip-optargs
   (lambda (x)
+    ;(format #t "strip-optargs ~a~%" x)
     (syntax-case x ()
       ((_)
        #''())
       ((_ (v e))
-       #'(cons v '()))
+       #''(v))
       ((_ (v e) e2 ...)
-       #'(cons v (strip-optargs e2 ...)))
+       (with-syntax ((rest #'(strip-optargs e2 ...)))
+         #'(v rest)))
       ;; ((_ (v e) e2)
       ;;  #''(v (strip-optargs e2)))
       ((_ e1)
@@ -110,12 +113,19 @@ keyword arguments that is run as a coroutine."
        (keyword? (syntax->datum #'e1))
        #'(strip-optargs e2 ...))
       ((_ e1)
-       #'(cons e1 '()))
+       #'(e1))
       ((_ e1 e2 ...)
-       #'(cons e1 (strip-optargs e2 ...)))
+       (with-syntax ((rest #'(strip-optargs e2 ...)))
+        #'(e1 rest)))
       ;; ((_ e1 e2)
       ;;  #`'(e1 #,@(strip-optargs e2)))
       )))
+
+(define-syntax strip-optargs*
+  (lambda (x)
+    (syntax-case x ()
+      ((_ list)
+       #'(strip-optargs . list)))))
 
   "Syntactic sugar for defining a procedure with optional and
 keyword arguments that is run as a coroutine."
@@ -123,13 +133,13 @@ keyword arguments that is run as a coroutine."
   (lambda (x)
     (syntax-case x ()
       ((codefine* (name . args) . body) 
-       (with-syntax ((callable-args (datum->syntax x '()))) ;;#'(strip-optargs args)
+       (with-syntax ((callable-args #'(strip-optargs args))) ;;
          #'(define* (name . args)
              ;; Create an inner procedure with the same signature so that a
              ;; recursive procedure call does not create a new prompt.
              (define* (name . args) . body)
              (coroutine
-              (lambda () (name .  callable-args)))))))))
+              (lambda () (name . callable-args)))))))))
 
 
 #;(define (strip-optargs args)
