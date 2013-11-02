@@ -1,3 +1,9 @@
+;; https://github.com/davexunit/guile-2d/blob/master/2d/coroutine.scm
+;;
+;; I'm Shane. I'm having a problem trying to fix codefine*.  I wrote
+;; the strip-optargs macro to try to fix it, but I can't get it right.
+;; Help me, #guile!
+
 ;;; guile-2d
 ;;; Copyright (C) 2013 David Thompson <dthompson2@worcester.edu>
 ;;;
@@ -27,8 +33,6 @@
             codefine
             codefine*
             coroutine->cid
-            strip-optargs
-            strip-optargs*
             )
   #:replace (yield))
 
@@ -82,58 +86,33 @@ coroutine."
     (coroutine
      (lambda () (name ...)))))
 
+;; (strip-optargs #'(a #:optional (b 2) c)) =>~ (a b c)
+;; TODO make it work with keyword arguments.
+(define strip-optargs
+  (lambda (x)
+    (syntax-case x ()
+      (()
+       #'())
+      ;; optional values
+      (((v e) e2 ...)
+       (identifier? #'v)
+       #`(v . #,(strip-optargs #'(e2 ...))))
+      ;; #:optional keyword
+      ((#:optional e2 ...)
+       (strip-optargs #'(e2 ...)))
+      ;; identifiers
+      ((e1 e2 ...)
+       (identifier? #'e1)
+       #`(e1 . #,(strip-optargs #'(e2 ...)))))))
+
 ;; emacs: (put 'codefine* 'scheme-indent-function 1)
-#;(define-syntax-rule (codefine* (name ...) . body)
   "Syntactic sugar for defining a procedure with optional and
 keyword arguments that is run as a coroutine."
-  (define* (name ...)
-    ;; Create an inner procedure with the same signature so that a
-    ;; recursive procedure call does not create a new prompt.
-    (define* (name ...) . body)
-    (coroutine
-     (lambda () (name ...)))))
-
-(define-syntax strip-optargs
-  (lambda (x)
-    ;(format #t "strip-optargs ~a~%" x)
-    (syntax-case x ()
-      ((_)
-       #''())
-      ((_ (v e))
-       #''(v))
-      ((_ (v e) e2 ...)
-       (with-syntax ((rest #'(strip-optargs e2 ...)))
-         #'(v rest)))
-      ;; ((_ (v e) e2)
-      ;;  #''(v (strip-optargs e2)))
-      ((_ e1)
-       (keyword? (syntax->datum #'e1))
-       #''())
-      ((_ e1 e2 ...)
-       (keyword? (syntax->datum #'e1))
-       #'(strip-optargs e2 ...))
-      ((_ e1)
-       #'(e1))
-      ((_ e1 e2 ...)
-       (with-syntax ((rest #'(strip-optargs e2 ...)))
-        #'(e1 rest)))
-      ;; ((_ e1 e2)
-      ;;  #`'(e1 #,@(strip-optargs e2)))
-      )))
-
-(define-syntax strip-optargs*
-  (lambda (x)
-    (syntax-case x ()
-      ((_ list)
-       #'(strip-optargs . list)))))
-
-  "Syntactic sugar for defining a procedure with optional and
-keyword arguments that is run as a coroutine."
-(define-syntax codefine*
+#;(define-syntax codefine*
   (lambda (x)
     (syntax-case x ()
       ((codefine* (name . args) . body) 
-       (with-syntax ((callable-args #'(strip-optargs args))) ;;
+       (with-syntax ((callable-args (strip-optargs #'args))) 
          #'(define* (name . args)
              ;; Create an inner procedure with the same signature so that a
              ;; recursive procedure call does not create a new prompt.
@@ -141,26 +120,16 @@ keyword arguments that is run as a coroutine."
              (coroutine
               (lambda () (name . callable-args)))))))))
 
-
-#;(define (strip-optargs args)
- (define (strip-optargs* args)
-   (if (null? args)
-       '()
-       (let ((arg (syntax->datum (car args))))
-         (cond
-          ((keyword? arg)
-           ;; strip the keywords.
-           (strip-optargs (cdr args)))
-          ((pair? arg)
-           ;; only take the first of pairs.
-           (cons (caar args) (strip-optargs (cdr args))))
-          (else
-           ;; take everything else.
-           (cons (car args) (strip-optargs (cdr args))))))))
- (let ((out (strip-optargs* args)))
-   (format #t "strip-optargs: ~a -> ~a~%" args out)
-   out))
-
+;; emacs: (put 'codefine* 'scheme-indent-function 1)
+(define-syntax-rule (codefine* (name . formals) . body)
+  "Syntactic sugar for defining a procedure that is run as a
+coroutine."
+  (define (name . args)
+    ;; Create an inner procedure with the same signature so that a
+    ;; recursive procedure call does not create a new prompt.
+    (define* (name . formals) . body)
+    (coroutine
+     (lambda () (apply name args)))))
 
 (define (yield callback)
   "Yield continuation to a CALLBACK procedure."
