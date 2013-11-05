@@ -34,9 +34,9 @@ SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
 
 SCHEME_FILES = event.scm util.scm keymap.scm command.scm buffer.scm		\
  block.scm klecl.scm kbd-macro.scm minibuffer.scm core.scm emacsy.scm	\
- advice.scm window.scm help.scm
+ advice.scm window.scm help.scm 
 
-GOBJECTS = $(SCHEME_FILES:%.scm=%.go)
+GOBJECTS = $(SCHEME_FILES:%.scm=%.go) coroutine.go agenda.go 
 
 NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS) emacsy.h emacsy.c
 

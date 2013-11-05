@@ -92,3 +92,13 @@ TAGS
 support/build-aux/compile
 
 *.log
+/src/emacsy/_windows.tex
+/src/emacsy/core.aux
+/src/emacsy/core.nwi
+/src/emacsy/emacsy.c.x
+/src/emacsy/help-test.scm
+/src/emacsy/help.scm
+/src/emacsy/util.aux
+/src/emacsy/util.nwi
+/src/emacsy/window-test.scm
+/src/emacsy/window.scm
