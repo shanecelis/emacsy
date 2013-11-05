@@ -133,31 +133,32 @@ We define the global command map.
 (define-syntax-public define-cmd
   (lambda (x)
     (syntax-case x ()
-      ((define-cmd (name . args) only-expr)
+      ((define-cmd (name . args) e0)
        #'(begin 
            (codefine* (name . args)
              (with-fluids ((in-what-command 'name))
-               only-expr))
+               e0))
            (export name)
            (set-command-properties! name 'name)))
-      ((define-cmd (name . args) first-expr . body)
-       (if (string? (syntax->datum #'first-expr))
-           ;; Handle the case where there is a documentation string.
-           #'(begin 
-               (codefine* (name . args)
-                 first-expr
-                 (with-fluids ((in-what-command 'name))
-                   (let ()
-                     . body)))
-               (export name)
-               (set-command-properties! name 'name))
-           #'(begin 
-               (codefine* (name . args)
-                 (with-fluids ((in-what-command 'name))
-                   (let ()
-                     first-expr . body)))
-               (export name)
-                (set-command-properties! name 'name))))
+      ((define-cmd (name . args) e0 e1 . body)
+       (string? (syntax->datum #'e0))
+       ;; Handle the case where there is a documentation string.
+       #'(begin 
+           (codefine* (name . args)
+                      e0
+                      (with-fluids ((in-what-command 'name))
+                        (let ()
+                          e1 . body)))
+           (export name)
+           (set-command-properties! name 'name)))
+      ((define-cmd (name . args) e0 e1 . body)
+       #'(begin 
+           (codefine* (name . args)
+                      (with-fluids ((in-what-command 'name))
+                        (let ()
+                          e0 e1 . body)))
+           (export name)
+           (set-command-properties! name 'name)))
       ((define-cmd name value)
        #'(begin 
            (define name #f)

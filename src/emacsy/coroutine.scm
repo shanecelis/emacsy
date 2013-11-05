@@ -28,7 +28,8 @@
 ;;; Code:
 
 (define-module (emacsy coroutine)
-  #:export (coroutine
+  #:export (make-coroutine
+            coroutine
             colambda
             codefine
             codefine*
@@ -121,7 +122,7 @@ keyword arguments that is run as a coroutine."
               (lambda () (name . callable-args)))))))))
 
 ;; emacs: (put 'codefine* 'scheme-indent-function 1)
-(define-syntax-rule (codefine* (name . formals) . body)
+#;(define-syntax-rule (codefine* (name . formals) . body)
   "Syntactic sugar for defining a procedure that is run as a
 coroutine."
   (define (name . args)
@@ -130,6 +131,49 @@ coroutine."
     (define* (name . formals) . body)
     (coroutine
      (lambda () (apply name args)))))
+
+;; emacs: (put 'codefine* 'scheme-indent-function 1)
+;; Thank Mark Weaver for defining this little gem without
+;; the crazy syntax-case I originally did. -SEC
+#;(define-syntax-rule (codefine* (name . formals) . body)
+  "Syntactic sugar for defining a procedure that is run as a
+coroutine."
+  (define (name . args)
+    ;; Create an inner procedure with the same signature so that a
+    ;; recursive procedure call does not create a new prompt.
+    (define* (name . formals) . body)
+    (coroutine
+     (lambda () (apply name args)))))
+
+;; Syntactic sugar for defining a procedure that is run as a
+;; coroutine.
+(define-syntax codefine*
+  (lambda (x)
+    (syntax-case x ()
+      ((_ (name . formals) e0)
+       #'(define (name . args)
+           ;; Create an inner procedure with the same signature so that a
+           ;; recursive procedure call does not create a new prompt.
+           (define* (name . formals) e0)
+           (coroutine
+            (lambda () (apply name args)))))
+      ;; Handle the case where there is a documentation string.
+      ((_ (name . formals) e0 e1 . body)
+       (string? (syntax->datum #'e0))
+       #'(define (name . args)
+           e0
+           ;; Create an inner procedure with the same signature so that a
+           ;; recursive procedure call does not create a new prompt.
+           (define* (name . formals) e1 . body)
+           (coroutine
+            (lambda () (apply name args)))))
+      ((_ (name . formals) e0 e1 . body)
+       #'(define (name . args)
+           ;; Create an inner procedure with the same signature so that a
+           ;; recursive procedure call does not create a new prompt.
+           (define* (name . formals) e0 e1 . body)
+           (coroutine
+            (lambda () (apply name args))))))))
 
 (define (yield callback)
   "Yield continuation to a CALLBACK procedure."

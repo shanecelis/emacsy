@@ -176,6 +176,9 @@ ticks."
      (lambda () (coexit -1)))
     ((suspend)
      (lambda () ()))
+    ((continue)
+     (lambda () ()))
+
 )
 ))
 

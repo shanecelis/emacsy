@@ -23,8 +23,11 @@
 
 (define-module (emacsy agenda)
   #:use-module (ice-9 q)
+  #:use-module (ice-9 receive)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
+
+
   #:use-module (emacsy coroutine)
   #:export (make-agenda
             with-agenda
@@ -32,7 +35,11 @@
             agenda-schedule-interval
             update-agenda
             clear-agenda
-            wait))
+            wait
+            agenda-suspended?
+            agenda-suspend
+            agenda-continue
+            ))
 
 ;; This code is a modified version of the agenda implementation in
 ;; SICP. Thank you, SICP!
@@ -64,14 +71,16 @@ list CALLBACKS."
 ;;;
 
 (define-record-type <agenda>
-  (%make-agenda time segments)
+  (%make-agenda time segments suspend-cids suspended)
   agenda?
   (time agenda-time set-agenda-time!)
-  (segments agenda-segments set-agenda-segments!))
+  (segments agenda-segments set-agenda-segments!)
+  (suspend-cids agenda-suspend-cids set-agenda-suspend-cids!)
+  (suspended agenda-suspended set-agenda-suspended!))
 
 (define (make-agenda)
   "Create a new, empty agenda."
-  (%make-agenda 0 '()))
+  (%make-agenda 0 '() '() '()))
 
 ;; The global agenda that will be used when schedule is called outside
 ;; of a with-agenda form.
@@ -148,11 +157,44 @@ and enqueue CALLBACK."
         ;; ... Otherwise, search for the right place
         (add-to-segments (agenda-segments agenda)))))
 
-(define (flush-queue! q)
+(define (%agenda-suspend agenda cid)
+  (set-agenda-suspend-cids! agenda 
+                            (lset-adjoin = (agenda-suspend-cids agenda) cid)))
+
+(define (%agenda-continue agenda cid)
+  (set-agenda-suspend-cids! agenda 
+                            (remove! 
+                             (lambda (other-cid) (= other-cid cid)) 
+                             (agenda-suspend-cids agenda)))
+  (receive (continue-thunks suspended-thunks)
+      (partition! (lambda (thunk)
+                    (= (coroutine->cid thunk) cid)) 
+                  (agenda-suspended agenda))
+    (map agenda-schedule continue-thunks)
+    (set-agenda-suspended! agenda suspended-thunks)))
+
+(define (%agenda-suspended? agenda cid)
+  (and cid (member cid (agenda-suspend-cids agenda))))
+
+(define (agenda-suspend cid)
+  (%agenda-suspend *current-agenda* cid))
+
+(define (agenda-continue cid)
+  (%agenda-continue *current-agenda* cid))
+
+(define (agenda-suspended? cid)
+  (%agenda-suspended? *current-agenda* cid))
+
+(define (flush-queue! agenda q)
   "Dequeue and execute every member of Q."
   (unless (q-empty? q)
-    ((deq! q)) ;; Execute scheduled procedure
-    (flush-queue! q)))
+    (let* ((thunk (deq! q))
+           (cid (coroutine->cid thunk)))
+      (if (%agenda-suspended? agenda cid)
+          (set-agenda-suspended! agenda
+                                 (cons thunk (agenda-suspended agenda)))
+          (thunk))) ;; Execute scheduled procedure
+    (flush-queue! agenda q)))
 
 (define (%update-agenda agenda)
   "Move AGENDA forward in time and run scheduled procedures."
@@ -163,7 +205,7 @@ and enqueue CALLBACK."
         ;; Process time segment if it is scheduled before or at the
         ;; current agenda time.
         (when (>= (agenda-time agenda) (segment-time segment))
-          (flush-queue! (segment-queue segment))
+          (flush-queue! agenda (segment-queue segment))
           (set-agenda-segments! agenda (rest-segments agenda))
           (next-segment))))))
 

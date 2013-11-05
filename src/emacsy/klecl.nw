@@ -59,7 +59,7 @@ front of the queue rather than the rear.
 will block if there are no events to read.
 
 <<klecl:procedure>>=
-(define*-public (read-event #:optional (prompt #f))
+#;(define*-public (read-event #:optional (prompt #f))
   (if prompt
       (message prompt))
   ;(if (q-empty? event-queue)
@@ -68,9 +68,19 @@ will block if there are no events to read.
     (run-hook read-event-hook event)
     event))
 
+(define (raw-read-event prompt)
+  (if prompt
+      (message prompt))
+  (let ((event (deq! event-queue)))
+    (run-hook read-event-hook event)
+    (format #t "RAW-READ-EVENT ~a~%" event)
+    event))
+
 (define*-public (read-event #:optional (prompt #f))
-  (yield (lambda (resume)
-           (block-read-event (coroutine->cid resume) prompt resume))))
+  (if (q-empty? event-queue)
+      (yield (lambda (resume)
+               (block-read-event (coroutine->cid resume) prompt resume)))
+      (raw-read-event prompt)))
 
 (define reader-request-queue (make-q))
 
@@ -86,12 +96,9 @@ will block if there are no events to read.
        (format #t "fulfill-read-requests DO~%")
        (match (deq! reader-request-queue)
          ((cid prompt resume)
-          (if prompt
-              (message prompt))
-          (let ((event (deq! event-queue)))
-            (run-hook read-event-hook event)
-            ;; Do I need to schedule this with the agenda to make it behave properly?
-            (resume event)))))
+          ;; Do I need to schedule this with the agenda to make it
+          ;; behave properly?
+          (resume (raw-read-event prompt)))))
      (wait)))
 
 (agenda-schedule fulfill-read-requests)
@@ -103,15 +110,21 @@ will block if there are no events to read.
 
 <<klecl:test>>=
 (define last-event #f)
-(define (test-read-event)
+(codefine (test-read-event)
   (set! last-event (read-event)))
-(with-blockable (test-read-event))
-(check (blocking?) => #t)
+;(with-blockable (test-read-event))
+(agenda-schedule test-read-event)
+;(check (blocking?) => #t)
 (emacsy-key-event #\a)
 (check last-event => #f)
-(block-tick)
-(check (blocking?) => #f)
+;(block-tick)
+;(update-agenda)
+(check last-event => #f)
+(update-agenda)
+;(check last-event => #f)
+;(check (blocking?) => #f)
 (check (command-char last-event) => #\a)
+;(clear-agenda)
 @ 
 
 \subsection{read-key}
@@ -236,13 +249,16 @@ return any single key inputs.
 
 <<klecl:test>>=
 (define last-key-seq #f)
-(define (read-key-sequence*)
+(define-cmd (read-key-sequence*)
   (set! last-key-seq #f)
   (set! last-key-seq (map command-char (read-key-sequence))))
-(with-blockable (read-key-sequence*))
+;(with-blockable (read-key-sequence*))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
-(block-tick)
+;(block-tick)
+(update-agenda)
 (check last-key-seq => '(#\a))
+;(clear-agenda)
 @ 
 
 \noindent However, if we add a keymap with only the sequence
@@ -253,9 +269,11 @@ return any single key inputs.
 (define test-keymap (make-keymap))
 (set! default-klecl-maps (lambda () (list test-keymap)))
 (define-key test-keymap (kbd "a b c") 'no-command)
-(with-blockable (read-key-sequence*))
+;(with-blockable (read-key-sequence*))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
-(block-tick)
+;(block-tick)
+(update-agenda)
 (check last-key-seq => #f) ;; Not enough keys to return.
 @ 
 
@@ -263,18 +281,20 @@ Let's test a sequence that is not in the keymap.
 
 <<klecl:test>>=
 (emacsy-key-event #\z)
-(block-tick)
+(update-agenda)
 (check last-key-seq => '(#\a #\z)) ;; No way "a z" is an actual key-sequence.
 @ 
 
 <<klecl:test>>=
-(with-blockable (read-key-sequence*))
+;(with-blockable (read-key-sequence*))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
 (emacsy-key-event #\b)
-(block-tick)
+;(block-tick)
+(update-agenda)
 (check last-key-seq => #f) ;; Not enough keys to return yet.
 (emacsy-key-event #\c)
-(block-tick)
+(update-agenda)
 (check last-key-seq => '(#\a #\b #\c)) ;; Got it!
 @ 
 
@@ -282,12 +302,15 @@ Let's test keyboard quitting.
 
 <<klecl:test>>=
 (define-key test-keymap (kbd "q") 'keyboard-quit)
-(with-blockable (read-key-sequence*))
+;(with-blockable (read-key-sequence*))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
-(block-tick)
+;(block-tick)
+(update-agenda)
 (check last-key-seq => #f) ;; Not enough keys to return yet.
 (emacsy-key-event #\q)
-(block-tick)
+;(block-tick)
+(update-agenda)
 (check last-key-seq => '(#\a #\q)) ;; Got it!
 @ 
 
@@ -479,7 +502,9 @@ Let's define a convenience procedure to [[pretty-print]] to a string.
 (define-key test-keymap (kbd "c") 'my-command)
 (emacsy-key-event #\c)
 (check my-command-count => 0)
-(with-blockable (primitive-command-tick))
+(agenda-schedule primitive-command-tick)
+(update-agenda)
+;(with-blockable (primitive-command-tick))
 (check my-command-count => 1)
 @ 
 

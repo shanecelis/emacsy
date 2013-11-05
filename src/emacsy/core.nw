@@ -380,7 +380,7 @@ These are most of the C API calls.
              #t))))
     (lambda (key . args)
       (emacsy-log-error "Hook ~a threw error '~a with args ~a " hook key args)
-      (emacsy-log-error "Resetting hook ~a" hook)
+;      (emacsy-log-error "Resetting hook ~a" hook)
 ;      (reset-hook! hook)
       #f)))
 
@@ -456,7 +456,7 @@ We don't do this all the time because it seems unnecessarily taxing.
 @ 
 
 <<core:procedure>>=
-(define*-public (read-from-mouse #:optional (prompt #f))
+(define* (read-from-mouse #:optional (prompt #f))
   (define (my-read-event) 
     (if (and (pair? this-command-event)
              (mouse-event? (car this-command-event)))
@@ -487,12 +487,19 @@ We don't do this all the time because it seems unnecessarily taxing.
 (emacsy-discard-input!)
 (emacsy-key-event #\a)
 (define mouse-event #f)
-(with-blockable (set! mouse-event (read-from-mouse)))
-(block-tick)
+(agenda-schedule (colambda () 
+                           (format #t "START~%")
+                           (set! mouse-event (read-from-mouse))
+                           (format #t "END~%")))
+;(with-blockable )
+;(block-tick)
 (check mouse-event => #f)
+(update-agenda)
 (emacsy-mouse-event #(0 0) 1 'down)
-(block-tick)
+(update-agenda)
 (check-true mouse-event)
+;(block-tick)
+
 @ 
 
 \subsection{Command Loop}
@@ -506,7 +513,7 @@ If we ever run out of command loops due to errors, we start a new one.
   ;(call-blockable (lambda () (command-loop)))
   (agenda-schedule (colambda () (command-loop))))
 
-(agenda-schedule (colambda () (command-loop)))
+;(restart-command-loop)
 
 @ 
 
@@ -549,7 +556,8 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
   #:use-module (emacsy minibuffer)
   #:use-module (emacsy coroutine)
   #:use-module (emacsy agenda)
-  #:replace (switch-to-buffer))
+  #:replace (switch-to-buffer)
+  #:export (read-from-mouse))
 <<core:macro>>
 <<core:class>>
 <<core:state>>

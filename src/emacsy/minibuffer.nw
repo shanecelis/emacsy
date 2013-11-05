@@ -159,15 +159,23 @@ the next command is executed.
 @ 
 
 <<minibuffer:test>>=
+
 (set! default-klecl-maps (lambda () (list minibuffer-local-map)))
 (set-buffer! minibuffer)
 (delete-minibuffer-contents minibuffer)
 (check (buffer-string minibuffer) => "What? ")
 (insert "A")
-(with-blockable
- (minibuffer-message " [Huh?]"))
-
+(agenda-schedule (colambda ()
+                  (minibuffer-message " [Huh?]")))
+#;(with-blockable
+  (minibuffer-message " [Huh?]"))
+(update-agenda)
 (check (buffer-string minibuffer) => "What? A [Huh?]")
+(update-agenda)
+(check (buffer-string minibuffer) => "What? A [Huh?]")
+(emacsy-key-event #\c)
+(update-agenda)
+(check (buffer-string minibuffer) => "What? Ac")
 ;(emacsy-key-event #\a)
 ;(block-tick)
 ;(check (buffer-string minibuffer) => "What? Aa")
@@ -818,7 +826,9 @@ Some commands for manipulating the minibuffer history.
   #:use-module (emacsy command)
   #:use-module (emacsy block)
   #:use-module (emacsy klecl)
-  #:use-module (emacsy kbd-macro))
+  #:use-module (emacsy kbd-macro)
+  #:use-module (emacsy agenda)
+  #:use-module (emacsy coroutine))
 <<minibuffer:macro>>
 <<minibuffer:class>>
 <<minibuffer:state>>
