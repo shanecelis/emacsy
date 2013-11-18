@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Command Module}
 
 \epigraph{If words of command are not clear and distinct, if orders are not thoroughly understood, then the general is to blame.}{Sun Tzu}
@@ -135,7 +136,7 @@ We define the global command map.
     (syntax-case x ()
       ((define-cmd (name . args) e0)
        #'(begin 
-           (codefine* (name . args)
+           (define* (name . args)
              (with-fluids ((in-what-command 'name))
                e0))
            (export name)
@@ -144,7 +145,7 @@ We define the global command map.
        (string? (syntax->datum #'e0))
        ;; Handle the case where there is a documentation string.
        #'(begin 
-           (codefine* (name . args)
+           (define* (name . args)
                       e0
                       (with-fluids ((in-what-command 'name))
                         (let ()
@@ -153,7 +154,7 @@ We define the global command map.
            (set-command-properties! name 'name)))
       ((define-cmd (name . args) e0 e1 . body)
        #'(begin 
-           (codefine* (name . args)
+           (define* (name . args)
                       (with-fluids ((in-what-command 'name))
                         (let ()
                           e0 e1 . body)))

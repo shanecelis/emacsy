@@ -11,6 +11,9 @@ NOWEB_DOCS = _emacsy.pdf
 #
 #NOWEB_DOCS = command-paper.pdf
 
+NOWEAVE_HEADER = $(top_srcdir)/support/noweb/paper-header.nw
+NOWEAVE_FOOTER = $(top_srcdir)/support/noweb/paper-footer.nw
+
 PARTIAL_TEX = _emacsy-c-api.tex _event.tex _keymap.tex _command.tex _block.tex _klecl.tex _advice.tex _buffer.tex _minibuffer.tex _core.tex _window.tex _util.tex
 _emacsy.pdf : $(PARTIAL_TEX)
 
@@ -36,7 +39,7 @@ SCHEME_FILES = event.scm util.scm keymap.scm command.scm buffer.scm		\
  block.scm klecl.scm kbd-macro.scm minibuffer.scm core.scm emacsy.scm	\
  advice.scm window.scm help.scm 
 
-GOBJECTS = $(SCHEME_FILES:%.scm=%.go) coroutine.go agenda.go 
+GOBJECTS = $(SCHEME_FILES:%.scm=%.go) coroutine.go agenda.go mode.go
 
 NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS) emacsy.h emacsy.c
 

@@ -45,17 +45,19 @@ coroutine's ID, or cid."
   (procedure-property resume 'cid))
 
 ;; could have a (make-coroutine thunk) => (cid . run-coroutine-thunk)
-(define (make-coroutine thunk)
+(define* (make-coroutine thunk #:optional (name #f))
   "Creates a procedure that can yield a continuation.  (Does not execute thunk.)"
   (define cid cid-next)
   (define (handler cont callback . args)
     (define (resume . args)
-      (format #t "resuming cid ~a~%" cid)
+      (format #t "resuming ~a cid ~a~%" name cid)
       ;; Call continuation that resumes the procedure.
       (call-with-prompt 'coroutine-prompt
                         (lambda () (apply cont args))
                         handler))
     (set-procedure-property! resume 'cid cid)
+    (when name
+     (set-procedure-property! resume 'name (string->symbol (format #f "~a-resume-~a" name cid))))
     (when (procedure? callback)
       (apply callback resume args)))
   (set! cid-next (1+ cid-next))
@@ -65,9 +67,9 @@ coroutine's ID, or cid."
     (set-procedure-property! first-call 'cid cid)
     (values first-call cid)))
 
-(define (coroutine thunk)
+(define* (coroutine thunk #:optional (name #f))
   "Calls a procedure that can yield a continuation."
-  ((make-coroutine thunk)))
+  ((make-coroutine thunk name)))
 
 ;; emacs: (put 'colambda 'scheme-indent-function 0)
 (define-syntax-rule (colambda args body ...)
@@ -77,15 +79,15 @@ coroutine's ID, or cid."
      (lambda () body ...))))
 
 ;; emacs: (put 'codefine 'scheme-indent-function 1)
-(define-syntax-rule (codefine (name ...) . body)
+(define-syntax-rule (codefine (name . args) . body)
   "Syntactic sugar for defining a procedure that is run as a
 coroutine."
-  (define (name ...)
+  (define (name . args)
     ;; Create an inner procedure with the same signature so that a
     ;; recursive procedure call does not create a new prompt.
-    (define (name ...) . body)
+    (define (name . args) . body)
     (coroutine
-     (lambda () (name ...)))))
+     (lambda () (name . args)) 'name)))
 
 ;; (strip-optargs #'(a #:optional (b 2) c)) =>~ (a b c)
 ;; TODO make it work with keyword arguments.
@@ -156,7 +158,8 @@ coroutine."
            ;; recursive procedure call does not create a new prompt.
            (define* (name . formals) e0)
            (coroutine
-            (lambda () (apply name args)))))
+            (lambda () (apply name args)) 
+            'name)))
       ;; Handle the case where there is a documentation string.
       ((_ (name . formals) e0 e1 . body)
        (string? (syntax->datum #'e0))
@@ -166,14 +169,16 @@ coroutine."
            ;; recursive procedure call does not create a new prompt.
            (define* (name . formals) e1 . body)
            (coroutine
-            (lambda () (apply name args)))))
+            (lambda () (apply name args))
+            'name)))
       ((_ (name . formals) e0 e1 . body)
        #'(define (name . args)
            ;; Create an inner procedure with the same signature so that a
            ;; recursive procedure call does not create a new prompt.
            (define* (name . formals) e0 e1 . body)
            (coroutine
-            (lambda () (apply name args))))))))
+            (lambda () (apply name args))
+            'name))))))
 
 (define (yield callback)
   "Yield continuation to a CALLBACK procedure."

@@ -2,7 +2,7 @@
 % -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Buffer Module}
 
-\epigraph{And when you gaze long into an abyss the abyss also gazes into you.}{Beyond Good and Evil \\Friedrich Nietzsche}
+\epigraph{And when you gaze long into an abyss the abyss also gazes into you.}{Beyond Good and Evil \\Friedrich Nietzsche} 
 \todo[inline]{This should be moved out of the KLECL chapter.}
 
 A buffer in Emacs represents text, including its mode, local
@@ -19,8 +19,9 @@ the model, view, and controller respectively---the MVC pattern.
   (buffer-modified? #:accessor buffer-modified? #:init-value #f)
   (buffer-modified-tick #:accessor buffer-modified-tick #:init-value 0)
   (buffer-enter-hook #:accessor buffer-enter-hook #:init-form (make-hook 0))
-  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0)))
-(export local-keymap local-variables buffer-enter-hook buffer-exit-hook before-buffer-change-hook after-buffer-change-hook after-change-hook before-change-hook buffer-modified-tick)
+  (buffer-exit-hook #:accessor buffer-exit-hook #:init-form (make-hook 0))
+  (buffer-modes #:accessor buffer-modes #:init-form '()))
+(export local-keymap local-variables buffer-enter-hook buffer-exit-hook before-buffer-change-hook after-buffer-change-hook after-change-hook before-change-hook buffer-modified-tick buffer-modes)
 @ 
 
 <<buffer:state>>=
@@ -639,8 +640,8 @@ This macro requires a procedure [[in-out-guard]] defined in the
   #:use-module (emacsy command)
   #:use-module (emacsy klecl)
   #:use-module (emacsy help)
-  #:use-module (rnrs base)
-  )
+  #:use-module (emacsy mode)
+  #:use-module (rnrs base))
 <<buffer:macro>>
 <<buffer:class>>
 <<buffer:state>>

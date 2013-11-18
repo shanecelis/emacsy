@@ -67,20 +67,30 @@ will block if there are no events to read.
   (let ((event (deq! event-queue)))
     (run-hook read-event-hook event)
     event))
-
 (define (raw-read-event prompt)
   (if prompt
       (message prompt))
   (let ((event (deq! event-queue)))
     (run-hook read-event-hook event)
-    (format #t "RAW-READ-EVENT ~a~%" event)
+    (emacsy-log-debug "RAW-READ-EVENT ~a~%" event)
     event))
 
 (define*-public (read-event #:optional (prompt #f))
-  (if (q-empty? event-queue)
-      (yield (lambda (resume)
-               (block-read-event (coroutine->cid resume) prompt resume)))
-      (raw-read-event prompt)))
+  (if emacsy-interactive?
+      (if (q-empty? event-queue)
+          (yield (lambda (resume)
+                   (block-read-event (coroutine->cid resume) prompt resume)))
+          (raw-read-event prompt))
+      ;; We're non-interactive. I need to read from stdin.
+      
+      (let ((input-string (read-line)))
+        (if (and (eof-object? input-string)
+                 (q-empty? event-queue))
+            (throw 'read-event-eof)
+            (begin
+              (unless (eof-object? input-string)
+                (map emacsy-event (kbd->events input-string)))
+              (raw-read-event prompt))))))
 
 (define reader-request-queue (make-q))
 
@@ -90,10 +100,10 @@ will block if there are no events to read.
 
 (codefine (fulfill-read-requests)
    (while #t
-     (format #t "fulfill-read-requests CHECK~%")
+     ;(format #t "fulfill-read-requests CHECK~%")
      (when (and (not (q-empty? event-queue)) 
                 (not (q-empty? reader-request-queue)))
-       (format #t "fulfill-read-requests DO~%")
+       ;(format #t "fulfill-read-requests DO~%")
        (match (deq! reader-request-queue)
          ((cid prompt resume)
           ;; Do I need to schedule this with the agenda to make it
@@ -106,6 +116,7 @@ will block if there are no events to read.
 
 <<klecl:state>>=
 (define-public read-event-hook (make-hook 1))
+(define-public emacsy-interactive? #f)
 @ 
 
 <<klecl:test>>=
@@ -253,12 +264,11 @@ return any single key inputs.
   (set! last-key-seq #f)
   (set! last-key-seq (map command-char (read-key-sequence))))
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule read-key-sequence*)
+(agenda-schedule (colambda () (read-key-sequence*)))
 (emacsy-key-event #\a)
 ;(block-tick)
 (update-agenda)
 (check last-key-seq => '(#\a))
-;(clear-agenda)
 @ 
 
 \noindent However, if we add a keymap with only the sequence
@@ -270,7 +280,7 @@ return any single key inputs.
 (set! default-klecl-maps (lambda () (list test-keymap)))
 (define-key test-keymap (kbd "a b c") 'no-command)
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule read-key-sequence*)
+(agenda-schedule (colambda () (read-key-sequence*)))
 (emacsy-key-event #\a)
 ;(block-tick)
 (update-agenda)
@@ -287,7 +297,7 @@ Let's test a sequence that is not in the keymap.
 
 <<klecl:test>>=
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule read-key-sequence*)
+(agenda-schedule (colambda () (read-key-sequence*)))
 (emacsy-key-event #\a)
 (emacsy-key-event #\b)
 ;(block-tick)
@@ -303,7 +313,7 @@ Let's test keyboard quitting.
 <<klecl:test>>=
 (define-key test-keymap (kbd "q") 'keyboard-quit)
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule read-key-sequence*)
+(agenda-schedule (colambda () (read-key-sequence*)))
 (emacsy-key-event #\a)
 ;(block-tick)
 (update-agenda)
@@ -502,7 +512,7 @@ Let's define a convenience procedure to [[pretty-print]] to a string.
 (define-key test-keymap (kbd "c") 'my-command)
 (emacsy-key-event #\c)
 (check my-command-count => 0)
-(agenda-schedule primitive-command-tick)
+(agenda-schedule (colambda () (primitive-command-tick)))
 (update-agenda)
 ;(with-blockable (primitive-command-tick))
 (check my-command-count => 1)
@@ -577,8 +587,10 @@ have to worry about any ``pollution'' of Emacs-isms.
 (define-module (emacsy klecl)
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 rdelim)
   #:use-module (ice-9 q)
   #:use-module (srfi srfi-1)
+  #:use-module (rnrs io ports)
   #:use-module (oop goops)
   #:use-module (system repl error-handling)
   #:use-module (emacsy util)

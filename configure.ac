@@ -80,6 +80,7 @@ AC_CONFIG_FILES([ Makefile
 AC_CONFIG_FILES([bin/env], [chmod a+x bin/env])
 AC_CONFIG_FILES([bin/warn-notangle], [chmod a+x bin/warn-notangle])
 AC_CONFIG_FILES([bin/namespace-markup], [chmod a+x bin/namespace-markup])
+AC_CONFIG_FILES([bin/wrapper], [chmod a+x bin/wrapper])
 
 
 dnl We can point the example to the build directory.

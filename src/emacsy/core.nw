@@ -16,7 +16,7 @@ We need a global keymap.
   (list))
 
 (define-public (current-active-maps)
-  (list (current-local-map) global-map))
+  `(,(current-local-map) ,@(map mode-map (buffer-modes (current-buffer))) ,global-map))
 
 (set! default-klecl-maps current-active-maps)
 @ 
@@ -75,7 +75,8 @@ with \verb|M-x|.
 
 <<core:command>>=
 (define-interactive (quit-application)
-  (set! emacsy-quit-application? #t))
+  (set! emacsy-quit-application? #t)
+  (wait))
 @ 
 
 <<core:state>>=
@@ -143,13 +144,13 @@ invoke recursive minibuffers.
     (define-key ua-keymap "9" (lambda () (process-arg 9)))
     (define-key ua-keymap "0" (lambda () (process-arg 0)))
     (define-key ua-keymap "-" (lambda () 
-                                      (set! count (- count))
-                                      (add-to-prompt "-")))
+                                (set! count (- count))
+                                (add-to-prompt "-")))
     (define-key ua-keymap "C-u" (lambda () 
-                                        (when (= count 0)
-                                            (set! count 4))
-                                        (set! count (* count 4))
-                                        (add-to-prompt "C-u")))
+                                  (when (= count 0)
+                                    (set! count 4))
+                                  (set! count (* count 4))
+                                  (add-to-prompt "C-u")))
     (while (not done?)
       (primitive-command-tick prompt 
                               #:keymaps (list ua-keymap)
@@ -307,6 +308,9 @@ instantiate.
                 (insert string)
                 (insert "\n"))
    (set! echo-area string)
+   (if emacsy-interactive?
+       (wait)
+       (display string))
    string))
 
 ;; There's probably a better way to do this.
@@ -359,7 +363,7 @@ These are most of the C API calls.
 
 ;; XXX this should be moved into the (emacsy buffer) module.
 (define-method-public (emacsy-mode-line (buffer <buffer>))
-  (format #f "-:**- ~a" (buffer-name buffer)))
+  (format #f "-:**- ~a    (~{~a~^ ~})" (buffer-name buffer) (map mode-name (buffer-modes buffer))))
 
 (define-public (emacsy-minibuffer-point)
   (if emacsy-display-minibuffer?
@@ -485,7 +489,7 @@ We don't do this all the time because it seems unnecessarily taxing.
 
 <<core:test>>=
 (emacsy-discard-input!)
-(emacsy-key-event #\a)
+;(emacsy-key-event #\a)
 (define mouse-event #f)
 (agenda-schedule (colambda () 
                            (format #t "START~%")
@@ -493,13 +497,12 @@ We don't do this all the time because it seems unnecessarily taxing.
                            (format #t "END~%")))
 ;(with-blockable )
 ;(block-tick)
-(check mouse-event => #f)
-(update-agenda)
+;(check mouse-event => #f)
+;(update-agenda)
 (emacsy-mouse-event #(0 0) 1 'down)
 (update-agenda)
 (check-true mouse-event)
 ;(block-tick)
-
 @ 
 
 \subsection{Command Loop}
@@ -507,14 +510,31 @@ We don't do this all the time because it seems unnecessarily taxing.
 If we ever run out of command loops due to errors, we start a new one.
 
 <<core:procedure>>=
-(define (restart-command-loop)
+(codefine (restart-command-loop)
   ;; Start another command-loop
-  (emacsy-log-warning "NO COMMAND LOOPS; STARTING ANOTHER.")
-  ;(call-blockable (lambda () (command-loop)))
-  (agenda-schedule (colambda () (command-loop))))
+          (while #t
+            (emacsy-log-warning "NO COMMAND LOOPS; STARTING ANOTHER.")
+            (command-loop)))
 
-;(restart-command-loop)
+(codefine (non-interactive-command-loop)
+  ;; Start another command-loop
+          (emacsy-log-warning "STARTING NON-INTERACTIVE COMMAND LOOP.")
+          (catch #t 
+            (lambda () (primitive-command-loop))
+            (lambda args
+              (format #t "stopping non-interactive command loop ~a" args)))
+          (exit 0)
+          #;(quit-application))
 
+;(agenda-schedule restart-command-loop)
+
+(define-public (emacsy-initialize interactive?)
+  #;(when interactive? 
+    (agenda-schedule restart-command-loop))
+  (agenda-schedule (if interactive? 
+                       restart-command-loop
+                       non-interactive-command-loop))
+  (set! emacsy-interactive? interactive?))
 @ 
 
 And if we have warning, we emit then through [[emacsy-log-warning]].
@@ -548,6 +568,7 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
   #:use-module (emacsy util)
   #:use-module (emacsy keymap)
   #:use-module (emacsy event)
+  #:use-module (emacsy mode)
   #:use-module (emacsy buffer)
   #:use-module (emacsy command)
   #:use-module (emacsy block)

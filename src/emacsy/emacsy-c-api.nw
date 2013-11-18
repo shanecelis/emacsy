@@ -6,7 +6,7 @@ programs. The C API is given below.
 
 <<Prototypes>>=
 /* Initialize Emacsy. */
-int  emacsy_initialize(void);
+int  emacsy_initialize(int init_flags);
 
 /* Enqueue a keyboard event. */
 void emacsy_key_event(int char_code,
@@ -67,10 +67,9 @@ SCM modifier_key_flags_to_list(int modifier_key_flags);
 
 <<End Header Guard>>
 
-@ Here are the constants for the C API.  TODO, add the \verb|EY_| prefix to these constants.
+@ Here are the constants for the C API.  
 
 <<Defines>>=
-
 #define EMACSY_MODKEY_COUNT   6
 
 #define EMACSY_MODKEY_ALT     1 // A
@@ -83,10 +82,14 @@ SCM modifier_key_flags_to_list(int modifier_key_flags);
 #define EMACSY_MOUSE_BUTTON_DOWN  0
 #define EMACSY_MOUSE_BUTTON_UP    1
 #define EMACSY_MOUSE_MOTION       2
+
+#define EMACSY_INTERACTIVE        1
+#define EMACSY_NON_INTERACTIVE    0
+
+#define EMACSY_MOUSE_BUTTON_UP    1
+#define EMACSY_MOUSE_MOTION       2
 @ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
-\todo[inline]{Change prefix from EY to EMACSY, and make these all refer
-to actual Scheme names; for instance [[EMACSY_QUIT_APPLICATION]] should be changed to [[EMACSY_QUIT_APPLICATION_P]] and there should be a scheme value [[emacsy-quit-application?]].}
 <<Defines>>=
 #define EMACSY_QUIT_APPLICATION_P       1
 #define EMACSY_ECHO_AREA_UPDATED_P      2
@@ -108,13 +111,16 @@ to actual Scheme names; for instance [[EMACSY_QUIT_APPLICATION]] should be chang
 \section{emacsy\_initialize}
 
 <<Functions>>=
-int emacsy_initialize()
+int emacsy_initialize(int init_flags)
 {
   /* Load the (emacsy emacsy) module. */
   const char *module = "emacsy emacsy"; 
   int err = emacsy_load_module(module);
   if (err)
     return err;
+    
+  (void) scm_call_1(scm_c_public_ref("emacsy emacsy", "emacsy-initialize"),
+                    (init_flags & EMACSY_INTERACTIVE) ? SCM_BOOL_T : SCM_BOOL_F);
   
   return err;
 }

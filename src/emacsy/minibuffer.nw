@@ -151,15 +151,31 @@ help or show possible completions.  The message will only last until
 the next command is executed.
 
 <<minibuffer:procedure>>=
+(define* (seconds->ticks seconds #:optional (default-ticks #f))
+  "Converts seconds to number of ticks, if such a conversion is
+available. Otherwise returns default-ticks."
+  (if ticks-per-second
+      (* seconds ticks-per-second)
+      default-ticks))
+
 (define-public (minibuffer-message string . args)
   (set! (minibuffer-message-string minibuffer) 
         (apply format #f string args))
-  (command-tick)
-  (set! (minibuffer-message-string minibuffer) ""))
+  (incr! minibuffer-message-modified-tick)
+  (agenda-schedule (let ((my-tick minibuffer-message-modified-tick))
+                     (lambda () 
+                       (when (= my-tick minibuffer-message-modified-tick)
+                         (set! (minibuffer-message-string minibuffer) ""))))
+                       (seconds->ticks minibuffer-message-timeout 1)))
 @ 
 
-<<minibuffer:test>>=
+<<minibuffer:state>>=
+(define-public minibuffer-message-timeout 5)
+(define-public ticks-per-second #f)
+(define minibuffer-message-modified-tick 0)
+@
 
+<<minibuffer:test>>=
 (set! default-klecl-maps (lambda () (list minibuffer-local-map)))
 (set-buffer! minibuffer)
 (delete-minibuffer-contents minibuffer)
@@ -172,8 +188,9 @@ the next command is executed.
 (update-agenda)
 (check (buffer-string minibuffer) => "What? A [Huh?]")
 (update-agenda)
-(check (buffer-string minibuffer) => "What? A [Huh?]")
+(check (buffer-string minibuffer) => "What? A")
 (emacsy-key-event #\c)
+(agenda-schedule (colambda () (command-tick)))
 (update-agenda)
 (check (buffer-string minibuffer) => "What? Ac")
 ;(emacsy-key-event #\a)
@@ -455,7 +472,7 @@ It can also work with a procedure.
                         contents 
                         (fluid-ref minibuffer-completion-table)
                         (fluid-ref minibuffer-completion-predicate))))
-     ;(format #t "contents = ~a~%" contents)
+     (format #t "contents = ~a, expansion = ~a, completions = ~a ~%" contents expansion completions)
      (while (not (= (point) (point-min)))
        (delete-backward-char))
                                         ;(goto-char (point-min))
@@ -464,6 +481,8 @@ It can also work with a procedure.
      (cond
       ((= 0 (length completions))
        (minibuffer-message " [No match]"))
+      ((= 1 (length completions))
+       (minibuffer-message " [Sole completion]"))
       ((> (length completions) 1)
        (minibuffer-message 
         (string-concatenate 

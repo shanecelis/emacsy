@@ -22,9 +22,10 @@ wrapper = $(abs_top_builddir)/bin/wrapper
 		 $(wrapper) -H "$(NOWEAVE_HEADER)" -F "$(NOWEAVE_FOOTER)" -- $(noweave) $(NOWEAVE_UNWRAPPED_FLAGS) -indexfrom all.defs $^ | cpif $@; \
 	fi
 
-# This creates a LaTeX file from that Noweb that may be easily included into a larger
-# TeX file.  It uses a similar convention of _name like that of Compass to denote that
-# it is a partial TeX and not complete.
+# This creates a LaTeX file from that Noweb that may be easily
+# included into a larger TeX file.  It uses a similar convention of
+# _name like that of Compass to denote that it is a partial TeX and
+# not complete.
 _%.tex : %.nw 
 	$(AM_V_at) $(MAKE) all.defs
 	$(AM_V_GEN) $(noweave) $(NOWEAVE_UNWRAPPED_FLAGS) -indexfrom all.defs $^ | cpif $@
@@ -83,7 +84,7 @@ doc-local: pdf-local
 
 else
 %.pdf : %.tex
-	$(warning Warning: unable to update $@ from changed $< without latexmk.)
+	$(warning Warning: unable to update $@ from changed $< without pdflatex.)
 
 endif
 

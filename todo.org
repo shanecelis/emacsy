@@ -1,8 +1,11 @@
 * Emacsy TODO
   - [X] Defining variables with define-variable leaves warnings about
     that variable not being defined. FIXED. Thanks, Mark Weaver!
+  - [ ] Change emacsy-key-event to emacsy-submit-key-event or something.
+  - [ ] rename define-cmd to define-command
   - [ ] BUG: The frame title should show the current buffer whereas the
     modeline show's the window's buffer
+  - [ ] hello-emacsy BUG: C-u 1 0 doesn't show latest character.
   - [ ] It'd be nice to have a for-each which didn't use lambdas and
     was more like loop.  The for-each action list where action can be
     long then the list that it operates on is kind of jaring.)
@@ -114,6 +117,8 @@
     be regular Guile that one reverts to.  This has the added
     advantage that one ends up creating Guile modules that others can
     use.
+  - [ ] Add re-export-module macro, and do it as you build everything up.
+  - [ ] (define (get-cid) (yield (lambda (resume) (resume (coroutine->cid resume)))))
   - [ ] make emacsy work with copy/paste [[http://stackoverflow.com/questions/6888862/how-to-access-clipboard-data-programmatically][link]]
 
   - [ ] [[https://github.com/technomancy/find-file-in-project/blob/master/find-file-in-project.el][Try this find-file-in-project]]

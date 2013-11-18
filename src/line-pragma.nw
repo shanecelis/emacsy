@@ -21,16 +21,16 @@ that.
 
 <<Line Pragma Handler>>=
 (lambda (char port)
-  (let* ((ine (read port))
-         (lineno (read port))
-         (filename (read port)))
+  (let ((ine (read port))
+        (lineno (read port))
+        (filename (read port)))
     (if (not (eq? ine 'ine))
         (error (format #f "Expected '#line <line-number> <filename>'; got '#~a~a ~a \"~a\"'." char ine lineno filename)))
     (set-port-filename! port filename)
     (set-port-line! port lineno)
     (set-port-column! port 0)
     ;; Return unspecified on purpose.
-    (if #f #f)
+    *unspecified*
     ))
 @ One problem that popped up was I sometimes wanted to include pieces of
 documentation in embedded strings.  Something that might end up
@@ -73,12 +73,11 @@ another reader extension that will strip out any \#l lines within it.
   #:use-module (ice-9 rdelim))
 
 (eval-when (compile load eval)
- (define eor (call-with-input-string "#;done" (lambda (port) (read port))))
- (read-hash-extend #\l #f)
  (define line-pragma-handler <<Line Pragma Handler>>)
- (set-procedure-property! line-pragma-handler 'read-comment #t)
+ (read-hash-extend #\l #f)
  (read-hash-extend #\l line-pragma-handler)
- (read-hash-extend #\" <<Liberal String Quote Reader>>))
+ #;(read-hash-extend #\" <<Liberal String Quote Reader>>))
+@ 
 
 \subsection{[[__LINE__]] and [[__FILE__]]}
 

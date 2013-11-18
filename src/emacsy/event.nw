@@ -214,7 +214,7 @@ rather than the first [[x]] for which [[(f x)]] is true.
 
 
 <<event:procedure>>=
-(define (kbd->events kbd-string)
+(define-public (kbd->events kbd-string)
   (let ((kbd-entries (string-tokenize kbd-string)))
         (map kbd-entry->event kbd-entries)))
 @ 
