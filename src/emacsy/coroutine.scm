@@ -33,43 +33,39 @@
             colambda
             codefine
             codefine*
-            coroutine->cid
-            )
+            couser-data) 
   #:replace (yield))
 
 (define cid-next 0)
-
-(define (coroutine->cid resume)
-  "Given a coroutine resumption method. This will return that
-coroutine's ID, or cid."
-  (procedure-property resume 'cid))
 
 ;; could have a (make-coroutine thunk) => (cid . run-coroutine-thunk)
 (define* (make-coroutine thunk #:optional (name #f) (user-data #f))
   "Creates a procedure that can yield a continuation.  (Does not execute thunk.)"
   (define cid cid-next)
-  (define (handler cont callback . args)
+  (define (handler cont key . args)
     (define (resume . args)
       (format #t "resuming ~a cid ~a~%" name cid)
       ;; Call continuation that resumes the procedure.
-      (call-with-prompt 'coroutine-prompt
+      (call-with-prompt 'coroutine-prompt 
                         (lambda () (apply cont args))
                         handler))
-    (set-procedure-property! resume 'cid cid)
     (when name
-     (set-procedure-property! resume 'name (string->symbol (format #f "~a-resume-~a" name cid))))
-    (when (procedure? callback)
-      (apply callback resume args)))
+      (set-procedure-property! resume 
+                               'name (string->symbol 
+                                      (format #f "~a-resume-~a" name cid))))
+    (case key
+      ((callback)
+       (when (procedure? (car args))
+         (apply (car args) resume (cdr args))))
+      ((user-data)
+       (resume user-data))))
   (set! cid-next (1+ cid-next))
 
-  ;; Call procedure.
-  (let ((first-call (lambda () (call-with-prompt 'coroutine-prompt thunk handler))))
-    (set-procedure-property! first-call 'cid cid)
-    (values first-call cid)))
+  (lambda () (call-with-prompt 'coroutine-prompt thunk handler)))
 
-(define* (coroutine thunk #:optional (name #f))
+(define* (coroutine thunk #:optional (name #f) (user-data #f))
   "Calls a procedure that can yield a continuation."
-  ((make-coroutine thunk name)))
+  ((make-coroutine thunk name user-data)))
 
 ;; emacs: (put 'colambda 'scheme-indent-function 0)
 (define-syntax-rule (colambda args body ...)
@@ -182,4 +178,8 @@ coroutine."
 
 (define (yield callback)
   "Yield continuation to a CALLBACK procedure."
-  (abort-to-prompt 'coroutine-prompt callback))
+  (abort-to-prompt 'coroutine-prompt 'callback callback))
+
+(define (couser-data)
+  "Return the user-data for this coroutine."
+  (abort-to-prompt 'coroutine-prompt 'user-data))

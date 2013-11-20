@@ -297,10 +297,10 @@ Test quitting the minibuffer.
 (emacsy-key-event #\g '(control))
 ;(with-backtrace* (read-from-minibuffer "What?1 "))
 ;(set! emacsy-interactive? #f)
-;(check-throw ((colambda () (read-from-minibuffer "What?1 "))) => 'quit-command)
-((colambda () (read-from-minibuffer "What?1 ")))
+(check-throw ((colambda () (read-from-minibuffer "What?1 "))) => 'quit-command)
+;((colambda () (read-from-minibuffer "What?1 ")))
 ;; Displaying the "Quit!" message causes a pause.
-(check-throw (update-agenda) => 'quit-command)
+;(check-throw (update-agenda) => 'quit-command)
 ;(set! emacsy-interactive? #t)
 @ 
 

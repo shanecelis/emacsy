@@ -80,7 +80,7 @@ will block if there are no events to read.
   (if emacsy-interactive?
       (if (q-empty? event-queue)
           (yield (lambda (resume)
-                   (block-read-event (coroutine->cid resume) prompt resume)))
+                   (block-read-event prompt resume)))
           (raw-read-event prompt))
       ;; We're non-interactive. I need to read from stdin.
       
@@ -95,9 +95,9 @@ will block if there are no events to read.
 
 (define reader-request-queue (make-q))
 
-(define (block-read-event cid prompt resume)
-  (format #t "block-read-event ~a~%" (list cid prompt resume))
-  (enq! reader-request-queue (list cid prompt resume)))
+(define (block-read-event prompt resume)
+  (format #t "block-read-event ~a~%" (list prompt resume))
+  (enq! reader-request-queue (list prompt resume)))
 
 (codefine (fulfill-read-requests)
    (while #t
@@ -106,7 +106,7 @@ will block if there are no events to read.
                 (not (q-empty? reader-request-queue)))
        (format #t "fulfill-read-requests DO~%")
        (match (deq! reader-request-queue)
-         ((cid prompt resume)
+         ((prompt resume)
           ;; Do I need to schedule this with the agenda to make it
           ;; behave properly?
           (resume (raw-read-event prompt)))))

@@ -121,6 +121,10 @@
   - [ ] (define (get-cid) (yield (lambda (resume) (resume (coroutine->cid resume)))))
   - [ ] make emacsy work with copy/paste [[http://stackoverflow.com/questions/6888862/how-to-access-clipboard-data-programmatically][link]]
 
+  - [ ] Have something for blocking reading, need something for
+    blocking/smartly doing writing (message) shouldn't cause an
+    enormous hassle for unit testing like it does now.
+
   - [ ] [[https://github.com/technomancy/find-file-in-project/blob/master/find-file-in-project.el][Try this find-file-in-project]]
   - [[https://groups.google.com/forum/m/?fromgroups#!msg/comp.emacs/j_fNPgtbavM/DVygGrzgQgMJ][Great introduction]] to the bare minimum you need to know to use
     Emacs
