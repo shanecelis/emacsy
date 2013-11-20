@@ -283,7 +283,7 @@ return any single key inputs.
 (define (no-command) #f)
 (define test-keymap (make-keymap))
 (set! default-klecl-maps (lambda () (list test-keymap)))
-(define-key test-keymap (kbd "a b c") 'no-command)
+(define-key test-keymap "a b c" 'no-command)
 ;(with-blockable (read-key-sequence*))
 (agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
@@ -316,7 +316,7 @@ Let's test a sequence that is not in the keymap.
 Let's test keyboard quitting.
 
 <<klecl:test>>=
-(define-key test-keymap (kbd "q") 'keyboard-quit)
+(define-key test-keymap "q" 'keyboard-quit)
 ;(with-blockable (read-key-sequence*))
 (agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
@@ -514,7 +514,7 @@ Let's define a convenience procedure to [[pretty-print]] to a string.
 (define my-command-count 0)
 (define-interactive (my-command)
   (incr! my-command-count))
-(define-key test-keymap (kbd "c") 'my-command)
+(define-key test-keymap "c" 'my-command)
 (emacsy-key-event #\c)
 (check my-command-count => 0)
 (agenda-schedule (colambda () (primitive-command-tick)))

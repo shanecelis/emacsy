@@ -36,21 +36,21 @@ would be expected in an editable buffer.\todo{This should probably be
 We want to be able to move around the buffer as well.
 
 <<minibuffer:keymap>>=
-(define-key minibuffer-local-map (kbd "C-f") 'forward-char)
-(define-key minibuffer-local-map (kbd "M-f") 'forward-word)
-(define-key minibuffer-local-map (kbd "C-b") 'backward-char)
-(define-key minibuffer-local-map (kbd "M-b") 'backward-word)
-(define-key minibuffer-local-map (kbd "DEL") 'delete-backward-char)
-(define-key minibuffer-local-map (kbd "SPC") 'self-insert-command)
-(define-key minibuffer-local-map (kbd "-")   'self-insert-command)
-(define-key minibuffer-local-map (kbd "C-a") 'move-beginning-of-line)
-(define-key minibuffer-local-map (kbd "C-e") 'move-end-of-line)
-(define-key minibuffer-local-map (kbd "C-k") 'kill-line)
-(define-key minibuffer-local-map (kbd "C-d") 'forward-delete-char)
-(define-key minibuffer-local-map (kbd "RET") 'exit-minibuffer)
-(define-key minibuffer-local-map (kbd "M-n") 'next-history-element)
-(define-key minibuffer-local-map (kbd "M-p") 'previous-history-element)
-(define-key minibuffer-local-map (kbd "C-g") 'keyboard-quit)
+(define-key minibuffer-local-map "C-f" 'forward-char)
+(define-key minibuffer-local-map "M-f" 'forward-word)
+(define-key minibuffer-local-map "C-b" 'backward-char)
+(define-key minibuffer-local-map "M-b" 'backward-word)
+(define-key minibuffer-local-map "DEL" 'delete-backward-char)
+(define-key minibuffer-local-map "SPC" 'self-insert-command)
+(define-key minibuffer-local-map "-"   'self-insert-command)
+(define-key minibuffer-local-map "C-a" 'move-beginning-of-line)
+(define-key minibuffer-local-map "C-e" 'move-end-of-line)
+(define-key minibuffer-local-map "C-k" 'kill-line)
+(define-key minibuffer-local-map "C-d" 'forward-delete-char)
+(define-key minibuffer-local-map "RET" 'exit-minibuffer)
+(define-key minibuffer-local-map "M-n" 'next-history-element)
+(define-key minibuffer-local-map "M-p" 'previous-history-element)
+(define-key minibuffer-local-map "C-g" 'keyboard-quit)
 @ 
 
 We instantiate the [[<minibuffer>]] class into the global variable
@@ -531,11 +531,11 @@ It can also work with a procedure.
 <<minibuffer:keymap>>=
 (define minibuffer-local-completion-map 
   (let ((kmap (make-keymap minibuffer-local-map)))
-    ;(define-key kmap (kbd "SPC") 'minibuffer-complete-word)
-    (define-key kmap (kbd "TAB") 'minibuffer-complete)
-    (define-key kmap (kbd "?")   'minibuffer-completion-help)
-    (define-key kmap (kbd "C-s") 'next-match)
-    (define-key kmap (kbd "C-r") 'previous-match)))
+    ;(define-key kmap "SPC" 'minibuffer-complete-word)
+    (define-key kmap "TAB" 'minibuffer-complete)
+    (define-key kmap "?"   'minibuffer-completion-help)
+    (define-key kmap "C-s" 'next-match)
+    (define-key kmap "C-r" 'previous-match)))
 @ 
 
 <<minibuffer:state>>=

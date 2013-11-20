@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Event Module}
 
 Let's define an root event class.  \todo{Rename time to event-time.}
@@ -42,7 +43,7 @@ including the modifier keys.
 One of the idioms we want to capture from Emacs is this.
 
 \begin{verbatim}
-  (define-key global-map (kbd "M-f") 'some-command)
+  (define-key global-map "M-f" 'some-command)
 \end{verbatim}
 
 They [[keymap]] and [[command]] module will deal with most of the

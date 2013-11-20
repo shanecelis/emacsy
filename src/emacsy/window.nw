@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Windows (Optional)}   
 
 Emacsy aims to offer the minimal amount of intrusion to acquire big
@@ -328,12 +329,12 @@ It will come as no surprise that these key bindings will mimic the
 behavior of Emacs.
 
 <<Key bindings>>=
-(define-key global-map (kbd "C-x 0") 'delete-window)
-(define-key global-map (kbd "C-x 1") 'delete-other-windows)
-(define-key global-map (kbd "C-x 2") 'split-window-below)
-(define-key global-map (kbd "C-x 3") 'split-window-right)
+(define-key global-map "C-x 0" 'delete-window)
+(define-key global-map "C-x 1" 'delete-other-windows)
+(define-key global-map "C-x 2" 'split-window-below)
+(define-key global-map "C-x 3" 'split-window-right)
 
-(define-key global-map (kbd "C-x o") 'other-window)
+(define-key global-map "C-x o" 'other-window)
 <<file:window-test.scm>>=
 <<+ Lisp File Header>>  
 <<+ Test Preamble>>

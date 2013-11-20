@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Keymap Module}
 
 The keymap stores the mapping between key strokes---or events---and
@@ -12,9 +13,9 @@ Here is an example of the keymap representation in Emacs.
 
 \begin{verbatim}
 > (let ((k (make-sparse-keymap)))
-    (define-key k (kbd "a")         'self-insert-command)
-    (define-key k (kbd "<mouse-1>") 'mouse-drag-region)
-    (define-key k (kbd "C-x C-f")   'find-file-at-point) 
+    (define-key k "a"         'self-insert-command)
+    (define-key k "<mouse-1>" 'mouse-drag-region)
+    (define-key k "C-x C-f"   'find-file-at-point) 
     k)
 
 (keymap
@@ -34,9 +35,9 @@ same keymap as above but in Emacsy.
 
 \begin{verbatim}
 > (let ((k (make-keymap)))
-    (define-key k (kbd "a")       'self-insert-command)
-    (define-key k (kbd "mouse-1") 'mouse-drag-region)
-    (define-key k (kbd "C-x C-f") 'find-file-at-point) 
+    (define-key k "a"       'self-insert-command)
+    (define-key k "mouse-1" 'mouse-drag-region)
+    (define-key k "C-x C-f" 'find-file-at-point) 
     k)
 
 #<keymap 
@@ -78,9 +79,9 @@ list of keys.  Consider this test keymap
 (define (mouse-drag-region) #f) ;; make a fake command
 (define (find-file-at-point) #f) ;; make a fake command
 (define k (make-keymap))
-(define-key k (kbd "a")       'self-insert-command)
-(define-key k (kbd "mouse-1") 'mouse-drag-region)
-(define-key k (kbd "C-x C-f") 'find-file-at-point)
+(define-key k "a"       'self-insert-command)
+(define-key k "mouse-1" 'mouse-drag-region)
+(define-key k "C-x C-f" 'find-file-at-point)
 @ 
 \noindent [[lookup-key]] should behave in the following way.
 
@@ -91,35 +92,39 @@ list of keys.  Consider this test keymap
         (procedure-name result)
         result)))
 (check (lookup-key* k '("a")) => 'self-insert-command-trampoline)
-(check (lookup-key* k (kbd "a")) => 'self-insert-command-trampoline)
+(check (lookup-key* k "a") => 'self-insert-command-trampoline)
 (check (lookup-key k '("b")) => #f)
-(check (lookup-key k (kbd "M-x b")) => #f)
+(check (lookup-key k "M-x b") => #f)
 (check-true (keymap? (lookup-key k '("C-x"))))
-(check (lookup-key k (kbd "C-x C-f a b") #f) => 2)
+(check (lookup-key k "C-x C-f a b" #f) => 2)
 @ 
 
 <<keymap:procedure>>=
 (define*-public (lookup-key keymap keys #:optional (follow-parent? #t))
-  (if (null? keys)
-      keymap
-      (let ((entry (hash-ref (entries keymap) (car keys))))
-        (if entry
-            (if (keymap? entry)
-                ;; Recurse into the next keymap.
-                (1+if-number (lookup-key entry (cdr keys) follow-parent?))
-                ;; Entry exists.
-                (if (null? (cdr keys))
-                    ;; Specifies the right number of keys; return
-                    ;; entry.
-                    entry
-                    ;; Entry exists but there are more keys; return a
-                    ;; number.
-                    1))
-            ;; No entry; try the parent.
-            (if (and follow-parent? (parent keymap))
-                (lookup-key (parent keymap) keys follow-parent?)
-                ;; No entry; no parent.
-                #f)))))
+  (define* (lookup-key* keymap keys #:optional (follow-parent? #t))
+    (if (null? keys)
+        keymap
+        (let ((entry (hash-ref (entries keymap) (car keys))))
+          (if entry
+              (if (keymap? entry)
+                  ;; Recurse into the next keymap.
+                  (1+if-number (lookup-key* entry (cdr keys) follow-parent?))
+                  ;; Entry exists.
+                  (if (null? (cdr keys))
+                      ;; Specifies the right number of keys; return
+                      ;; entry.
+                      entry
+                      ;; Entry exists but there are more keys; return a
+                      ;; number.
+                      1))
+              ;; No entry; try the parent.
+              (if (and follow-parent? (parent keymap))
+                  (lookup-key* (parent keymap) keys follow-parent?)
+                  ;; No entry; no parent.
+                  #f)))))
+  (lookup-key* keymap (if (string? keys)
+                          (kbd keys)
+                          keys) follow-parent?))
 @ 
 
 We propagate the error using a number using the following procedure.
@@ -136,14 +141,17 @@ cumbersome (and perhaps should be replaced with exceptions?),
 sometimes we just want to see if there is something in the keymap.
 
 <<keymap:test>>=
-(check (lookup-key? k (kbd "C-x")) => #f)
-(check (lookup-key? k (kbd "C-x C-f")) => #t)
-(check (lookup-key? k (kbd "a")) => #t)
+(check (lookup-key? k "C-x") => #f)
+(check (lookup-key? k "C-x C-f") => #t)
+(check (lookup-key? k "a") => #t)
 @ 
 
 <<keymap:procedure>>=
-(define*-public (lookup-key? keymap keys #:optional (keymap-ok? #f))
-   (let ((result (lookup-key keymap keys)))
+(define*-public (lookup-key? keymap keyspec #:optional (keymap-ok? #f))
+   (let* ((keys (if (string? keyspec) 
+                    (kbd keyspec)
+                    keyspec))
+          (result (lookup-key keymap keys)))
      (if keymap-ok?
          (and (not (boolean? result)) 
               (not (number? result)))

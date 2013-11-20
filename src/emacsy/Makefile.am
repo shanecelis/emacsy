@@ -30,18 +30,22 @@ NOWEB_FILES = emacsy.nw emacsy-c-api.nw event.nw util.nw keymap.nw	\
 							command.nw buffer.nw block.nw klecl.nw kbd-macro.nw		\
 							minibuffer.nw core.nw advice.nw window.nw help.nw
 
-SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm			\
- buffer-test.scm block-test.scm klecl-test.scm kbd-macro-test.scm		\
- core-test.scm emacsy-test.scm advice-test.scm minibuffer-test.scm	\
+NOWEB_SCHEME_TESTS = event-test.scm keymap-test.scm command-test.scm	\
+ buffer-test.scm block-test.scm klecl-test.scm kbd-macro-test.scm			\
+ core-test.scm emacsy-test.scm advice-test.scm minibuffer-test.scm		\
  window-test.scm help-test.scm
 
-SCHEME_FILES = event.scm util.scm keymap.scm command.scm buffer.scm		\
+NOWEB_SCHEME_FILES = event.scm util.scm keymap.scm command.scm buffer.scm		\
  block.scm klecl.scm kbd-macro.scm minibuffer.scm core.scm emacsy.scm	\
  advice.scm window.scm help.scm 
 
-GOBJECTS = $(SCHEME_FILES:%.scm=%.go) coroutine.go agenda.go mode.go
+SCHEME_FILES = $(NOWEB_SCHEME_FILES) coroutine.scm agenda.scm mode.scm job.scm
 
-NOWEB_PRODUCTS = $(SCHEME_FILES) $(SCHEME_TESTS) emacsy.h emacsy.c
+SCHEME_TESTS = $(NOWEB_SCHEME_TESTS) job-test.scm
+
+GOBJECTS = $(SCHEME_FILES:%.scm=%.go) 
+
+NOWEB_PRODUCTS = $(NOWEB_SCHEME_FILES) $(NOWEB_SCHEME_TESTS) emacsy.h emacsy.c
 
 NOWEB_INCLUDES = $(top_srcdir)/support/noweb/boiler-plate.nw
 

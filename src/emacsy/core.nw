@@ -10,6 +10,7 @@ We need a global keymap.
 
 <<core:state>>=
 (define-public global-map (make-keymap))
+(define-public special-event-map (make-keymap))
 @ 
 
 <<core:procedure>>=
@@ -25,11 +26,13 @@ We need a global keymap.
 And here are the essential key bindings.
 
 <<core:keybinding>>=
-(define-key global-map (kbd "M-:")     'eval-expression)
-(define-key global-map (kbd "M-x")     'execute-extended-command)
-(define-key global-map (kbd "C-g")     'keyboard-quit)
-(define-key global-map (kbd "C-x C-c") 'quit-application)
-(define-key global-map (kbd "C-u")     'universal-argument)
+(define-key global-map "M-:"        'eval-expression)
+(define-key global-map "M-x"        'execute-extended-command)
+(define-key global-map "C-g"        'keyboard-quit)
+(define-key global-map "C-x C-c"    'quit-application)
+(define-key global-map "C-u"        'universal-argument)
+
+(define-key special-event-map "C-g" 'keyboard-quit)
 @ 
 
 \subsection{eval-expression}
@@ -184,17 +187,17 @@ invoke recursive minibuffers.
 \subsubsection{Keyboard Macro Keybindings}
 
 <<core:keybinding>>=
-(define-key global-map (kbd "C-x (") 'kmacro-start-macro)
-(define-key global-map (kbd "C-x )") 'kmacro-end-macro)
-(define-key global-map (kbd "C-x e") 'kmacro-end-and-call-macro)
+(define-key global-map "C-x (" 'kmacro-start-macro)
+(define-key global-map "C-x )" 'kmacro-end-macro)
+(define-key global-map "C-x e" 'kmacro-end-and-call-macro)
 @ 
 
 \subsubsection{Buffer Manipulation Keybindings}
 
 <<core:keybinding>>=
-(define-key global-map (kbd "C-o")   'other-buffer)
-(define-key global-map (kbd "C-x k") 'kill-buffer)
-(define-key global-map (kbd "C-x b") 'switch-to-buffer)
+(define-key global-map "C-o"   'other-buffer)
+(define-key global-map "C-x k" 'kill-buffer)
+(define-key global-map "C-x b" 'switch-to-buffer)
 @ 
 
 One problem with this is I'd like to give completing-read a list of
@@ -399,14 +402,6 @@ These are most of the C API calls.
   (run-hook emacsy-terminate-hook))
 
 (define-public (emacsy-tick)
-  #;(define (my-tick)
-   (unless initialized?
-     (call-blockable          
-      (lambda ()
-        (run-hook emacsy-initialize-hook)))
-     (set! initialized? #t))
-   (block-tick))
-  
   (define (my-tick)
     (update-agenda))
   
