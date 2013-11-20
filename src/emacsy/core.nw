@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Core}
 
 %\epigraph{...}{...}
@@ -52,7 +53,9 @@ command is [[eval-expression]].  Let's write it.
 
 
 <<core:test>>=
+(set! emacsy-interactive? #f)
 (check (eval-expression '(+ 1 2)) => 3)
+(set! emacsy-interactive? #t)
 @ 
 [[read-from-string]] parses the string into an expression.
 
@@ -596,10 +599,9 @@ Layout for tests.
              (oop goops)
              (srfi srfi-11))
 
-(eval-when (compile load eval)
-           ;; Some trickery so we can test private procedures.
-           (module-use! (current-module) (resolve-module '(emacsy core))))
+(use-private-modules (emacsy core))
 
+(set! emacsy-interactive? #t)
 <<+ Test Preamble>>
 <<core:test>>
 <<+ Test Postscript>>

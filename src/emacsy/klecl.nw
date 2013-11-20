@@ -67,6 +67,7 @@ will block if there are no events to read.
   (let ((event (deq! event-queue)))
     (run-hook read-event-hook event)
     event))
+
 (define (raw-read-event prompt)
   (if prompt
       (message prompt))
@@ -100,10 +101,10 @@ will block if there are no events to read.
 
 (codefine (fulfill-read-requests)
    (while #t
-     ;(format #t "fulfill-read-requests CHECK~%")
+     (format #t "fulfill-read-requests CHECK~%")
      (when (and (not (q-empty? event-queue)) 
                 (not (q-empty? reader-request-queue)))
-       ;(format #t "fulfill-read-requests DO~%")
+       (format #t "fulfill-read-requests DO~%")
        (match (deq! reader-request-queue)
          ((cid prompt resume)
           ;; Do I need to schedule this with the agenda to make it
@@ -126,11 +127,13 @@ will block if there are no events to read.
 ;(with-blockable (test-read-event))
 (agenda-schedule test-read-event)
 ;(check (blocking?) => #t)
-(emacsy-key-event #\a)
+(set! emacsy-interactive? #t)
 (check last-event => #f)
 ;(block-tick)
-;(update-agenda)
+(update-agenda)
 (check last-event => #f)
+(emacsy-key-event #\a)
+
 (update-agenda)
 ;(check last-event => #f)
 ;(check (blocking?) => #f)
@@ -260,13 +263,15 @@ return any single key inputs.
 
 <<klecl:test>>=
 (define last-key-seq #f)
-(define-cmd (read-key-sequence*)
+(codefine (read-key-sequence*)
   (set! last-key-seq #f)
   (set! last-key-seq (map command-char (read-key-sequence))))
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule (colambda () (read-key-sequence*)))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
 ;(block-tick)
+(update-agenda)
+(check last-key-seq => '(#\a))
 (update-agenda)
 (check last-key-seq => '(#\a))
 @ 
@@ -280,7 +285,7 @@ return any single key inputs.
 (set! default-klecl-maps (lambda () (list test-keymap)))
 (define-key test-keymap (kbd "a b c") 'no-command)
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule (colambda () (read-key-sequence*)))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
 ;(block-tick)
 (update-agenda)
@@ -297,7 +302,7 @@ Let's test a sequence that is not in the keymap.
 
 <<klecl:test>>=
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule (colambda () (read-key-sequence*)))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
 (emacsy-key-event #\b)
 ;(block-tick)
@@ -313,7 +318,7 @@ Let's test keyboard quitting.
 <<klecl:test>>=
 (define-key test-keymap (kbd "q") 'keyboard-quit)
 ;(with-blockable (read-key-sequence*))
-(agenda-schedule (colambda () (read-key-sequence*)))
+(agenda-schedule read-key-sequence*)
 (emacsy-key-event #\a)
 ;(block-tick)
 (update-agenda)
@@ -614,11 +619,10 @@ Layout for tests.
 <<file:klecl-test.scm>>=
 (use-modules (emacsy klecl)
              (emacsy event)
+             (check)
              (oop goops))
 
-(eval-when (compile load eval)
-           ;; Some trickery so we can test private procedures.
-           (module-use! (current-module) (resolve-module '(emacsy klecl))))
+(use-private-modules (emacsy klecl))
 
 <<+ Test Preamble>>
 <<klecl:test>>

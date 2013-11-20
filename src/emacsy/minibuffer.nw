@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 
 \section{Minibuffer}
 
@@ -295,7 +296,12 @@ Test quitting the minibuffer.
 (emacsy-key-event #\a)
 (emacsy-key-event #\g '(control))
 ;(with-backtrace* (read-from-minibuffer "What?1 "))
-(check-throw (read-from-minibuffer "What?1 ") => 'quit-command)
+;(set! emacsy-interactive? #f)
+;(check-throw ((colambda () (read-from-minibuffer "What?1 "))) => 'quit-command)
+((colambda () (read-from-minibuffer "What?1 ")))
+;; Displaying the "Quit!" message causes a pause.
+(check-throw (update-agenda) => 'quit-command)
+;(set! emacsy-interactive? #t)
 @ 
 
 Test retaining history in the minibuffer.  
@@ -862,11 +868,12 @@ Layout for tests.
 (use-modules (emacsy minibuffer)
              (emacsy event)
              (emacsy klecl)
-             (oop goops))
+             (oop goops)
+             (check))
 
-(eval-when (compile load eval)
-           ;; Some trickery so we can test private procedures.
-           (module-use! (current-module) (resolve-module '(emacsy minibuffer))))
+(use-private-modules (emacsy minibuffer))
+
+(set! emacsy-interactive? #t)
 
 <<+ Test Preamble>>
 <<minibuffer:test>>

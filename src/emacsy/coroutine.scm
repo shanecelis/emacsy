@@ -45,7 +45,7 @@ coroutine's ID, or cid."
   (procedure-property resume 'cid))
 
 ;; could have a (make-coroutine thunk) => (cid . run-coroutine-thunk)
-(define* (make-coroutine thunk #:optional (name #f))
+(define* (make-coroutine thunk #:optional (name #f) (user-data #f))
   "Creates a procedure that can yield a continuation.  (Does not execute thunk.)"
   (define cid cid-next)
   (define (handler cont callback . args)

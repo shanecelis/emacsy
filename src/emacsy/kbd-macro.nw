@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Keyboard Macro Module}
 
 
@@ -166,11 +167,12 @@ Layout for tests.
              (emacsy event)
              (emacsy command)     
              (emacsy klecl)
-             (oop goops))
+             (oop goops)
+             (check))
 
-(eval-when (compile load eval)
-           ;; Some trickery so we can test private procedures.
-           (module-use! (current-module) (resolve-module '(emacsy kbd-macro))))
+(use-private-modules (emacsy kbd-macro))
+
+(set! emacsy-interactive? #t)
 
 <<+ Test Preamble>>
 <<kbd-macro:test>>
