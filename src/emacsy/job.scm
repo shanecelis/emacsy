@@ -21,12 +21,22 @@
 
 (define next-job-id 1)
 
+(define (job-id->job jid)
+  (find (lambda (job)
+          (eq? (job-id job) jid))
+        *current-job-list*))
+
+(define (coerce-to-job job-or-jid)
+  (if (job? job-or-jid)
+      job-or-jid
+      (job-id->job job-or-jid)))
+
 (define* (make-job thunk)
   "Creates a coroutine that has some job control."
   (let ((job (%make-job next-job-id 'baby #f #f)))
    (define (handler cont key . args)
      (define (resume . args)
-       (format #t "resuming job ~a~%" (job-id job))       
+       #;(format #t "resuming job ~a~%" (job-id job))       
        ;; Call continuation that resumes the procedure.
        (call-with-prompt 'coroutine-prompt 
                          (lambda () (apply cont args))
@@ -36,7 +46,7 @@
            (apply resume args)
            (begin
              (set-job-cont! job job-resume)
-             (format #t "job ~a unable to resume because it is ~a~%" 
+             #;(format #t "job ~a unable to resume because it is ~a~%" 
                      (job-id job)
                      (job-state job)))))
      (case key
@@ -47,34 +57,37 @@
         (resume job))))
    (set! next-job-id (1+ next-job-id))
    (set! *current-job-list* (cons job *current-job-list*))
-   (lambda () 
-     (if (eq? (job-state job) 'baby)
-         (begin 
-           (set-job-state! job 'running)
-           (format #t "starting job ~a~%" (job-id job))
-           (call-with-prompt 'coroutine-prompt (lambda () (job-exit (thunk))) handler))
-         (throw 'job-already-started)))))
+   (values 
+    (lambda () 
+      (if (eq? (job-state job) 'baby)
+          (begin 
+            (set-job-state! job 'running)
+            #;(format #t "starting job ~a~%" (job-id job))
+            (call-with-prompt 'coroutine-prompt 
+                              (lambda () (job-exit (thunk))) 
+                              handler))
+          (throw 'job-already-started)))
+    job)))
 
-(define (suspend-job job)
+(define (suspend-job job-or-jid)
   "Suspend a job that is currently running."
-  (set-job-state! job 'suspended))
+  (set-job-state! (coerce-to-job job-or-jid) 'suspended))
 
-(define (continue-job job)
+(define (continue-job job-or-jid)
   "Continue a suspended job and schedule it to be run."
-  (when (eq? (job-state job) suspended)
-    (set-job-state! job 'running)
-    ;; job isn't resumable or callable.
-    (agenda-schedule (job-cont job))
-    (set-job-cont! job #f)))
+  (let ((job (coerce-to-job job-or-jid)))
+   (when (eq? (job-state job) 'suspended)
+     (set-job-state! job 'running)
+     (agenda-schedule (job-cont job))
+     (set-job-cont! job #f))))
 
-(define (wait-for-job job)
+(define (wait-for-job job-or-jid)
   "Waits for a job to complete."
   ;; XXX This should be smarter than polling.
-  (yield (lambda (resume)
-           (while #t
-             (when (eq? (job-state job) 'zombie)
-                 (agenda-schedule (lambda () (resume (job-exit-value job)))))
-             (wait)))))
+  (let ((job (coerce-to-job job-or-jid)))
+    (while (not (eq? (job-state job) 'zombie))
+      (wait))
+    (job-exit-value job)))
 
 (define (job-exit return-value)
   "Exit the job with the given return-value."
