@@ -95,5 +95,7 @@
 (check *current-job-list* => (list (%make-job 6 'zombie 'f #f)
                                    (%make-job 5 'zombie 'f #f)))
 
+(check (format #f "~a" (car *current-job-list*)) => "#<job id: 6 state: zombie exit-value: f>")
+
 (check-report)
 (check-exit)

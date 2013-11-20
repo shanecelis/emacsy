@@ -1,5 +1,6 @@
 (define-module (emacsy job)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-9 gnu)
   #:use-module (emacsy coroutine)
   #:use-module (emacsy agenda)
   #:export (<job>
@@ -16,6 +17,21 @@
   (job-state job-state set-job-state!)
   (job-exit-value job-exit-value set-job-exit-value!)
   (job-cont job-cont set-job-cont!))
+
+(set-record-type-printer! <job>
+  (lambda (job port)
+    (format port "#<job id: ~a state: ~a"
+            (job-id job)
+            (job-state job))
+    (when (job-exit-value job)
+      (format port " exit-value: ~a"
+              (job-exit-value job)))
+    (when (job-cont job)
+      (format port " cont: ~a"
+              (job-cont job)))
+    (display #\> port)))
+
+
 
 (define *current-job-list* '())
 

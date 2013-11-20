@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \documentclass{book}
 
 %\usepackage{microtype}
@@ -503,8 +504,6 @@ re-exports all of the public interfaces for each module.
  '(emacsy core)
  '(emacsy help))
 @ 
-
- 
 
 <<file:emacsy-test.scm>>=
 <<+ Lisp File Header>>  
