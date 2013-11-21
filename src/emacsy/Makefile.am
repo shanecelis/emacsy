@@ -28,16 +28,16 @@ EXTRA_DIST = $(SCHEME_TESTS) $(NOWEB_FILES)
 
 NOWEB_FILES = emacsy.nw emacsy-c-api.nw event.nw util.nw keymap.nw \
 							command.nw buffer.nw block.nw klecl.nw kbd-macro.nw	 \
-							minibuffer.nw core.nw advice.nw window.nw help.nw self-doc.nw
+							minibuffer.nw core.nw advice.nw window.nw help.nw self-doc.nw mru-stack.nw
 
 NOWEB_SCHEME_TESTS = event-test.scm self-doc-test.scm keymap-test.scm	\
  command-test.scm buffer-test.scm block-test.scm klecl-test.scm				\
  kbd-macro-test.scm core-test.scm emacsy-test.scm advice-test.scm			\
- minibuffer-test.scm window-test.scm help-test.scm
+ minibuffer-test.scm window-test.scm help-test.scm mru-stack-test.scm
 
 NOWEB_SCHEME_FILES = event.scm util.scm self-doc.scm keymap.scm		 \
  command.scm buffer.scm block.scm klecl.scm kbd-macro.scm					 \
- minibuffer.scm core.scm emacsy.scm advice.scm window.scm help.scm
+ minibuffer.scm core.scm emacsy.scm advice.scm window.scm help.scm mru-stack.scm
 
 SCHEME_FILES = $(NOWEB_SCHEME_FILES) coroutine.scm agenda.scm mode.scm job.scm
 
