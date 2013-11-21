@@ -395,8 +395,6 @@ These are most of the C API calls.
       #f)))
 
 (define-public emacsy-terminate-hook (make-hook))
-(define-public emacsy-initialize-hook (make-hook))
-(define initialized? #f)
 
 (define-public (emacsy-terminate)
   (run-hook emacsy-terminate-hook))

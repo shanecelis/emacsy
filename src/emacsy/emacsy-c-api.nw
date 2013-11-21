@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: c-mode -*-
 \chapter{C API} 
 \lstset{language=C}
 
@@ -86,8 +87,6 @@ SCM modifier_key_flags_to_list(int modifier_key_flags);
 #define EMACSY_INTERACTIVE        1
 #define EMACSY_NON_INTERACTIVE    0
 
-#define EMACSY_MOUSE_BUTTON_UP    1
-#define EMACSY_MOUSE_MOTION       2
 @ Here are the return flags that may be returned by \verb|emacsy_tick|.
 
 <<Defines>>=

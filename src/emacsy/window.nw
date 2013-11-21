@@ -20,7 +20,19 @@ you can, but you aren't required to.
   #:use-module (oop goops)
   #:use-module (emacsy emacsy)
   <<Include Modules>>
-  #:export ( <<Exported Symbols>> window-buffer window-children orientation user-data window-list root-window current-window window-configuration-change-hook window-clone)
+  #:export (<window>
+            <internal-window>
+            window?
+            split-window
+            window-buffer
+            window-children
+            orientation 
+            user-data
+            window-list
+            root-window
+            current-window
+            window-configuration-change-hook
+            window-clone)
   #:export-syntax ( <<Exported Syntax>> ) 
 )
 @ \section{Classes}
@@ -41,29 +53,22 @@ a buffer.
 (define-class <internal-window> ()
   (window-parent #:accessor window-parent #:init-value #f)
   (user-data #:accessor user-data #:init-keyword #:user-data #:init-value #f)
-  (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) ; just two!
+  (window-children #:accessor window-children #:init-keyword #:window-children #:init-value '()) 
   (orientation #:accessor orientation #:init-keyword #:orientation #:init-value 'vertical) ; or 'horizontal
   (size #:accessor size #:init-keyword #:size #:init-value .5))
 @ %def <internal-window>
-<<Exported Symbols>>=
-<window> <internal-window>
-@ \section{Procedures}
+ \section{Procedures}
 
 <<Procedures>>=
 (define-method (initialize (obj <internal-window>) initargs)
   (next-method)
   (for-each (lambda (window)
     (set! (window-parent window) obj)) (window-children obj)))
-@
 
-<<Procedures>>=
 (define (window? o)
-  (or (is-a? o <window>) (is-a? o <internal-window>) )
-  )
+  (or (is-a? o <window>) (is-a? o <internal-window>)))
 @ 
-<<Exported Symbols>>=
-window?
-@ 
+
 <<Windows Tests>>=
   (check (window? root-window) => #t)
 @ 
@@ -143,7 +148,7 @@ particular pixel height will require some callbacks or hooks.
 
 \subsection{Overriding switch-to-buffer}
 
-When the user switches to a buffer, that the current window should be
+When the user switches to a buffer, then the current window should be
 switched to that window.  It'd be preferrable to use an advice
 mechanism, but I haven't finished writing that module yet, so we'll
 have to settle for something a little more clunky.
@@ -193,9 +198,6 @@ has references to other windows, you will clone entire object graph.
     (update-window internal-window)
   internal-window))
 @ %def split-window
-<<Exported Symbols>>=
- split-window
-@  
 
 <<Procedures>>=
 (define-method (window-clone (window <window>))
