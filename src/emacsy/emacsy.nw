@@ -459,6 +459,7 @@ re-exports all of the public interfaces for each module.
 (define-module (emacsy emacsy)
   #:use-module (convenience-lambda)  
   #:use-module (emacsy util)
+  #:use-module (emacsy self-doc)
   #:use-module (emacsy event)
   #:use-module (emacsy keymap)
   #:use-module (emacsy coroutine)
@@ -490,6 +491,7 @@ re-exports all of the public interfaces for each module.
 <<emacsy:process>>=
 (re-export-modules 
  '(emacsy util)
+ '(emacsy self-doc)
  '(emacsy keymap)
  '(emacsy event)
  '(emacsy mode)       

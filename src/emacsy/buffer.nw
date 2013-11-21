@@ -635,11 +635,11 @@ This macro requires a procedure [[in-out-guard]] defined in the
   #:use-module (string completion)
   #:use-module (oop goops)
   #:use-module (emacsy util)
+  #:use-module (emacsy self-doc)
   #:use-module (emacsy event)
   #:use-module (emacsy keymap)
   #:use-module (emacsy command)
   #:use-module (emacsy klecl)
-  #:use-module (emacsy help)
   #:use-module (emacsy mode)
   #:use-module (rnrs base))
 <<buffer:macro>>

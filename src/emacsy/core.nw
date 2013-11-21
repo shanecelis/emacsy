@@ -562,6 +562,7 @@ And if we have warning, we emit then through [[emacsy-log-warning]].
   #:use-module (srfi srfi-26) ;; cut cute
   #:use-module (convenience-lambda)  
   #:use-module (emacsy util)
+  #:use-module (emacsy self-doc)
   #:use-module (emacsy keymap)
   #:use-module (emacsy event)
   #:use-module (emacsy mode)

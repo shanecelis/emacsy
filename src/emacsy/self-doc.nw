@@ -1,5 +1,5 @@
 % -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
-\section{Help}
+\section{Self Documentation}
 
 Emacs offers a fantastic comprehensive help system.  Emacsy intends to
 replicate most of this functionality.  One distinction that would be
@@ -9,7 +9,8 @@ the same way.  In Emacs, each are accessible by the help system
 distinctly.  For instance, [[C-h f]] looks up functions, [[C-h v]]
 looks up variables.  In addition to defining what kind of value a
 variable holds, this also allows one to include documentation for
-values which is not included in Guile Scheme by default. (XXX fact check.)
+values which is not included in Guile Scheme by default. (XXX fact
+check.)
 
 \subsection{define-variable}
 
@@ -173,7 +174,7 @@ Now let's try to start a new module.  And probe some of the behavior.
 <<test-this-last>>=
 (define-module (test-this)
   #:use-module (check)
-  #:use-module (emacsy help))
+  #:use-module (emacsy self-doc))
 
 
 (check (emacsy-collect-kind (current-module) 'parameter) => '())
@@ -200,7 +201,7 @@ Now let's try to start a new module.  And probe some of the behavior.
 (check (emacsy-collect-all-kind (current-module) 'variable 1) => '(x))
 (check (emacsy-collect-all-kind (current-module) 'parameter 1) => '(y))
 
-(check (string-suffix? "emacsy/help-test.scm" (assoc-ref (current-source-location) 'filename)) => #t)
+(check (string-suffix? "emacsy/self-doc-test.scm" (assoc-ref (current-source-location) 'filename)) => #t)
 (check (current-filename) => #f)
 (check (source-properties x) => '())
 (check (source-properties 'x) => '())
@@ -211,8 +212,8 @@ Now let's try to start a new module.  And probe some of the behavior.
 
 \subsection{File Layout}
 
-<<file:help.scm>>=
-(define-module (emacsy help)
+<<file:self-doc.scm>>=
+(define-module (emacsy self-doc)
   #:use-module (emacsy util)
   #:use-module (srfi srfi-1)
   #:use-module (search basic)
@@ -225,10 +226,10 @@ Now let's try to start a new module.  And probe some of the behavior.
 <<macro>>
 @ 
 
-<<file:help-test.scm>>=
+<<file:self-doc-test.scm>>=
 (use-modules (check)
-             (emacsy help))
-(use-private-modules (emacsy help))
+             (emacsy self-doc))
+(use-private-modules (emacsy self-doc))
 
 <<test>>
 

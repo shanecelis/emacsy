@@ -1,3 +1,4 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Block Module}
 
 \epigraph{Wearied I fell asleep: But now lead on; In me is no delay; with thee to go, Is to stay here}{Paradise Lost \\John Milton}
@@ -111,7 +112,7 @@ If the thunk aborts, it adds an instance of the class
     bc))
 @ 
 
-<<block:state>>=
+<<util:state>>=
 ;; I want to get rid of this state if I can.
 (define-public continue-command-loop? (make-unbound-fluid))
 @ 
