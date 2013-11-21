@@ -445,7 +445,8 @@ It can also work with a procedure.
       (if (readline-completer? collection)
           (all-completions 
            string 
-           (stream->list (readline-completer->stream collection string))
+           (stream->list 
+            (readline-completer->stream collection string))
            predicate)
           (collection string predicate #t))
    (let ((completer (collection->completer collection predicate)))
@@ -552,11 +553,22 @@ It can also work with a procedure.
                    (predicate (const #t))
                    (require-match? #f)
                    (initial-input #f)
-                   (history (what-command-am-i?)))
+                   (history (what-command-am-i?))
+                   (to-string #f))
+  
 ;; XXX implement require-match?
-  (with-fluids ((minibuffer-completion-table collection)
-                (minibuffer-completion-predicate predicate))
-   (read-from-minibuffer prompt initial-input #:keymap minibuffer-local-completion-map #:history history)))
+  (define (completing-read* collection*)
+    (with-fluids ((minibuffer-completion-table collection*)
+                  (minibuffer-completion-predicate predicate))
+      (read-from-minibuffer prompt initial-input 
+                            #:keymap minibuffer-local-completion-map 
+                            #:history history)))
+  (cond
+   (to-string
+    (receive (to-string* from-string*) (object-tracker to-string)
+      (from-string* (completing-read* (map to-string* collection)))))
+   (else
+    (completing-read* collection))))
 @ 
 
 \subsection{Filename Lookup}

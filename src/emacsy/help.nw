@@ -22,16 +22,28 @@
 (define-interactive 
   (describe-variable 
    #:optional 
-   (variable (completing-read 
+   (symbol (completing-read 
               "Describe variable: "
-              (map symbol->string 
-                   (emacsy-collect-kind (current-module) 'variable)))))
-  (message "Describing variable ~a" variable))
+              (emacsy-collect-kind (current-module) 'variable 1)
+              #:to-string symbol->string)))
+  #;(message "Describing variable ~a: ~a" symbol (variable-documentation symbol))
+  (message "~a" (variable-documentation symbol)))
+
+(define-interactive 
+  (describe-command
+   #:optional 
+   (symbol (completing-read 
+              "Describe command: "
+              (emacsy-collect-kind (current-module) 'command 1)
+              #:to-string symbol->string)))
+  #;(message "Describing variable ~a: ~a" symbol (variable-documentation symbol))
+  (message "~a" (procedure-documentation (module-ref (current-module) symbol))))
 @
 
 <<keymap>>=
 
 (define-key global-map "C-h v" 'describe-variable)
+(define-key global-map "C-h c" 'describe-command)
 @ 
 
 <<file:help-test.scm>>=

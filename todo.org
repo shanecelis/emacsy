@@ -91,6 +91,11 @@
   - [-] Add a couple of variations on the webkit browser
     - [X] make it use multiple buffers
     - [ ] make it use multiple windows
+  - [ ] Should (emacsy window) always be loaded but default to not
+    supporting multiple windows?
+
+  - [ ] 
+
   - [ ] get rid of noise in emacsy (noise?) log noise?
   - [ ] Change define-cmd to define-command
   - [ ] implement coroutines in Guile using [[http://www.lua.org/manual/5.2/manual.html][Lua API]] and [[http://wingolog.org/archives/2011/08/30/the-gnu-extension-language][this]] as a basis

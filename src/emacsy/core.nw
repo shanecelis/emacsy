@@ -211,7 +211,8 @@ object out rather than the string.  I want something like this:
      (map from-string (all-completions "a" (map to-string symbols))))) => '(aa ab))
 @ 
 
-So let's write it.
+So let's write it.  (This functionality has been baked into
+completing-read with the [[#:to-string]] keyword argument.)
 
 <<util:procedure>>=
 ;; object-tracker :: (a -> b) -> ((a -> b), (b -> a))

@@ -1,0 +1,19 @@
+\documentclass{article} 
+\usepackage{graphicx} 
+\usepackage{amsmath} 
+\usepackage{amssymb} 
+\usepackage{float} 
+\usepackage{upgreek}
+\usepackage{todonotes} 
+\usepackage{color}
+\definecolor{linkcolor}{rgb}{0, 0, 0.7}
+\usepackage[backref,raiselinks,pdfhighlight=/O,pagebackref,hyperfigures,breaklinks,colorlinks,pdfstartview=FitBH,linkcolor={linkcolor},anchorcolor={linkcolor},citecolor={linkcolor},filecolor={linkcolor},menucolor={linkcolor},pagecolor={linkcolor},urlcolor={linkcolor}]{hyperref}
+\usepackage{epigraph}
+\usepackage{cleveref}
+\input{/Users/shane/.latexrc}
+\usepackage{noweb}
+\pagestyle{noweb}
+\noweboptions{externalindex,longxref}
+
+\begin{document}
+

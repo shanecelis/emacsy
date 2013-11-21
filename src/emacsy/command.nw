@@ -140,6 +140,9 @@ We define the global command map.
              (with-fluids ((in-what-command 'name))
                e0))
            (export name)
+           (emacsy-kind-set! 
+            (module-variable (current-module) 'name) 
+            'command)
            (set-command-properties! name 'name)))
       ((define-cmd (name . args) e0 e1 . body)
        (string? (syntax->datum #'e0))
@@ -151,6 +154,9 @@ We define the global command map.
                         (let ()
                           e1 . body)))
            (export name)
+           (emacsy-kind-set! 
+            (module-variable (current-module) 'name) 
+            'command)
            (set-command-properties! name 'name)))
       ((define-cmd (name . args) e0 e1 . body)
        #'(begin 
@@ -159,6 +165,9 @@ We define the global command map.
                         (let ()
                           e0 e1 . body)))
            (export name)
+           (emacsy-kind-set! 
+            (module-variable (current-module) 'name) 
+            'command)
            (set-command-properties! name 'name)))
       ((define-cmd name value)
        #'(begin 
@@ -168,6 +177,9 @@ We define the global command map.
                           (with-fluids ((in-what-command 'name))
                             (apply v args))))
              (export name)
+             (emacsy-kind-set! 
+              (module-variable (current-module) 'name) 
+              'command)
              (set-command-properties! name 'name))))
       ((define-cmd cmap (name . args) . body)
        #'(begin 
@@ -348,11 +360,10 @@ associated with commands.
   #:use-module (oop goops)
   #:use-module (ice-9 optargs)
   #:use-module (emacsy util)
+  #:use-module (emacsy self-doc)
   #:use-module (emacsy coroutine)
   
-  #:export-syntax (export-command
-                   )
-  )
+  #:export-syntax (export-command))
 <<command:macro>>
 <<command:class>>
 <<command:state>>

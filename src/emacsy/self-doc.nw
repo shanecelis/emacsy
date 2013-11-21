@@ -1,4 +1,5 @@
 % -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
 \section{Self Documentation}
 
 Emacs offers a fantastic comprehensive help system.  Emacsy intends to
@@ -45,6 +46,7 @@ OBJECT can be a procedure, macro or any object that has its
     ((define-variable name value documentation)
      (begin
        (define-once name value)
+       ;(define-documentation name documentation)
        (let ((v (module-variable (current-module) 'name)))
          (emacsy-kind-set! v 'variable)
          (object-documentation-set! v documentation)
@@ -66,34 +68,46 @@ OBJECT can be a procedure, macro or any object that has its
 
 XXX Rename from variable-documentation to just documentation.
 
-<<macro>>=
-(define-syntax-public variable-documentation
-  (syntax-rules ()
-    ((variable-documentation name)
-     (let ((v (module-variable (current-module) 'name)))
-       (if v
-         (object-documentation-ref v)
-         #f)))))
+<<procedure>>=
+(define-public (variable-documentation variable-or-symbol)
+  (let ((v (cond
+            ((symbol? variable-or-symbol)
+             ;(format #t "IN current-module ~a~%" (current-module))
+             (module-variable (current-module) variable-or-symbol))
+            ((variable? variable-or-symbol)
+             (object-documentation-ref variable-or-symbol))
+            (else
+             (scm-error 
+              'no-such-variable
+              "variable-documentation"
+              "Expected a symbol in the current module or a variable; got ~a"
+              (list variable-or-symbol)
+              #f)))))
+    (if v
+        (object-documentation-ref v)
+        #f)))
 @ 
 
 <<test>>=
 (define-variable x 1 "This is the variable x.")
 (check x => 1)
-(check (variable-documentation x) => "This is the variable x.")
+;(format #t "OUT current-module ~a~%" (current-module))
+(check (variable-documentation (module-variable (current-module) 'x)) => "This is the variable x.")
+(check (variable-documentation 'x) => "This is the variable x.")
 (define-variable x 2 "This is the variable x.")
 (check x => 1)
-(check (variable-documentation x) => "This is the variable x.")
+(check (variable-documentation 'x) => "This is the variable x.")
 (set! x 3)
 (check x => 3)
-(check (variable-documentation x) => "This is the variable x.")
+(check (variable-documentation 'x) => "This is the variable x.")
 
 ;; When we re-define x, the documentation stays.
 (define x 4)
-(check (variable-documentation x) => "This is the variable x.")
+(check (variable-documentation 'x) => "This is the variable x.")
 (check x => 4)
 (define-variable x 5 "This is the variable x; it is!")
 (check x => 4)
-(check (variable-documentation x) => "This is the variable x; it is!")
+(check (variable-documentation 'x) => "This is the variable x; it is!")
 
 (define-variable x 5 "This is the variable x.")
 @ 
@@ -156,13 +170,13 @@ defined, their values are set.
 <<test>>=
 (define-parameter y 1 "This is the parameter y.")
 (check y => 1)
-(check (variable-documentation y) => "This is the parameter y.")
+(check (variable-documentation 'y) => "This is the parameter y.")
 (define-parameter y 2 "This is the parameter y.")
 (check y => 2)
-(check (variable-documentation y) => "This is the parameter y.")
+(check (variable-documentation 'y) => "This is the parameter y.")
 (set! y 3)
 (check y => 3)
-(check (variable-documentation y) => "This is the parameter y.")
+(check (variable-documentation 'y) => "This is the parameter y.")
 ;(check (object-properties (module-variable (current-module) 'y)) => '())
 (check (emacsy-collect-kind (current-module) 'parameter) => '(y))
 (define emacsy-collect-all-kind emacsy-collect-kind)
@@ -183,15 +197,17 @@ Now let's try to start a new module.  And probe some of the behavior.
 
 ;; XXX These two tests behave differently on GNU/Linux and Mac OS X.
 ;(check (module-variable (current-module) 'x) => #f)
-;(check (variable-documentation x) => #f)
-;(check (variable-documentation y) => #f)
+;(check (variable-documentation 'x) => #f)
+;(check (variable-documentation 'y) => #f)
 
 (use-private-modules (guile-user))
 
 (check x => 4)
 (check y => 3)
-(check (variable-documentation x) => "This is the variable x.")
-(check (variable-documentation y) => "This is the parameter y.")
+(check (variable-documentation 'x) => "This is the variable x.")
+(check (variable-documentation (module-variable (current-module) 'x)) => "This is the variable x.")
+(check (variable-documentation 'y) => "This is the parameter y.")
+(check (variable-documentation (module-variable (current-module) 'y)) => "This is the parameter y.")
 (check (emacsy-collect-kind (current-module) 'variable) => '())
 (check (emacsy-collect-kind (current-module) 'parameter) => '())
 
@@ -220,7 +236,10 @@ Now let's try to start a new module.  And probe some of the behavior.
   #:use-module (ice-9 optargs)
   #:use-module (ice-9 match)
   #:use-module (ice-9 documentation)
-  #:export (emacsy-collect-kind))
+  #:export (emacsy-collect-kind
+            emacsy-kind-ref
+            emacsy-kind-set!
+            ))
 
 <<procedure>>
 <<macro>>
