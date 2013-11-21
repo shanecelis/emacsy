@@ -1,0 +1,37 @@
+% -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
+\section{Help}
+
+
+
+<<file:help.scm>>=
+(define-module (emacsy help)
+  #:use-module (emacsy self-doc)
+  #:use-module (emacsy keymap)
+  #:use-module (emacsy command)
+  #:use-module (emacsy minibuffer)
+  #:use-module (emacsy core))
+
+<<procedure>>
+<<macro>>
+<<command>>
+@ 
+
+<<command>>=
+(define-interactive 
+  (describe-variable 
+    #:optional 
+    (variable (read-from-minibuffer "Describe variable: ")))
+  #f
+)
+@
+
+
+<<file:help-test.scm>>=
+(use-modules (check)
+             (emacsy help))
+(use-private-modules (emacsy help))
+
+<<test>>
+
+(check-exit)
+@ 
